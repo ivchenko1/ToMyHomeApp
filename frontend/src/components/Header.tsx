@@ -13,6 +13,9 @@ const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
+  // Sprawdź czy użytkownik jest usługodawcą
+  const isProvider = user?.accountType === 'provider' || !!user?.businessName;
+  
   const authDropdownRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
@@ -199,7 +202,7 @@ const Header = () => {
                 </Link>
 
                 {/* Panel Biznes - tylko dla usługodawców */}
-                {user?.accountType === 'provider' && (
+                {isProvider && (
                   <Link
                     to="/biznes"
                     className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all text-sm"

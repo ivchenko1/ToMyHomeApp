@@ -42,12 +42,14 @@ const BusinessHeader = () => {
 
           {/* Right Side */}
           <div className="flex items-center gap-3">
-            {/* Switch to Client View */}
+            {/* Switch to Client View - widoczny zawsze */}
             <Link
               to="/"
-              className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
             >
-              Widok klienta →
+              <span className="hidden sm:inline">Widok klienta</span>
+              <span className="sm:hidden">🏠</span>
+              <span>→</span>
             </Link>
 
             {/* Notifications */}
