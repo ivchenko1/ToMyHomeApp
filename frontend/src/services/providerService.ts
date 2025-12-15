@@ -265,9 +265,12 @@ export const providerService = {
         const id = generateId();
         const provider = normalizeProvider({ ...data, ownerId, isActive: true }, id);
 
+        // Usuń wszystkie pola undefined - Firebase ich nie akceptuje
+        const cleanProvider = JSON.parse(JSON.stringify(provider));
+
         try {
-            console.log('Firebase create - zapisuję:', provider);
-            await setDoc(doc(db, FIREBASE_COLLECTION, id), provider);
+            console.log('Firebase create - zapisuję:', cleanProvider);
+            await setDoc(doc(db, FIREBASE_COLLECTION, id), cleanProvider);
             console.log('Firebase create - zapisano pomyślnie');
             window.dispatchEvent(new CustomEvent('providerCreated', { detail: provider }));
             return provider;
@@ -288,7 +291,10 @@ export const providerService = {
             const updated = normalizeProvider({ ...existing, ...data }, id);
             updated.updatedAt = new Date().toISOString();
 
-            await updateDoc(doc(db, FIREBASE_COLLECTION, id), { ...updated });
+            // Usuń wszystkie pola undefined - Firebase ich nie akceptuje
+            const cleanUpdated = JSON.parse(JSON.stringify(updated));
+
+            await updateDoc(doc(db, FIREBASE_COLLECTION, id), cleanUpdated);
             window.dispatchEvent(new CustomEvent('providerUpdated', { detail: updated }));
             return updated;
         } catch (error) {

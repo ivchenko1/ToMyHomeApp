@@ -364,8 +364,20 @@ const BusinessAddService = () => {
     try {
       const ownerId = user?.id?.toString() || '';
       
+      console.log('=== DEBUG SAVE ===');
+      console.log('user:', user);
+      console.log('ownerId:', ownerId);
+      console.log('formData:', formData);
+      
+      if (!ownerId) {
+        showToast('Błąd: brak ID użytkownika', 'error');
+        setIsLoading(false);
+        return;
+      }
+      
       // Sprawdź czy użytkownik ma już profil w Firebase
       const existingProviders = await providerService.getByOwner(ownerId);
+      console.log('existingProviders:', existingProviders);
       const existingProvider = existingProviders[0];
       
       const providerData = {
@@ -390,11 +402,15 @@ const BusinessAddService = () => {
 
       if (existingProvider) {
         // Aktualizuj istniejący profil w Firebase
+        console.log('Aktualizuję istniejący profil:', existingProvider.id);
         await providerService.update(existingProvider.id, providerData);
         showToast('🎉 Profil zaktualizowany!', 'success');
       } else {
         // Utwórz nowy profil w Firebase
-        await providerService.create(providerData, ownerId);
+        console.log('Tworzę nowy profil z ownerId:', ownerId);
+        console.log('providerData:', providerData);
+        const created = await providerService.create(providerData, ownerId);
+        console.log('Utworzony provider:', created);
         showToast('🎉 Profil utworzony pomyślnie!', 'success');
       }
 
