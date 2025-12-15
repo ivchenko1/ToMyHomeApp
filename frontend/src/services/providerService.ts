@@ -85,6 +85,11 @@ export interface Provider {
     isAvailableToday: boolean;
     createdAt: string;
     updatedAt: string;
+    // Dane właściciela/użytkownika
+    ownerEmail?: string;
+    ownerUsername?: string;
+    ownerPhone?: string;
+    ownerAvatar?: string;
 }
 
 // ============================================
@@ -187,6 +192,11 @@ const normalizeProvider = (data: any, id?: string): Provider => {
         isAvailableToday: data.isAvailableToday ?? true,
         createdAt: data.createdAt || now,
         updatedAt: data.updatedAt || now,
+        // Dane właściciela/użytkownika
+        ownerEmail: data.ownerEmail || '',
+        ownerUsername: data.ownerUsername || '',
+        ownerPhone: data.ownerPhone || '',
+        ownerAvatar: data.ownerAvatar || '',
     };
 };
 

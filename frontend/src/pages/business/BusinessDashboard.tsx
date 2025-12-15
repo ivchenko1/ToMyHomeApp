@@ -38,7 +38,7 @@ interface RecentBooking {
 }
 
 const BusinessDashboard = () => {
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
     totalBookings: 24,
     bookingsChange: 12,
@@ -85,7 +85,8 @@ const BusinessDashboard = () => {
 
   useEffect(() => {
     // Sprawdź czy użytkownik ma profil usługodawcy w Firebase
-    const checkProvider = async () => {
+    // i automatycznie zaktualizuj dane użytkownika
+    const checkAndUpdateProvider = async () => {
       if (!user?.id) {
         setIsLoading(false);
         return;
@@ -94,6 +95,24 @@ const BusinessDashboard = () => {
       try {
         const providers = await providerService.getByOwner(user.id.toString());
         setHasProvider(providers.length > 0);
+        
+        // Automatycznie zaktualizuj dane użytkownika w providerze
+        if (providers.length > 0) {
+          const provider = providers[0];
+          const needsUpdate = !provider.ownerEmail || !provider.ownerUsername || !provider.ownerPhone;
+          
+          if (needsUpdate) {
+            console.log('Auto-aktualizacja danych użytkownika w providerze...');
+            await providerService.update(provider.id, {
+              ownerEmail: userData?.email || user?.email || '',
+              ownerUsername: userData?.username || user?.username || '',
+              ownerPhone: userData?.phone || user?.phone || '',
+              ownerAvatar: userData?.avatar || user?.avatar || '',
+              isVerified: userData?.isVerified || false,
+            });
+            console.log('Dane użytkownika zaktualizowane!');
+          }
+        }
       } catch (error) {
         console.error('Błąd sprawdzania profilu:', error);
       } finally {
@@ -101,8 +120,8 @@ const BusinessDashboard = () => {
       }
     };
     
-    checkProvider();
-  }, [user]);
+    checkAndUpdateProvider();
+  }, [user, userData]);
 
   const statCards = [
     {

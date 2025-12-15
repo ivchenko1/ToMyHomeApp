@@ -107,7 +107,7 @@ const MapRecenter = ({ lat, lng }: { lat: number; lng: number }) => {
 
 const BusinessAddService = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, userData } = useAuth();
   const { showToast } = useToast();
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -381,6 +381,7 @@ const BusinessAddService = () => {
       const existingProvider = existingProviders[0];
       
       const providerData = {
+        // Dane z formularza
         name: formData.businessName,
         profession: formData.profession,
         category: formData.category,
@@ -398,6 +399,13 @@ const BusinessAddService = () => {
         travelRadius: formData.travelRadius,
         hasTravel: formData.features.includes('Dojazd do klienta'),
         acceptsCard: formData.features.includes('Płatność kartą'),
+        
+        // Dane użytkownika
+        ownerEmail: userData?.email || user?.email || '',
+        ownerUsername: userData?.username || user?.username || '',
+        ownerPhone: userData?.phone || user?.phone || '',
+        ownerAvatar: userData?.avatar || user?.avatar || '',
+        isVerified: userData?.isVerified || false,
       };
 
       if (existingProvider) {
