@@ -19,7 +19,7 @@ const Footer = () => {
     help: [
       { label: 'FAQ', to: '/faq' },
       { label: 'Regulamin', to: '/regulamin' },
-      { label: 'Polityka prywatności', to: '/prywatnosc' },
+      { label: 'Polityka prywatności', to: '/polityka-prywatnosci' },
       { label: 'Wsparcie', to: '/wsparcie' },
     ],
   };

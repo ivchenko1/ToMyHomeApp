@@ -1,5 +1,6 @@
 // src/pages/ContactPage.tsx
 import { Mail, Phone } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const ContactPage = () => {
   return (
@@ -71,9 +72,9 @@ const ContactPage = () => {
             Twoje dane osobowe będą przetwarzane w celu odpowiedzi na Twoją wiadomość 
             i komunikacji z Tobą. Szczegółowe informacje dotyczące przetwarzania Twoich 
             danych osobowych znajdziesz w{' '}
-            <a href="/polityka-prywatnosci" className="text-primary hover:underline">
+            <Link to="/polityka-prywatnosci" className="text-primary hover:underline">
               informacji o sposobie przetwarzania danych osobowych
-            </a>.
+            </Link>.
           </p>
         </div>
       </div>

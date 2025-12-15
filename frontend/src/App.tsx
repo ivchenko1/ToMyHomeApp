@@ -15,6 +15,11 @@ import ProviderDetailPage from './pages/ProviderDetailPage';
 import MessagesPage from './pages/MessagesPage';
 import NotificationsPage from './pages/NotificationsPage';
 import ContactPage from './pages/ContactPage';
+import TermsPage from './pages/TermsPage';
+import PrivacyPage from './pages/PrivacyPage';
+import FAQPage from './pages/FAQPage';
+import SupportPage from './pages/SupportPage';
+import AboutPage from './pages/AboutPage';
 
 // Business Pages
 import BusinessLayout from './components/business/BusinessLayout';
@@ -100,6 +105,11 @@ const ClientLayout = () => {
           <Route path="/wiadomosci" element={<MessagesPage />} />
           <Route path="/powiadomienia" element={<NotificationsPage />} />
           <Route path="/kontakt" element={<ContactPage />} />
+          <Route path="/regulamin" element={<TermsPage />} />
+          <Route path="/polityka-prywatnosci" element={<PrivacyPage />} />
+          <Route path="/faq" element={<FAQPage />} />
+          <Route path="/wsparcie" element={<SupportPage />} />
+          <Route path="/o-nas" element={<AboutPage />} />
         </Routes>
       </main>
       <Footer />
