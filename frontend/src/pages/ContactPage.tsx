@@ -4,7 +4,7 @@ import { Mail, Phone } from 'lucide-react';
 const ContactPage = () => {
   return (
     <div className="min-h-screen py-12 px-4">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-8">
         {/* Header */}
         <h1 className="text-3xl font-bold text-gray-900 mb-4">
           Skontaktuj się z nami
