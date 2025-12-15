@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { LoginRequest, RegisterRequest, AuthResponse, User, Provider } from '../types';
+import { RegisterRequest, AuthResponse, User, Provider } from '../types';
 
 const API_BASE_URL = '/api';
 
@@ -28,10 +28,11 @@ export const authService = {
     } catch (error) {
       // For demo, simulate successful login
       const mockUser: User = {
-        id: 1,
+        id: '1',
         username: email.split('@')[0],
         email: email,
         phone: '+48 123 456 789',
+        accountType: 'client',
       };
       return {
         user: mockUser,
@@ -47,7 +48,7 @@ export const authService = {
     } catch (error) {
       // For demo, simulate successful registration
       const mockUser: User = {
-        id: Date.now(),
+        id: Date.now().toString(),
         username: data.username,
         email: data.email,
         phone: data.phone,

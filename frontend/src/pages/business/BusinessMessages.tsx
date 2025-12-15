@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
 import {
   Search,
   Send,
@@ -7,7 +6,6 @@ import {
   Paperclip,
   MoreVertical,
   Phone,
-  Video,
   ChevronLeft,
   Check,
   CheckCheck,
@@ -19,7 +17,7 @@ import { useAuth, useToast } from '../../App';
 
 interface Message {
   id: string;
-  senderId: number;
+  senderId: string;
   text: string;
   timestamp: Date;
   read: boolean;
@@ -36,7 +34,7 @@ interface Message {
 interface Conversation {
   id: string;
   client: {
-    id: number;
+    id: string;
     name: string;
     avatar: string;
     phone?: string;
@@ -75,7 +73,7 @@ const BusinessMessages = () => {
       {
         id: '1',
         client: {
-          id: 101,
+          id: '101',
           name: 'Magdalena Kowalczyk',
           avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop',
           phone: '+48 123 456 789',
@@ -89,7 +87,7 @@ const BusinessMessages = () => {
         messages: [
           {
             id: '1',
-            senderId: 101,
+            senderId: '101',
             text: 'Dzień dobry! Interesuje mnie strzyżenie.',
             timestamp: new Date(Date.now() - 1000 * 60 * 30),
             read: true,
@@ -97,7 +95,7 @@ const BusinessMessages = () => {
           },
           {
             id: '2',
-            senderId: user?.id || 0,
+            senderId: user?.id || '',
             text: 'Dzień dobry! Oczywiście, kiedy chciałaby Pani się umówić?',
             timestamp: new Date(Date.now() - 1000 * 60 * 20),
             read: true,
@@ -105,7 +103,7 @@ const BusinessMessages = () => {
           },
           {
             id: '3',
-            senderId: 101,
+            senderId: '101',
             text: 'Czy mogę się umówić na piątek?',
             timestamp: new Date(Date.now() - 1000 * 60 * 2),
             read: false,
@@ -116,7 +114,7 @@ const BusinessMessages = () => {
       {
         id: '2',
         client: {
-          id: 102,
+          id: '102',
           name: 'Tomasz Nowicki',
           avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop',
           phone: '+48 987 654 321',
@@ -129,7 +127,7 @@ const BusinessMessages = () => {
         messages: [
           {
             id: '1',
-            senderId: 102,
+            senderId: '102',
             text: 'Chciałbym zarezerwować masaż na sobotę.',
             timestamp: new Date(Date.now() - 1000 * 60 * 120),
             read: true,
@@ -137,7 +135,7 @@ const BusinessMessages = () => {
           },
           {
             id: '2',
-            senderId: user?.id || 0,
+            senderId: user?.id || '',
             text: '',
             timestamp: new Date(Date.now() - 1000 * 60 * 90),
             read: true,
@@ -152,7 +150,7 @@ const BusinessMessages = () => {
           },
           {
             id: '3',
-            senderId: 102,
+            senderId: '102',
             text: 'Świetnie, dziękuję!',
             timestamp: new Date(Date.now() - 1000 * 60 * 60),
             read: true,
@@ -163,7 +161,7 @@ const BusinessMessages = () => {
       {
         id: '3',
         client: {
-          id: 103,
+          id: '103',
           name: 'Anna Wiśniewska',
           avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop',
           email: 'anna.w@example.com',
@@ -176,7 +174,7 @@ const BusinessMessages = () => {
         messages: [
           {
             id: '1',
-            senderId: 103,
+            senderId: '103',
             text: 'Czy można przełożyć rezerwację?',
             timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3),
             read: false,
@@ -203,7 +201,7 @@ const BusinessMessages = () => {
 
     const message: Message = {
       id: Date.now().toString(),
-      senderId: user?.id || 0,
+      senderId: user?.id || '',
       text: messageText,
       timestamp: new Date(),
       read: false,
@@ -236,7 +234,7 @@ const BusinessMessages = () => {
 
     const message: Message = {
       id: Date.now().toString(),
-      senderId: user?.id || 0,
+      senderId: user?.id || '',
       text: '',
       timestamp: new Date(),
       read: false,

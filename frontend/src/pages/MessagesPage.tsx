@@ -17,7 +17,7 @@ import { useAuth } from '../App';
 
 interface Message {
   id: string;
-  senderId: number;
+  senderId: string
   text: string;
   timestamp: Date;
   read: boolean;
@@ -75,7 +75,7 @@ const MessagesPage = () => {
         messages: [
           {
             id: '1',
-            senderId: 1,
+            senderId: '1',
             text: 'Dzień dobry! Dziękuję za zainteresowanie moimi usługami.',
             timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
             read: true,
@@ -83,7 +83,7 @@ const MessagesPage = () => {
           },
           {
             id: '2',
-            senderId: user?.id || 0,
+            senderId: user?.id || '',
             text: 'Dzień dobry! Chciałabym umówić się na strzyżenie w piątek.',
             timestamp: new Date(Date.now() - 1000 * 60 * 60),
             read: true,
@@ -91,7 +91,7 @@ const MessagesPage = () => {
           },
           {
             id: '3',
-            senderId: 1,
+            senderId: '1',
             text: 'Oczywiście! Mam wolny termin o 14:00. Pasuje Pani?',
             timestamp: new Date(Date.now() - 1000 * 60 * 30),
             read: true,
@@ -99,7 +99,7 @@ const MessagesPage = () => {
           },
           {
             id: '4',
-            senderId: user?.id || 0,
+            senderId: user?.id || '',
             text: 'Tak, idealnie! Rezerwuję.',
             timestamp: new Date(Date.now() - 1000 * 60 * 20),
             read: true,
@@ -107,7 +107,7 @@ const MessagesPage = () => {
           },
           {
             id: '5',
-            senderId: 1,
+            senderId: '1',
             text: '',
             timestamp: new Date(Date.now() - 1000 * 60 * 10),
             read: false,
@@ -122,7 +122,7 @@ const MessagesPage = () => {
           },
           {
             id: '6',
-            senderId: 1,
+            senderId: '1',
             text: 'Dziękuję za rezerwację! Do zobaczenia w piątek 😊',
             timestamp: new Date(Date.now() - 1000 * 60 * 5),
             read: false,
@@ -146,7 +146,7 @@ const MessagesPage = () => {
         messages: [
           {
             id: '1',
-            senderId: 2,
+            senderId: '2',
             text: 'Witam! Czy jest Pan zainteresowany masażem relaksacyjnym?',
             timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5),
             read: true,
@@ -154,7 +154,7 @@ const MessagesPage = () => {
           },
           {
             id: '2',
-            senderId: user?.id || 0,
+            senderId: user?.id || '',
             text: 'Tak, szukam czegoś na napięte mięśnie.',
             timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4),
             read: true,
@@ -162,7 +162,7 @@ const MessagesPage = () => {
           },
           {
             id: '3',
-            senderId: 2,
+            senderId: '2',
             text: 'Proszę potwierdzić rezerwację na poniedziałek',
             timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3),
             read: true,
@@ -186,7 +186,7 @@ const MessagesPage = () => {
         messages: [
           {
             id: '1',
-            senderId: 3,
+            senderId: '3',
             text: 'Zapraszam na zabieg w środę!',
             timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24),
             read: false,
@@ -224,7 +224,7 @@ const MessagesPage = () => {
 
     const message: Message = {
       id: Date.now().toString(),
-      senderId: user?.id || 0,
+      senderId: user?.id || '',
       text: newMessage,
       timestamp: new Date(),
       read: false,

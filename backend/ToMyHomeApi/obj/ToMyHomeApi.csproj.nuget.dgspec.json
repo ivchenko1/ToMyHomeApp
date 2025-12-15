@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\nikit\\OneDrive\\Рабочий стол\\ToMyHomeApp\\backend\\ToMyHomeApi\\ToMyHomeApi.csproj": {}
+    "C:\\ToMyHomeApp\\backend\\ToMyHomeApi\\ToMyHomeApi.csproj": {}
   },
   "projects": {
-    "C:\\Users\\nikit\\OneDrive\\Рабочий стол\\ToMyHomeApp\\backend\\ToMyHomeApi\\ToMyHomeApi.csproj": {
+    "C:\\ToMyHomeApp\\backend\\ToMyHomeApi\\ToMyHomeApi.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\nikit\\OneDrive\\Рабочий стол\\ToMyHomeApp\\backend\\ToMyHomeApi\\ToMyHomeApi.csproj",
+        "projectUniqueName": "C:\\ToMyHomeApp\\backend\\ToMyHomeApi\\ToMyHomeApi.csproj",
         "projectName": "ToMyHomeApi",
-        "projectPath": "C:\\Users\\nikit\\OneDrive\\Рабочий стол\\ToMyHomeApp\\backend\\ToMyHomeApi\\ToMyHomeApi.csproj",
+        "projectPath": "C:\\ToMyHomeApp\\backend\\ToMyHomeApi\\ToMyHomeApi.csproj",
         "packagesPath": "C:\\Users\\nikit\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\nikit\\OneDrive\\Рабочий стол\\ToMyHomeApp\\backend\\ToMyHomeApi\\obj\\",
+        "outputPath": "C:\\ToMyHomeApp\\backend\\ToMyHomeApi\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\nikit\\AppData\\Roaming\\NuGet\\NuGet.Config"

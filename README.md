@@ -46,7 +46,7 @@ npm install firebase react-router-dom lucide-react
 ```bash
 cd frontend
 npm install
-npm run dev
+git fetch origin
 ```
 
 Frontend dostępny na: http://localhost:3000

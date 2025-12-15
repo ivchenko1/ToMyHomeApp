@@ -14,6 +14,7 @@ import ProvidersPage from './pages/ProvidersPage';
 import ProviderDetailPage from './pages/ProviderDetailPage';
 import MessagesPage from './pages/MessagesPage';
 import NotificationsPage from './pages/NotificationsPage';
+import ContactPage from './pages/ContactPage';
 
 // Business Pages
 import BusinessLayout from './components/business/BusinessLayout';
@@ -98,6 +99,7 @@ const ClientLayout = () => {
           <Route path="/uslugodawcy" element={<ProvidersPage />} />
           <Route path="/wiadomosci" element={<MessagesPage />} />
           <Route path="/powiadomienia" element={<NotificationsPage />} />
+          <Route path="/kontakt" element={<ContactPage />} />
         </Routes>
       </main>
       <Footer />

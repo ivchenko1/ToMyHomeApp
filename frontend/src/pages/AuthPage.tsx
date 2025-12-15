@@ -11,7 +11,7 @@ import {
   updateProfile
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from '../FireBase';
+import { auth, db } from '../firebase';
 
 type AuthMode = 'select' | 'login' | 'register-client' | 'register-provider';
 

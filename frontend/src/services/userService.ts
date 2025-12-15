@@ -74,21 +74,11 @@ export const updateUserProfile = async (
   try {
     const userRef = doc(db, 'users', userId);
     
-    // Usuń undefined wartości (Firebase nie akceptuje undefined)
-    const cleanData: Record<string, any> = {};
-    Object.entries(data).forEach(([key, value]) => {
-      if (value !== undefined) {
-        cleanData[key] = value;
-      }
+    // Aktualizuj Firestore
+    await updateDoc(userRef, {
+      ...data,
+      updatedAt: serverTimestamp(),
     });
-    
-    // Aktualizuj Firestore tylko jeśli są dane do zapisania
-    if (Object.keys(cleanData).length > 0) {
-      await updateDoc(userRef, {
-        ...cleanData,
-        updatedAt: serverTimestamp(),
-      });
-    }
     
     // Aktualizuj Firebase Auth displayName jeśli zmieniono username
     if (data.username && auth.currentUser) {

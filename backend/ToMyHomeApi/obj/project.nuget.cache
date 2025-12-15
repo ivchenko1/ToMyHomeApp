@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "JAgXMoYHUAM=",
+  "dgSpecHash": "T6z2uTE67A0=",
   "success": true,
-  "projectFilePath": "C:\\Users\\nikit\\OneDrive\\Рабочий стол\\ToMyHomeApp\\backend\\ToMyHomeApi\\ToMyHomeApi.csproj",
+  "projectFilePath": "C:\\ToMyHomeApp\\backend\\ToMyHomeApi\\ToMyHomeApi.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\nikit\\.nuget\\packages\\bcrypt.net-next\\4.0.3\\bcrypt.net-next.4.0.3.nupkg.sha512",
     "C:\\Users\\nikit\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",
