@@ -13,7 +13,7 @@ const StatItem = ({ target, label, suffix = '' }: StatItemProps) => {
 
   useEffect(() => {
     const observer = new IntersectionObserver(
-      (entries) => {
+      (entries: IntersectionObserverEntry[]): void => {
         if (entries[0].isIntersecting && !hasAnimated) {
           setHasAnimated(true);
           animateCount();
@@ -26,16 +26,16 @@ const StatItem = ({ target, label, suffix = '' }: StatItemProps) => {
       observer.observe(ref.current);
     }
 
-    return () => observer.disconnect();
+    return (): void => { observer.disconnect(); };
   }, [hasAnimated, target]);
 
-  const animateCount = () => {
+  const animateCount = (): void => {
     const duration = 2000;
     const steps = 60;
     const increment = target / steps;
     let current = 0;
 
-    const timer = setInterval(() => {
+    const timer = setInterval((): void => {
       current += increment;
       if (current >= target) {
         setCount(target);

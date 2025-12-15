@@ -27,16 +27,16 @@ const Header = () => {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   useEffect(() => {
-    const handleScroll = () => {
+    const handleScroll = (): void => {
       setIsScrolled(window.scrollY > 50);
     };
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    return (): void => { window.removeEventListener('scroll', handleScroll); };
   }, []);
 
   // Close dropdowns on outside click
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent): void => {
       if (authDropdownRef.current && !authDropdownRef.current.contains(event.target as Node)) {
         setShowAuthDropdown(false);
       }
@@ -48,7 +48,7 @@ const Header = () => {
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return (): void => { document.removeEventListener('mousedown', handleClickOutside); };
   }, []);
 
   const navLinks = [
@@ -59,7 +59,7 @@ const Header = () => {
     { to: '/#contact', label: 'Kontakt' },
   ];
 
-  const handleNavClick = (to: string) => {
+  const handleNavClick = (to: string): void => {
     setIsMenuOpen(false);
     if (to.startsWith('/#')) {
       const elementId = to.replace('/#', '');
@@ -70,7 +70,7 @@ const Header = () => {
     }
   };
 
-  const markAllAsRead = () => {
+  const markAllAsRead = (): void => {
     setNotifications(notifications.map(n => ({ ...n, read: true })));
   };
 

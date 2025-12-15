@@ -17,14 +17,18 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useAuth, useToast } from '../../App';
+import { LocalProvider } from '../../types';
 
 // Leaflet imports
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Fix for default marker icon
-delete (L.Icon.Default.prototype as any)._getIconUrl;
+// Fix for default marker icon - Leaflet type workaround
+interface IconDefaultPrototype {
+  _getIconUrl?: string;
+}
+delete (L.Icon.Default.prototype as IconDefaultPrototype)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
@@ -276,7 +280,11 @@ const BusinessAddService = () => {
       }
       setImageFile(file);
       const reader = new FileReader();
-      reader.onloadend = () => setImagePreview(reader.result as string);
+      reader.onloadend = (): void => {
+        if (typeof reader.result === 'string') {
+          setImagePreview(reader.result);
+        }
+      };
       reader.readAsDataURL(file);
     }
   };
@@ -362,9 +370,9 @@ const BusinessAddService = () => {
 
     try {
       // Save to localStorage (demo mode)
-      const localProviders = JSON.parse(localStorage.getItem('localProviders') || '[]');
-      
-      const newProvider = {
+      const localProviders: LocalProvider[] = JSON.parse(localStorage.getItem('localProviders') || '[]');
+
+      const newProvider: LocalProvider = {
         id: Date.now(),
         ownerId: user?.id,
         name: formData.businessName,

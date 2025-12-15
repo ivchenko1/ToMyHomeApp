@@ -77,15 +77,15 @@ const HomePage = () => {
     },
   ];
 
-  const scrollToServices = () => {
+  const scrollToServices = (): void => {
     servicesRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   // Intersection Observer for scroll animations
   useEffect(() => {
     const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
+      (entries: IntersectionObserverEntry[]): void => {
+        entries.forEach((entry: IntersectionObserverEntry): void => {
           if (entry.isIntersecting) {
             entry.target.classList.add('opacity-100', 'translate-y-0');
             entry.target.classList.remove('opacity-0', 'translate-y-10');
@@ -95,11 +95,11 @@ const HomePage = () => {
       { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
     );
 
-    document.querySelectorAll('.fade-in-scroll').forEach((el) => {
+    document.querySelectorAll('.fade-in-scroll').forEach((el: Element): void => {
       observer.observe(el);
     });
 
-    return () => observer.disconnect();
+    return (): void => { observer.disconnect(); };
   }, []);
 
   return (

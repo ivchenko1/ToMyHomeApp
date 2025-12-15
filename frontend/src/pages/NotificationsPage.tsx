@@ -11,6 +11,7 @@ import {
   Settings,
   Filter,
 } from 'lucide-react';
+import { NotificationData } from '../types';
 
 interface Notification {
   id: string;
@@ -20,7 +21,7 @@ interface Notification {
   time: Date;
   read: boolean;
   link?: string;
-  data?: any;
+  data?: NotificationData;
 }
 
 const NotificationsPage = () => {

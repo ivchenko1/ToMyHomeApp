@@ -323,8 +323,9 @@ const ProfilePage = () => {
         const newAvatarUrl = await uploadAvatar(user.id, file);
         setAvatarUrl(newAvatarUrl);
         showToast('Zdjęcie zostało zmienione!', 'success');
-      } catch (error: any) {
-        showToast(error.message || 'Błąd przesyłania zdjęcia', 'error');
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Błąd przesyłania zdjęcia';
+        showToast(errorMessage, 'error');
       } finally {
         setUploadingAvatar(false);
       }
@@ -366,10 +367,11 @@ const ProfilePage = () => {
         }
         
         await updateUserProfile(user.id, updateData);
-        
+
         showToast('Zmiany zostały zapisane!', 'success');
-      } catch (error: any) {
-        showToast(error.message || 'Błąd zapisywania zmian', 'error');
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Błąd zapisywania zmian';
+        showToast(errorMessage, 'error');
       } finally {
         setSaving(false);
       }
@@ -395,8 +397,9 @@ const ProfilePage = () => {
         showToast('Hasło zostało zmienione!', 'success');
         setShowPasswordForm(false);
         setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      } catch (error: any) {
-        showToast(error.message || 'Błąd zmiany hasła', 'error');
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Błąd zmiany hasła';
+        showToast(errorMessage, 'error');
       } finally {
         setChangingPassword(false);
       }
@@ -420,8 +423,9 @@ const ProfilePage = () => {
         await deleteUserAccount(password);
         showToast('Konto zostało usunięte', 'info');
         navigate('/');
-      } catch (error: any) {
-        showToast(error.message || 'Błąd usuwania konta', 'error');
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Błąd usuwania konta';
+        showToast(errorMessage, 'error');
       }
     };
 

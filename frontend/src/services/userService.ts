@@ -75,7 +75,7 @@ export const updateUserProfile = async (
     const userRef = doc(db, 'users', userId);
     
     // Usuń undefined wartości (Firebase nie akceptuje undefined)
-    const cleanData: Record<string, any> = {};
+    const cleanData: Record<string, string> = {};
     Object.entries(data).forEach(([key, value]) => {
       if (value !== undefined) {
         cleanData[key] = value;
@@ -181,19 +181,20 @@ export const changePassword = async (
     
     // Zmień hasło
     await updatePassword(user, newPassword);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error changing password:', error);
-    
-    if (error.code === 'auth/wrong-password') {
+
+    const firebaseError = error as { code?: string };
+    if (firebaseError.code === 'auth/wrong-password') {
       throw new Error('Nieprawidłowe obecne hasło');
     }
-    if (error.code === 'auth/weak-password') {
+    if (firebaseError.code === 'auth/weak-password') {
       throw new Error('Nowe hasło jest za słabe');
     }
-    if (error.code === 'auth/requires-recent-login') {
+    if (firebaseError.code === 'auth/requires-recent-login') {
       throw new Error('Zaloguj się ponownie i spróbuj jeszcze raz');
     }
-    
+
     throw error;
   }
 };
@@ -228,16 +229,17 @@ export const deleteUserAccount = async (password: string): Promise<void> => {
     
     // Usuń konto z Firebase Auth
     await deleteUser(user);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting account:', error);
-    
-    if (error.code === 'auth/wrong-password') {
+
+    const firebaseError = error as { code?: string };
+    if (firebaseError.code === 'auth/wrong-password') {
       throw new Error('Nieprawidłowe hasło');
     }
-    if (error.code === 'auth/requires-recent-login') {
+    if (firebaseError.code === 'auth/requires-recent-login') {
       throw new Error('Zaloguj się ponownie i spróbuj jeszcze raz');
     }
-    
+
     throw error;
   }
 };

@@ -85,12 +85,13 @@ const AuthPage = () => {
       showToast('Logowanie pomyślne! Witaj z powrotem!', 'success');
       const redirect = searchParams.get('redirect');
       navigate(redirect || '/');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Login error:', err);
-      
+
       // Obsługa błędów Firebase
       let errorMessage = 'Nieprawidłowy email lub hasło';
-      switch (err.code) {
+      const firebaseError = err as { code?: string };
+      switch (firebaseError.code) {
         case 'auth/user-not-found':
           errorMessage = 'Nie znaleziono użytkownika z tym adresem email';
           break;
@@ -110,7 +111,7 @@ const AuthPage = () => {
           errorMessage = 'Nieprawidłowy format adresu email';
           break;
       }
-      
+
       setError(errorMessage);
       showToast('Błąd logowania', 'error');
     } finally {
@@ -216,12 +217,13 @@ const AuthPage = () => {
       } else {
         navigate('/');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Registration error:', err);
-      
+
       // Obsługa błędów Firebase
       let errorMessage = 'Błąd podczas rejestracji';
-      switch (err.code) {
+      const firebaseError = err as { code?: string };
+      switch (firebaseError.code) {
         case 'auth/email-already-in-use':
           errorMessage = 'Ten adres email jest już zajęty';
           break;
@@ -235,7 +237,7 @@ const AuthPage = () => {
           errorMessage = 'Rejestracja jest tymczasowo niedostępna';
           break;
       }
-      
+
       setError(errorMessage);
       showToast('Błąd rejestracji', 'error');
     } finally {

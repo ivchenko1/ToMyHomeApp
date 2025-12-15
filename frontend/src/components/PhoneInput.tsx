@@ -40,7 +40,7 @@ export const countries = [
   { code: '+7', flag: '🇷🇺', name: 'Rosja', minDigits: 10, maxDigits: 10 },
 ];
 
-export const getCountryByCode = (code: string) => {
+export const getCountryByCode = (code: string): typeof countries[0] => {
   return countries.find(c => c.code === code) || countries[0];
 };
 
@@ -81,14 +81,14 @@ const PhoneInput = ({ value, countryCode, onChange, className = '', error }: Pho
 
   // Zamknij dropdown po kliknięciu poza
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent): void => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
         setSearchQuery('');
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return (): void => { document.removeEventListener('mousedown', handleClickOutside); };
   }, []);
 
   const filteredCountries = countries.filter(country =>

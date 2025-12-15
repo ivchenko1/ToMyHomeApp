@@ -86,3 +86,61 @@ export interface ProviderFilters {
   withTravel: boolean;
   recommended: boolean;
 }
+
+// Firebase error type for better error handling
+export interface FirebaseAuthError extends Error {
+  code: string;
+  message: string;
+}
+
+// Local provider type for localStorage data
+export interface LocalProvider {
+  id: number;
+  ownerId?: string;
+  name: string;
+  profession?: string;
+  category?: string;
+  description?: string;
+  location?: string;
+  locationData?: {
+    city: string;
+    district: string;
+    address: string;
+    postalCode: string;
+    lat: number;
+    lng: number;
+  };
+  services?: string[];
+  servicesData?: ServiceData[];
+  features?: string[];
+  priceFrom?: number;
+  image?: string;
+  isPremium?: boolean;
+  isAvailableToday?: boolean;
+  rating?: number;
+  reviewsCount?: number;
+  distance?: string;
+  workingHours?: Record<string, { from: string; to: string; enabled: boolean }>;
+  travelRadius?: number;
+  experience?: string;
+  createdAt?: string;
+}
+
+// Service data for local storage
+export interface ServiceData {
+  id?: string;
+  name: string;
+  price: number;
+  duration: string;
+  description?: string;
+  isActive?: boolean;
+  category?: string;
+}
+
+// Notification data type
+export interface NotificationData {
+  bookingId?: string;
+  messageId?: string;
+  providerId?: number;
+  [key: string]: string | number | boolean | undefined;
+}

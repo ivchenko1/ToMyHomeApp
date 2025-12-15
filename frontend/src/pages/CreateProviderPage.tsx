@@ -16,6 +16,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth, useToast } from '../App';
+import { LocalProvider } from '../types';
 
 interface ServiceItem {
   id: string;
@@ -140,11 +141,13 @@ const CreateProviderPage = () => {
       }
 
       setImageFile(file);
-      
+
       // Stwórz podgląd
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+      reader.onloadend = (): void => {
+        if (typeof reader.result === 'string') {
+          setImagePreview(reader.result);
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -319,10 +322,10 @@ const CreateProviderPage = () => {
       navigate('/moj-sklep');
     } catch (error) {
       console.error('Błąd:', error);
-      
+
       // Jeśli API nie działa, zapisz lokalnie (demo mode)
-      const existingProviders = JSON.parse(localStorage.getItem('localProviders') || '[]');
-      const newProvider = {
+      const existingProviders: LocalProvider[] = JSON.parse(localStorage.getItem('localProviders') || '[]');
+      const newProvider: LocalProvider = {
         id: Date.now(),
         name: formData.businessName,
         profession: formData.profession,

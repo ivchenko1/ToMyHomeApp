@@ -20,6 +20,7 @@ import {
   Scissors,
 } from 'lucide-react';
 import { useToast } from '../App';
+import { LocalProvider, ServiceData } from '../types';
 
 interface ServiceItem {
   id: string;
@@ -191,12 +192,12 @@ const ProviderDetailPage = () => {
     setIsLoading(true);
     
     // Sprawdź localStorage
-    const localProviders = JSON.parse(localStorage.getItem('localProviders') || '[]');
-    const foundProvider = localProviders.find((p: any) => p.id === Number(id));
-    
+    const localProviders: LocalProvider[] = JSON.parse(localStorage.getItem('localProviders') || '[]');
+    const foundProvider = localProviders.find((p: LocalProvider) => p.id === Number(id));
+
     if (foundProvider) {
       // Konwertuj dane z localStorage na format ProviderData
-      const services: ServiceItem[] = foundProvider.servicesData?.map((s: any, index: number) => ({
+      const services: ServiceItem[] = foundProvider.servicesData?.map((s: ServiceData, index: number): ServiceItem => ({
         id: s.id || String(index),
         name: s.name,
         description: s.description || '',

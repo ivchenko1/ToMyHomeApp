@@ -13,6 +13,7 @@ import {
   Filter,
 } from 'lucide-react';
 import { useAuth, useToast } from '../../App';
+import { LocalProvider, ServiceData } from '../../types';
 
 interface Service {
   id: string;
@@ -45,29 +46,37 @@ const BusinessServices = () => {
     loadProfile();
   }, []);
 
-  const loadProfile = () => {
+  const loadProfile = (): void => {
     setIsLoading(true);
-    
+
     // Load from localStorage (demo mode)
-    const localProviders = JSON.parse(localStorage.getItem('localProviders') || '[]');
-    
+    const localProviders: LocalProvider[] = JSON.parse(localStorage.getItem('localProviders') || '[]');
+
     if (localProviders.length > 0) {
       // Get the last added provider (for demo)
       const provider = localProviders[localProviders.length - 1];
-      
+
       // Parse services if stored as JSON string
       let services: Service[] = [];
       if (provider.servicesData) {
-        services = provider.servicesData;
-      } else if (provider.services && Array.isArray(provider.services)) {
-        services = provider.services.map((s: any, index: number) => ({
-          id: s.id || `service-${index}`,
-          name: typeof s === 'string' ? s : s.name,
+        services = provider.servicesData.map((s: ServiceData): Service => ({
+          id: s.id || `service-${provider.servicesData?.indexOf(s) || 0}`,
+          name: s.name,
           description: s.description || '',
           price: s.price || 0,
           duration: s.duration || '30 min',
           isActive: s.isActive !== false,
           category: s.category || 'Inne',
+        }));
+      } else if (provider.services && Array.isArray(provider.services)) {
+        services = provider.services.map((serviceName: string, index: number): Service => ({
+          id: `service-${index}`,
+          name: serviceName,
+          description: '',
+          price: 0,
+          duration: '30 min',
+          isActive: true,
+          category: 'Inne',
         }));
       }
       
@@ -85,38 +94,38 @@ const BusinessServices = () => {
     setIsLoading(false);
   };
 
-  const toggleServiceActive = (serviceId: string) => {
+  const toggleServiceActive = (serviceId: string): void => {
     if (!profile) return;
-    
-    const updatedServices = profile.services.map(s => 
+
+    const updatedServices = profile.services.map(s =>
       s.id === serviceId ? { ...s, isActive: !s.isActive } : s
     );
-    
+
     setProfile({ ...profile, services: updatedServices });
-    
+
     // Update localStorage
-    const localProviders = JSON.parse(localStorage.getItem('localProviders') || '[]');
+    const localProviders: LocalProvider[] = JSON.parse(localStorage.getItem('localProviders') || '[]');
     if (localProviders.length > 0) {
       localProviders[localProviders.length - 1].servicesData = updatedServices;
       localStorage.setItem('localProviders', JSON.stringify(localProviders));
     }
-    
+
     showToast('Status usługi zmieniony', 'success');
   };
 
-  const deleteService = (serviceId: string) => {
+  const deleteService = (serviceId: string): void => {
     if (!profile) return;
-    
+
     const updatedServices = profile.services.filter(s => s.id !== serviceId);
     setProfile({ ...profile, services: updatedServices });
-    
+
     // Update localStorage
-    const localProviders = JSON.parse(localStorage.getItem('localProviders') || '[]');
+    const localProviders: LocalProvider[] = JSON.parse(localStorage.getItem('localProviders') || '[]');
     if (localProviders.length > 0) {
       localProviders[localProviders.length - 1].servicesData = updatedServices;
       localStorage.setItem('localProviders', JSON.stringify(localProviders));
     }
-    
+
     showToast('Usługa usunięta', 'info');
   };
 

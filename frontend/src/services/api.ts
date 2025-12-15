@@ -1,5 +1,5 @@
-import axios from 'axios';
-import { LoginRequest, RegisterRequest, AuthResponse, User, Provider } from '../types';
+import axios, { InternalAxiosRequestConfig } from 'axios';
+import { LoginRequest, RegisterRequest, AuthResponse, User, Provider, LocalProvider } from '../types';
 
 const API_BASE_URL = '/api';
 
@@ -11,7 +11,7 @@ const api = axios.create({
 });
 
 // Add token to requests
-api.interceptors.request.use((config) => {
+api.interceptors.request.use((config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -93,8 +93,8 @@ export const providersService = {
       return response.data;
     } catch (error) {
       // Return local providers if API fails
-      const localProviders = JSON.parse(localStorage.getItem('localProviders') || '[]');
-      return localProviders;
+      const localProviders: LocalProvider[] = JSON.parse(localStorage.getItem('localProviders') || '[]');
+      return localProviders as unknown as Provider[];
     }
   },
 
@@ -104,8 +104,9 @@ export const providersService = {
       return response.data;
     } catch (error) {
       // Check local providers
-      const localProviders = JSON.parse(localStorage.getItem('localProviders') || '[]');
-      return localProviders.find((p: Provider) => p.id === id) || null;
+      const localProviders: LocalProvider[] = JSON.parse(localStorage.getItem('localProviders') || '[]');
+      const found = localProviders.find((p: LocalProvider) => p.id === id);
+      return found as unknown as Provider | null;
     }
   },
 
@@ -115,7 +116,7 @@ export const providersService = {
       return response.data;
     } catch (error) {
       // Save locally if API fails
-      const localProviders = JSON.parse(localStorage.getItem('localProviders') || '[]');
+      const localProviders: LocalProvider[] = JSON.parse(localStorage.getItem('localProviders') || '[]');
       const newProvider: Provider = {
         id: Date.now(),
         name: data.businessName,
@@ -144,8 +145,8 @@ export const providersService = {
       return response.data;
     } catch (error) {
       // Check local providers for current user
-      const localProviders = JSON.parse(localStorage.getItem('localProviders') || '[]');
-      return localProviders.length > 0 ? localProviders[localProviders.length - 1] : null;
+      const localProviders: LocalProvider[] = JSON.parse(localStorage.getItem('localProviders') || '[]');
+      return localProviders.length > 0 ? (localProviders[localProviders.length - 1] as unknown as Provider) : null;
     }
   },
 

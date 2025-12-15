@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Star, MapPin, Check, Filter, Loader2 } from 'lucide-react';
-import { Provider } from '../types';
+import { Provider, LocalProvider } from '../types';
 import { useToast } from '../App';
+
+// Extended provider interface to include category from local providers
+interface ExtendedProvider extends Provider {
+  category?: string;
+}
 
 const API_URL = '';
 
@@ -58,10 +63,10 @@ const ProvidersPage = () => {
       }
 
       // Pobierz lokalne usługi
-      const localProviders = JSON.parse(localStorage.getItem('localProviders') || '[]');
-      
+      const localProviders: LocalProvider[] = JSON.parse(localStorage.getItem('localProviders') || '[]');
+
       // Połącz dane z API i lokalne
-      let allProviders = [...apiData, ...localProviders.map((p: any) => ({
+      let allProviders: ExtendedProvider[] = [...apiData, ...localProviders.map((p: LocalProvider): ExtendedProvider => ({
         id: p.id,
         name: p.name,
         profession: p.profession || '',
@@ -82,7 +87,7 @@ const ProvidersPage = () => {
       // Filtruj po kategorii jeśli podana
       if (category) {
         const categoryNames = categoryMapping[category] || [category];
-        allProviders = allProviders.filter((p: any) => {
+        allProviders = allProviders.filter((p: ExtendedProvider) => {
           if (!p.category) return false;
           const providerCategory = p.category.toLowerCase();
           return categoryNames.some(cat => providerCategory.includes(cat.toLowerCase()));
@@ -108,11 +113,11 @@ const ProvidersPage = () => {
       setHasMore(false);
     } catch (error) {
       console.error('Błąd API, używam danych lokalnych:', error);
-      
+
       // Pobierz lokalne usługi
-      const localProviders = JSON.parse(localStorage.getItem('localProviders') || '[]');
-      
-      let allProviders = localProviders.map((p: any) => ({
+      const localProviders: LocalProvider[] = JSON.parse(localStorage.getItem('localProviders') || '[]');
+
+      let allProviders: ExtendedProvider[] = localProviders.map((p: LocalProvider): ExtendedProvider => ({
         id: p.id,
         name: p.name,
         profession: p.profession || '',
@@ -133,15 +138,15 @@ const ProvidersPage = () => {
       // Filtruj po kategorii
       if (category) {
         const categoryNames = categoryMapping[category] || [category];
-        allProviders = allProviders.filter((p: any) => {
+        allProviders = allProviders.filter((p: ExtendedProvider) => {
           if (!p.category) return false;
           const providerCategory = p.category.toLowerCase();
           return categoryNames.some(cat => providerCategory.includes(cat.toLowerCase()));
         });
       }
-      
+
       if (activeQuickFilters.includes('available-today')) {
-        allProviders = allProviders.filter((p: Provider) => p.isAvailableToday);
+        allProviders = allProviders.filter((p: ExtendedProvider) => p.isAvailableToday);
       }
       
       setProviders(allProviders);

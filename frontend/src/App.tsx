@@ -79,8 +79,8 @@ export const ToastContext = createContext<ToastContextType>({
   showToast: () => {},
 });
 
-export const useAuth = () => useContext(AuthContext);
-export const useToast = () => useContext(ToastContext);
+export const useAuth = (): AuthContextType => useContext(AuthContext);
+export const useToast = (): ToastContextType => useContext(ToastContext);
 
 // ==================== CLIENT LAYOUT ====================
 const ClientLayout = () => {

@@ -13,6 +13,7 @@ import {
   Eye,
 } from 'lucide-react';
 import { useAuth } from '../../App';
+import { LocalProvider } from '../../types';
 
 interface DashboardStats {
   totalBookings: number;
@@ -82,8 +83,8 @@ const BusinessDashboard = () => {
 
   useEffect(() => {
     // Check if user has a provider profile
-    const localProviders = JSON.parse(localStorage.getItem('localProviders') || '[]');
-    const userProvider = localProviders.find((p: any) => p.ownerId === user?.id);
+    const localProviders: LocalProvider[] = JSON.parse(localStorage.getItem('localProviders') || '[]');
+    const userProvider = localProviders.find((p: LocalProvider) => p.ownerId === user?.id);
     setHasProvider(!!userProvider || localProviders.length > 0);
   }, [user]);
 
