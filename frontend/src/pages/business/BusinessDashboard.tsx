@@ -11,8 +11,10 @@ import {
   ArrowDownRight,
   Plus,
   Eye,
+  Loader2,
 } from 'lucide-react';
 import { useAuth } from '../../App';
+import providerService from '../../services/providerService';
 
 interface DashboardStats {
   totalBookings: number;
@@ -79,12 +81,27 @@ const BusinessDashboard = () => {
   ]);
 
   const [hasProvider, setHasProvider] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user has a provider profile
-    const localProviders = JSON.parse(localStorage.getItem('localProviders') || '[]');
-    const userProvider = localProviders.find((p: any) => p.ownerId === user?.id);
-    setHasProvider(!!userProvider || localProviders.length > 0);
+    // Sprawdź czy użytkownik ma profil usługodawcy w Firebase
+    const checkProvider = async () => {
+      if (!user?.id) {
+        setIsLoading(false);
+        return;
+      }
+      
+      try {
+        const providers = await providerService.getByOwner(user.id.toString());
+        setHasProvider(providers.length > 0);
+      } catch (error) {
+        console.error('Błąd sprawdzania profilu:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkProvider();
   }, [user]);
 
   const statCards = [
@@ -130,6 +147,15 @@ const BusinessDashboard = () => {
         return null;
     }
   };
+
+  // If loading, show spinner
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-12 h-12 animate-spin text-emerald-500" />
+      </div>
+    );
+  }
 
   // If no provider profile, show empty state
   if (!hasProvider) {

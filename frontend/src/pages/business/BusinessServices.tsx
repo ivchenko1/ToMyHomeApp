@@ -11,8 +11,10 @@ import {
   ToggleRight,
   Search,
   Filter,
+  Loader2,
 } from 'lucide-react';
 import { useAuth, useToast } from '../../App';
+import providerService, { Provider, ServiceItem } from '../../services/providerService';
 
 interface Service {
   id: string;
@@ -25,7 +27,7 @@ interface Service {
 }
 
 interface ProviderProfile {
-  id: number;
+  id: string;
   name: string;
   profession: string;
   location: string;
@@ -38,55 +40,61 @@ const BusinessServices = () => {
   const { user } = useAuth();
   const { showToast } = useToast();
   const [profile, setProfile] = useState<ProviderProfile | null>(null);
+  const [providerId, setProviderId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     loadProfile();
-  }, []);
+  }, [user]);
 
-  const loadProfile = () => {
+  const loadProfile = async () => {
+    if (!user?.id) {
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     
-    // Load from localStorage (demo mode)
-    const localProviders = JSON.parse(localStorage.getItem('localProviders') || '[]');
-    
-    if (localProviders.length > 0) {
-      // Get the last added provider (for demo)
-      const provider = localProviders[localProviders.length - 1];
+    try {
+      // Pobierz profil z Firebase przez ownerId
+      const providers = await providerService.getByOwner(user.id.toString());
       
-      // Parse services if stored as JSON string
-      let services: Service[] = [];
-      if (provider.servicesData) {
-        services = provider.servicesData;
-      } else if (provider.services && Array.isArray(provider.services)) {
-        services = provider.services.map((s: any, index: number) => ({
-          id: s.id || `service-${index}`,
-          name: typeof s === 'string' ? s : s.name,
+      if (providers.length > 0) {
+        const provider = providers[0];
+        
+        // Mapuj usługi z Firebase na format lokalny
+        const services: Service[] = provider.services.map((s: ServiceItem) => ({
+          id: s.id,
+          name: s.name,
           description: s.description || '',
           price: s.price || 0,
           duration: s.duration || '30 min',
-          isActive: s.isActive !== false,
+          isActive: true, // Firebase nie ma tego pola, domyślnie aktywne
           category: s.category || 'Inne',
         }));
+        
+        setProviderId(provider.id);
+        setProfile({
+          id: provider.id,
+          name: provider.name,
+          profession: provider.profession || '',
+          location: provider.locationString || '',
+          image: provider.image || '',
+          services: services,
+          isActive: provider.isActive,
+        });
       }
-      
-      setProfile({
-        id: provider.id,
-        name: provider.name,
-        profession: provider.profession || '',
-        location: provider.location || '',
-        image: provider.image || '',
-        services: services,
-        isActive: true,
-      });
+    } catch (error) {
+      console.error('Błąd ładowania profilu z Firebase:', error);
+      showToast('Błąd ładowania danych', 'error');
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
-  const toggleServiceActive = (serviceId: string) => {
-    if (!profile) return;
+  const toggleServiceActive = async (serviceId: string) => {
+    if (!profile || !providerId) return;
     
     const updatedServices = profile.services.map(s => 
       s.id === serviceId ? { ...s, isActive: !s.isActive } : s
@@ -94,30 +102,43 @@ const BusinessServices = () => {
     
     setProfile({ ...profile, services: updatedServices });
     
-    // Update localStorage
-    const localProviders = JSON.parse(localStorage.getItem('localProviders') || '[]');
-    if (localProviders.length > 0) {
-      localProviders[localProviders.length - 1].servicesData = updatedServices;
-      localStorage.setItem('localProviders', JSON.stringify(localProviders));
+    // Aktualizuj w Firebase
+    try {
+      await providerService.update(providerId, {
+        services: updatedServices.map(s => ({
+          id: s.id,
+          name: s.name,
+          description: s.description,
+          price: s.price,
+          duration: s.duration,
+          category: s.category,
+        })),
+      });
+      showToast('Status usługi zmieniony', 'success');
+    } catch (error) {
+      console.error('Błąd aktualizacji:', error);
+      showToast('Błąd aktualizacji', 'error');
+      // Przywróć poprzedni stan
+      loadProfile();
     }
-    
-    showToast('Status usługi zmieniony', 'success');
   };
 
-  const deleteService = (serviceId: string) => {
-    if (!profile) return;
+  const deleteService = async (serviceId: string) => {
+    if (!profile || !providerId) return;
     
     const updatedServices = profile.services.filter(s => s.id !== serviceId);
     setProfile({ ...profile, services: updatedServices });
     
-    // Update localStorage
-    const localProviders = JSON.parse(localStorage.getItem('localProviders') || '[]');
-    if (localProviders.length > 0) {
-      localProviders[localProviders.length - 1].servicesData = updatedServices;
-      localStorage.setItem('localProviders', JSON.stringify(localProviders));
+    // Usuń z Firebase
+    try {
+      await providerService.removeService(providerId, serviceId);
+      showToast('Usługa usunięta', 'info');
+    } catch (error) {
+      console.error('Błąd usuwania:', error);
+      showToast('Błąd usuwania usługi', 'error');
+      // Przywróć poprzedni stan
+      loadProfile();
     }
-    
-    showToast('Usługa usunięta', 'info');
   };
 
   const filteredServices = profile?.services.filter(s =>
