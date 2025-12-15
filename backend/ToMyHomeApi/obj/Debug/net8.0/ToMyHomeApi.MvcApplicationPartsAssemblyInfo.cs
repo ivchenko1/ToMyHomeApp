@@ -12,5 +12,5 @@ using System.Reflection;
 
 [assembly: Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPartAttribute("Swashbuckle.AspNetCore.SwaggerGen")]
 
-// Создано классом WriteCodeFragment MSBuild.
+// Wygenerowane przez klasę WriteCodeFragment programu MSBuild.
 
