@@ -12,25 +12,14 @@ import {
   MoreVertical,
   Plus,
   Calendar as CalendarIcon,
+  Loader2,
 } from 'lucide-react';
-import { useToast } from '../../App';
-
-interface Booking {
-  id: string;
-  clientName: string;
-  clientPhone: string;
-  clientEmail: string;
-  service: string;
-  date: string; // YYYY-MM-DD
-  time: string; // HH:MM
-  duration: number; // minuty
-  price: number;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
-  notes?: string;
-  address?: string;
-}
+import { useAuth, useToast } from '../../App';
+import providerService from '../../services/providerService';
+import bookingService, { Booking } from '../../services/bookingService';
 
 const BusinessCalendar = () => {
+  const { user } = useAuth();
   const { showToast } = useToast();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string>(
@@ -40,104 +29,84 @@ const BusinessCalendar = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [providerId, setProviderId] = useState<string | null>(null);
 
-  // Przykładowe rezerwacje - w produkcji z API/bazy danych
+  // Pobierz rezerwacje z Firebase
   useEffect(() => {
-    const savedBookings = localStorage.getItem('businessBookings');
-    if (savedBookings) {
-      setBookings(JSON.parse(savedBookings));
-    } else {
-      // Demo data
-      const today = new Date().toISOString().split('T')[0];
-      const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-      const dayAfter = new Date(Date.now() + 172800000).toISOString().split('T')[0];
+    const loadBookings = async () => {
+      if (!user || !user.id) {
+        console.log('BusinessCalendar: No user or user.id');
+        setIsLoading(false);
+        return;
+      }
       
-      const demoBookings: Booking[] = [
-        {
-          id: '1',
-          clientName: 'Anna Nowak',
-          clientPhone: '+48 123 456 789',
-          clientEmail: 'anna@example.com',
-          service: 'Strzyżenie damskie',
-          date: today,
-          time: '09:00',
-          duration: 60,
-          price: 80,
-          status: 'confirmed',
-          address: 'ul. Marszałkowska 10, Warszawa',
-        },
-        {
-          id: '2',
-          clientName: 'Piotr Kowalski',
-          clientPhone: '+48 987 654 321',
-          clientEmail: 'piotr@example.com',
-          service: 'Strzyżenie męskie',
-          date: today,
-          time: '10:30',
-          duration: 30,
-          price: 50,
-          status: 'pending',
-          address: 'ul. Puławska 25, Warszawa',
-        },
-        {
-          id: '3',
-          clientName: 'Maria Wiśniewska',
-          clientPhone: '+48 555 666 777',
-          clientEmail: 'maria@example.com',
-          service: 'Koloryzacja + strzyżenie',
-          date: today,
-          time: '14:00',
-          duration: 120,
-          price: 250,
-          status: 'confirmed',
-          address: 'ul. Mokotowska 5/12, Warszawa',
-        },
-        {
-          id: '4',
-          clientName: 'Katarzyna Zielińska',
-          clientPhone: '+48 111 222 333',
-          clientEmail: 'kasia@example.com',
-          service: 'Manicure hybrydowy',
-          date: tomorrow,
-          time: '11:00',
-          duration: 90,
-          price: 120,
-          status: 'confirmed',
-        },
-        {
-          id: '5',
-          clientName: 'Tomasz Nowicki',
-          clientPhone: '+48 444 555 666',
-          clientEmail: 'tomek@example.com',
-          service: 'Strzyżenie + broda',
-          date: tomorrow,
-          time: '15:30',
-          duration: 45,
-          price: 70,
-          status: 'pending',
-        },
-        {
-          id: '6',
-          clientName: 'Ewa Kamińska',
-          clientPhone: '+48 777 888 999',
-          clientEmail: 'ewa@example.com',
-          service: 'Masaż relaksacyjny',
-          date: dayAfter,
-          time: '10:00',
-          duration: 60,
-          price: 150,
-          status: 'confirmed',
-        },
-      ];
+      console.log('BusinessCalendar: Loading for user', user.id);
       
-      setBookings(demoBookings);
-      localStorage.setItem('businessBookings', JSON.stringify(demoBookings));
-    }
-  }, []);
+      try {
+        // Najpierw znajdź providerId
+        const providers = await providerService.getByOwner(user.id);
+        console.log('BusinessCalendar: Found providers', providers.length);
+        
+        if (providers.length > 0) {
+          const provider = providers[0];
+          setProviderId(provider.id);
+          
+          // Subskrybuj rezerwacje real-time
+          const unsubscribe = bookingService.subscribeToProviderBookings(
+            provider.id,
+            (newBookings) => {
+              console.log('BusinessCalendar: Got bookings', newBookings.length);
+              setBookings(newBookings);
+              setIsLoading(false);
+            }
+          );
+          
+          return () => unsubscribe();
+        } else {
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('BusinessCalendar: Error loading bookings:', error);
+        setIsLoading(false);
+      }
+    };
+    
+    loadBookings();
+  }, [user]);
 
-  const saveBookings = (newBookings: Booking[]) => {
-    setBookings(newBookings);
-    localStorage.setItem('businessBookings', JSON.stringify(newBookings));
+  // Potwierdź rezerwację
+  const handleConfirmBooking = async (bookingId: string) => {
+    try {
+      await bookingService.confirm(bookingId);
+      showToast('Rezerwacja potwierdzona! ✅', 'success');
+    } catch (error) {
+      showToast('Błąd potwierdzania rezerwacji', 'error');
+    }
+  };
+
+  // Anuluj rezerwację
+  const handleCancelBooking = async (bookingId: string) => {
+    try {
+      await bookingService.cancel(bookingId, 'provider');
+      showToast('Rezerwacja anulowana', 'info');
+      setShowBookingModal(false);
+      setSelectedBooking(null);
+    } catch (error) {
+      showToast('Błąd anulowania rezerwacji', 'error');
+    }
+  };
+
+  // Oznacz jako zakończoną
+  const handleCompleteBooking = async (bookingId: string) => {
+    try {
+      await bookingService.complete(bookingId);
+      showToast('Usługa oznaczona jako zakończona! 🎉', 'success');
+      setShowBookingModal(false);
+      setSelectedBooking(null);
+    } catch (error) {
+      showToast('Błąd oznaczania usługi', 'error');
+    }
   };
 
   // Nawigacja kalendarza
@@ -248,15 +217,28 @@ const BusinessCalendar = () => {
     }
   };
 
-  const updateBookingStatus = (bookingId: string, newStatus: Booking['status']) => {
-    const updated = bookings.map((b) =>
-      b.id === bookingId ? { ...b, status: newStatus } : b
-    );
-    saveBookings(updated);
-    showToast(`Status zmieniony na: ${getStatusLabel(newStatus)}`, 'success');
-    setSelectedBooking(null);
-    setShowBookingModal(false);
+  const updateBookingStatus = async (bookingId: string, newStatus: Booking['status']) => {
+    try {
+      if (newStatus === 'confirmed') {
+        await handleConfirmBooking(bookingId);
+      } else if (newStatus === 'cancelled') {
+        await handleCancelBooking(bookingId);
+      } else if (newStatus === 'completed') {
+        await handleCompleteBooking(bookingId);
+      }
+    } catch (error) {
+      showToast('Błąd zmiany statusu', 'error');
+    }
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-12 h-12 animate-spin text-emerald-500" />
+      </div>
+    );
+  }
 
   const hours = Array.from({ length: 12 }, (_, i) => i + 8); // 8:00 - 19:00
 
@@ -404,7 +386,7 @@ const BusinessCalendar = () => {
                           >
                             <div className="font-bold truncate">{booking.time}</div>
                             <div className="truncate">{booking.clientName}</div>
-                            <div className="truncate text-gray-600">{booking.service}</div>
+                            <div className="truncate text-gray-600">{booking.serviceName}</div>
                           </button>
                         ))}
                       </div>
@@ -460,9 +442,9 @@ const BusinessCalendar = () => {
                                 <div className="font-bold text-gray-900">
                                   {booking.time} - {booking.clientName}
                                 </div>
-                                <div className="text-sm mt-1">{booking.service}</div>
+                                <div className="text-sm mt-1">{booking.serviceName}</div>
                                 <div className="text-sm text-gray-600 mt-1">
-                                  {booking.duration} min • {booking.price} zł
+                                  {booking.serviceDuration} min • {booking.servicePrice} zł
                                 </div>
                               </div>
                               <span

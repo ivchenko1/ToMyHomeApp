@@ -3,7 +3,7 @@
  * Pobiera dane z Firebase przez providerService
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -16,13 +16,14 @@ import {
   Heart,
   MessageCircle,
   X,
-  Send,
   Award,
   Shield,
   Share2,
+  Loader2,
 } from 'lucide-react';
-import { useToast } from '../App';
+import { useToast, useAuth } from '../App';
 import providerService, { Provider, ServiceItem } from '../services/providerService';
+import bookingService from '../services/bookingService';
 
 // ============================================
 // KOMPONENTY POMOCNICZE
@@ -110,22 +111,20 @@ const ProviderDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { user } = useAuth();
 
   // State
   const [provider, setProvider] = useState<Provider | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedServices, setSelectedServices] = useState<ServiceItem[]>([]);
   const [selectedDate, setSelectedDate] = useState<number | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [activeServiceFilter, setActiveServiceFilter] = useState('Wszystkie');
   const [showBookingModal, setShowBookingModal] = useState(false);
-  const [showChat, setShowChat] = useState(false);
+  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [chatMessages, setChatMessages] = useState<{ text: string; fromMe: boolean }[]>([]);
-  const [chatInput, setChatInput] = useState('');
   const [currentMonth] = useState({ month: 'Grudzień', year: 2025 });
-
-  const chatInputRef = useRef<HTMLInputElement>(null);
 
   // Załaduj dane usługodawcy z Firebase
   useEffect(() => {
@@ -208,24 +207,39 @@ const ProviderDetailPage = () => {
 
   const calendarDays = generateCalendarDays();
 
-  // Dostępne godziny
-  const timeSlots = [
-    { time: '09:00', disabled: false },
-    { time: '10:00', disabled: false },
-    { time: '11:00', disabled: false },
-    { time: '12:00', disabled: true },
-    { time: '13:00', disabled: false },
-    { time: '14:00', disabled: false },
-    { time: '15:00', disabled: false },
-    { time: '16:00', disabled: false },
-    { time: '17:00', disabled: true },
-    { time: '18:00', disabled: false },
-  ];
+  // Pobierz zajęte sloty gdy zmienia się data
+  useEffect(() => {
+    const loadBookedSlots = async () => {
+      if (!provider?.id || !selectedDate) return;
+      
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`;
+      
+      const slots = await bookingService.getBookedSlots(provider.id, dateStr);
+      setBookedSlots(slots);
+    };
+    
+    loadBookedSlots();
+  }, [provider?.id, selectedDate]);
 
-  // Potwierdź rezerwację
-  const confirmBooking = () => {
-    const userData = sessionStorage.getItem('user');
-    if (!userData) {
+  // Dostępne godziny - generowane dynamicznie z godzin pracy
+  const generateTimeSlots = () => {
+    const slots = [];
+    for (let hour = 9; hour <= 18; hour++) {
+      const time = `${String(hour).padStart(2, '0')}:00`;
+      slots.push({
+        time,
+        disabled: bookedSlots.includes(time),
+      });
+    }
+    return slots;
+  };
+
+  const timeSlots = generateTimeSlots();
+
+  // Potwierdź rezerwację - tworzy prawdziwą rezerwację w Firebase
+  const confirmBooking = async () => {
+    if (!user || !user.id) {
       showToast('Zaloguj się, aby zarezerwować wizytę', 'info');
       navigate(`/auth?mode=login&redirect=/uslugodawcy/profil/${id}`);
       return;
@@ -241,21 +255,50 @@ const ProviderDetailPage = () => {
       return;
     }
 
-    setShowBookingModal(true);
-  };
+    if (!provider) return;
 
-  // Wyślij wiadomość
-  const sendMessage = () => {
-    if (!chatInput.trim()) return;
-    setChatMessages(prev => [...prev, { text: chatInput, fromMe: true }]);
-    setChatInput('');
-    
-    setTimeout(() => {
-      setChatMessages(prev => [...prev, { 
-        text: 'Dziękuję za wiadomość! Odpowiem najszybciej jak to możliwe 😊', 
-        fromMe: false 
-      }]);
-    }, 1500);
+    setIsSubmitting(true);
+    console.log('Creating booking for user:', user.id);
+
+    try {
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`;
+      
+      // Sprawdź czy termin jest wolny
+      const isAvailable = await bookingService.isTimeSlotAvailable(provider.id, dateStr, selectedTime);
+      if (!isAvailable) {
+        showToast('Ten termin jest już zajęty. Wybierz inny.', 'error');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Utwórz rezerwację dla każdej wybranej usługi (lub połącz w jedną)
+      const mainService = selectedServices[0];
+      
+      await bookingService.create({
+        clientId: user.id,
+        clientName: user.username || 'Klient',
+        clientEmail: user.email || '',
+        clientPhone: user.phone || '',
+        providerId: provider.id,
+        providerName: provider.name,
+        providerImage: provider.image,
+        serviceId: mainService.id,
+        serviceName: selectedServices.map(s => s.name).join(', '),
+        servicePrice: totalPrice,
+        serviceDuration: `${totalDuration} min`,
+        date: dateStr,
+        time: selectedTime,
+      });
+
+      console.log('Booking created successfully');
+      setShowBookingModal(true);
+    } catch (error) {
+      console.error('Błąd rezerwacji:', error);
+      showToast('Błąd podczas tworzenia rezerwacji', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Loading state
@@ -449,8 +492,40 @@ const ProviderDetailPage = () => {
                   {timeSlots.map(slot => <button key={slot.time} disabled={slot.disabled} onClick={() => !slot.disabled && setSelectedTime(slot.time)} className={`py-2 text-sm rounded-lg transition-colors ${slot.disabled ? 'opacity-30 cursor-not-allowed bg-gray-100' : selectedTime === slot.time ? 'bg-primary text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>{slot.time}</button>)}
                 </div>
               </div>
-              <button onClick={confirmBooking} disabled={selectedServices.length === 0} className={`w-full py-3 rounded-xl font-bold transition-all ${selectedServices.length > 0 ? 'bg-gradient-to-r from-primary to-secondary text-white hover:shadow-lg hover:-translate-y-0.5' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}>{selectedServices.length > 0 ? `Zarezerwuj za ${totalPrice} zł` : 'Wybierz usługę'}</button>
-              <button onClick={() => setShowChat(true)} className="w-full mt-3 py-3 border-2 border-gray-200 rounded-xl font-medium text-gray-700 hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2"><MessageCircle className="w-5 h-5" />Napisz wiadomość</button>
+              <button 
+                onClick={confirmBooking} 
+                disabled={selectedServices.length === 0 || isSubmitting} 
+                className={`w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
+                  selectedServices.length > 0 && !isSubmitting 
+                    ? 'bg-gradient-to-r from-primary to-secondary text-white hover:shadow-lg hover:-translate-y-0.5' 
+                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Rezerwuję...
+                  </>
+                ) : selectedServices.length > 0 ? (
+                  `Zarezerwuj za ${totalPrice} zł`
+                ) : (
+                  'Wybierz usługę'
+                )}
+              </button>
+              <button 
+                onClick={() => {
+                  if (!user) {
+                    showToast('Zaloguj się, aby napisać wiadomość', 'info');
+                    navigate(`/auth?mode=login&redirect=/uslugodawcy/profil/${id}`);
+                    return;
+                  }
+                  navigate(`/wiadomosci?providerId=${id}`);
+                }} 
+                className="w-full mt-3 py-3 border-2 border-gray-200 rounded-xl font-medium text-gray-700 hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2"
+              >
+                <MessageCircle className="w-5 h-5" />
+                Napisz wiadomość
+              </button>
             </div>
           </div>
         </div>
@@ -461,31 +536,40 @@ const ProviderDetailPage = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full">
             <div className="text-center">
-              <div className="text-5xl mb-4">🎉</div>
-              <h3 className="text-xl font-bold mb-2">Rezerwacja potwierdzona!</h3>
-              <p className="text-gray-600 mb-4">Twoja rezerwacja u <strong>{provider.name}</strong> została przyjęta.</p>
+              <div className="text-5xl mb-4">📅</div>
+              <h3 className="text-xl font-bold mb-2">Rezerwacja wysłana!</h3>
+              <p className="text-gray-600 mb-4">
+                Twoja prośba o rezerwację u <strong>{provider.name}</strong> została wysłana. 
+                Czekaj na potwierdzenie od usługodawcy.
+              </p>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-left mb-4">
+                <div className="flex items-center gap-2 text-yellow-700 font-medium mb-2">
+                  <Clock className="w-4 h-4" />
+                  Oczekuje na potwierdzenie
+                </div>
+                <p className="text-sm text-yellow-600">
+                  Otrzymasz powiadomienie gdy usługodawca potwierdzi Twoją wizytę.
+                </p>
+              </div>
               <div className="bg-gray-50 rounded-xl p-4 text-left mb-4">
                 <p className="text-sm mb-1"><strong>Data:</strong> {selectedDate} {currentMonth.month}</p>
                 <p className="text-sm mb-1"><strong>Godzina:</strong> {selectedTime}</p>
                 <p className="text-sm mb-1"><strong>Usługi:</strong> {selectedServices.map(s => s.name).join(', ')}</p>
                 <p className="text-sm"><strong>Łącznie:</strong> {totalPrice} zł</p>
               </div>
-              <button onClick={() => { setShowBookingModal(false); setSelectedServices([]); setSelectedDate(null); setSelectedTime(null); showToast('Rezerwacja potwierdzona!', 'success'); }} className="w-full py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90">OK</button>
+              <button 
+                onClick={() => { 
+                  setShowBookingModal(false); 
+                  setSelectedServices([]); 
+                  setSelectedDate(null); 
+                  setSelectedTime(null); 
+                  showToast('Rezerwacja wysłana! Czekaj na potwierdzenie.', 'success'); 
+                }} 
+                className="w-full py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90"
+              >
+                OK, rozumiem
+              </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Chat */}
-      {showChat && (
-        <div className="fixed bottom-4 right-4 w-80 h-96 bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden z-50">
-          <div className="p-3 bg-gradient-to-r from-primary to-secondary text-white flex items-center justify-between"><span className="font-medium">Czat z {provider.name}</span><button onClick={() => setShowChat(false)}><X className="w-5 h-5" /></button></div>
-          <div className="flex-1 p-3 bg-gray-50 overflow-y-auto space-y-2">
-            {chatMessages.length === 0 ? <p className="text-center text-gray-400 text-sm mt-4">Rozpocznij rozmowę...</p> : chatMessages.map((msg, i) => <div key={i} className={`max-w-[80%] p-3 rounded-2xl text-sm ${msg.fromMe ? 'bg-primary text-white ml-auto rounded-br-none' : 'bg-white shadow mr-auto rounded-bl-none'}`}>{msg.text}</div>)}
-          </div>
-          <div className="p-3 border-t flex gap-2">
-            <input ref={chatInputRef} type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendMessage()} placeholder="Napisz wiadomość..." className="flex-1 px-3 py-2 bg-gray-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary" />
-            <button onClick={sendMessage} className="p-2 bg-primary text-white rounded-xl hover:bg-primary/90"><Send className="w-5 h-5" /></button>
           </div>
         </div>
       )}

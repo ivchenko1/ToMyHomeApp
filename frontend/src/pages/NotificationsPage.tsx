@@ -1,107 +1,115 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Bell,
   Calendar,
   MessageSquare,
   Star,
-  DollarSign,
   Check,
   Trash2,
   Settings,
   Filter,
+  Loader2,
 } from 'lucide-react';
-
-interface Notification {
-  id: string;
-  type: 'booking' | 'message' | 'review' | 'payment' | 'system';
-  title: string;
-  message: string;
-  time: Date;
-  read: boolean;
-  link?: string;
-  data?: any;
-}
+import { useAuth, useToast } from '../App';
+import notificationService, { Notification } from '../services/notificationService';
 
 const NotificationsPage = () => {
+  const { user } = useAuth();
+  const { showToast } = useToast();
+  const navigate = useNavigate();
+  
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
 
   useEffect(() => {
-    // Load demo notifications - tylko dla klienta (bez review)
-    const demoNotifications: Notification[] = [
-      {
-        id: '1',
-        type: 'booking',
-        title: 'Rezerwacja potwierdzona',
-        message: 'Twoja rezerwacja została potwierdzona',
-        time: new Date(Date.now() - 1000 * 60 * 60 * 3),
-        read: false,
-        link: '/profil',
-      },
-      {
-        id: '2',
-        type: 'message',
-        title: 'Nowa wiadomość',
-        message: 'Masz nową wiadomość od usługodawcy',
-        time: new Date(Date.now() - 1000 * 60 * 30),
-        read: false,
-        link: '/wiadomosci',
-      },
-      {
-        id: '3',
-        type: 'booking',
-        title: 'Przypomnienie o wizycie',
-        message: 'Masz wizytę jutro o 14:00',
-        time: new Date(Date.now() - 1000 * 60 * 60 * 24),
-        read: true,
-        link: '/profil',
-      },
-      {
-        id: '4',
-        type: 'system',
-        title: 'Uzupełnij profil',
-        message: 'Dodaj zdjęcie profilowe dla lepszego doświadczenia',
-        time: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2),
-        read: true,
-        link: '/profil',
-      },
-    ];
+    if (!user || !user.id) {
+      console.log('NotificationsPage: No user or user.id');
+      setIsLoading(false);
+      return;
+    }
+    
+    console.log('NotificationsPage: Subscribing for user', user.id);
+    
+    // Subskrybuj powiadomienia real-time
+    const unsubscribe = notificationService.subscribe(
+      user.id,
+      (newNotifications) => {
+        console.log('NotificationsPage: Got notifications', newNotifications.length);
+        setNotifications(newNotifications);
+        setIsLoading(false);
+      }
+    );
+    
+    return () => unsubscribe();
+  }, [user]);
 
-    setNotifications(demoNotifications);
-  }, []);
-
-  const markAsRead = (id: string) => {
-    setNotifications(notifications.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    ));
+  const markAsRead = async (id: string) => {
+    try {
+      await notificationService.markAsRead(id);
+    } catch (error) {
+      showToast('Błąd oznaczania jako przeczytane', 'error');
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  const markAllAsRead = async () => {
+    if (!user || !user.id) return;
+    try {
+      await notificationService.markAllAsRead(user.id);
+      showToast('Wszystkie oznaczone jako przeczytane', 'success');
+    } catch (error) {
+      showToast('Błąd oznaczania powiadomień', 'error');
+    }
   };
 
-  const deleteNotification = (id: string) => {
-    setNotifications(notifications.filter(n => n.id !== id));
+  const deleteNotification = async (id: string) => {
+    try {
+      await notificationService.delete(id);
+      showToast('Powiadomienie usunięte', 'success');
+    } catch (error) {
+      showToast('Błąd usuwania powiadomienia', 'error');
+    }
   };
 
-  const clearAll = () => {
+  const clearAll = async () => {
+    if (!user || !user.id) return;
     if (confirm('Czy na pewno chcesz usunąć wszystkie powiadomienia?')) {
-      setNotifications([]);
+      try {
+        await notificationService.deleteAllByUser(user.id);
+        showToast('Wszystkie powiadomienia usunięte', 'success');
+      } catch (error) {
+        showToast('Błąd usuwania powiadomień', 'error');
+      }
+    }
+  };
+
+  const handleNotificationClick = (notification: Notification) => {
+    markAsRead(notification.id);
+    
+    // Nawiguj w zależności od typu
+    if (notification.data?.bookingId) {
+      navigate('/profil'); // lub dedykowana strona rezerwacji
+    } else if (notification.type === 'new_message') {
+      navigate('/wiadomosci');
+    } else if (notification.type === 'new_review' && notification.data?.providerId) {
+      navigate(`/uslugodawcy/profil/${notification.data.providerId}`);
     }
   };
 
   const getIcon = (type: string) => {
     switch (type) {
-      case 'booking':
+      case 'booking_request':
+      case 'booking_confirmed':
+      case 'booking_cancelled':
+      case 'booking_completed':
+      case 'booking_reminder':
         return <Calendar className="w-5 h-5" />;
-      case 'message':
+      case 'new_message':
         return <MessageSquare className="w-5 h-5" />;
-      case 'review':
+      case 'new_review':
         return <Star className="w-5 h-5" />;
-      case 'payment':
-        return <DollarSign className="w-5 h-5" />;
       default:
         return <Bell className="w-5 h-5" />;
     }
@@ -109,22 +117,29 @@ const NotificationsPage = () => {
 
   const getIconColor = (type: string) => {
     switch (type) {
-      case 'booking':
+      case 'booking_request':
         return 'bg-blue-100 text-blue-600';
-      case 'message':
-        return 'bg-purple-100 text-purple-600';
-      case 'review':
-        return 'bg-amber-100 text-amber-600';
-      case 'payment':
+      case 'booking_confirmed':
         return 'bg-green-100 text-green-600';
+      case 'booking_cancelled':
+        return 'bg-red-100 text-red-600';
+      case 'booking_completed':
+        return 'bg-purple-100 text-purple-600';
+      case 'booking_reminder':
+        return 'bg-yellow-100 text-yellow-600';
+      case 'new_message':
+        return 'bg-indigo-100 text-indigo-600';
+      case 'new_review':
+        return 'bg-amber-100 text-amber-600';
       default:
         return 'bg-gray-100 text-gray-600';
     }
   };
 
-  const formatTime = (date: Date) => {
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
     const now = new Date();
-    const diff = now.getTime() - new Date(date).getTime();
+    const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
@@ -134,16 +149,43 @@ const NotificationsPage = () => {
     if (hours < 24) return `${hours}h temu`;
     if (days === 1) return 'Wczoraj';
     if (days < 7) return `${days} dni temu`;
-    return new Date(date).toLocaleDateString('pl-PL');
+    return date.toLocaleDateString('pl-PL');
   };
 
   const filteredNotifications = notifications.filter(n => {
     if (filter === 'unread' && n.read) return false;
-    if (typeFilter !== 'all' && n.type !== typeFilter) return false;
+    if (typeFilter !== 'all') {
+      if (typeFilter === 'booking' && !n.type.startsWith('booking')) return false;
+      if (typeFilter === 'message' && n.type !== 'new_message') return false;
+      if (typeFilter === 'system' && n.type !== 'system') return false;
+    }
     return true;
   });
 
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Zaloguj się</h3>
+          <p className="text-gray-500 mb-4">Zaloguj się, aby zobaczyć powiadomienia</p>
+          <Link to="/auth" className="text-primary hover:underline">
+            Przejdź do logowania
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pt-8 pb-16">
@@ -157,19 +199,15 @@ const NotificationsPage = () => {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={markAllAsRead}
-              className="px-4 py-2 text-sm font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors"
-            >
-              <Check className="w-4 h-4 inline mr-1" />
-              Przeczytaj wszystkie
-            </button>
-            <Link
-              to="/ustawienia/powiadomienia"
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <Settings className="w-5 h-5 text-gray-500" />
-            </Link>
+            {unreadCount > 0 && (
+              <button
+                onClick={markAllAsRead}
+                className="px-4 py-2 text-sm font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors"
+              >
+                <Check className="w-4 h-4 inline mr-1" />
+                Przeczytaj wszystkie
+              </button>
+            )}
           </div>
         </div>
 
@@ -236,9 +274,10 @@ const NotificationsPage = () => {
             filteredNotifications.map((notification) => (
               <div
                 key={notification.id}
-                className={`bg-white rounded-xl shadow-sm p-4 flex items-start gap-4 transition-all hover:shadow-md ${
+                className={`bg-white rounded-xl shadow-sm p-4 flex items-start gap-4 transition-all hover:shadow-md cursor-pointer ${
                   !notification.read ? 'border-l-4 border-primary' : ''
                 }`}
+                onClick={() => handleNotificationClick(notification)}
               >
                 <div className={`p-3 rounded-xl ${getIconColor(notification.type)}`}>
                   {getIcon(notification.type)}
@@ -248,22 +287,13 @@ const NotificationsPage = () => {
                   <div className="flex items-start justify-between">
                     <div>
                       <h3 className={`font-semibold ${!notification.read ? 'text-gray-900' : 'text-gray-700'}`}>
-                        {notification.title}
+                        {notificationService.getIcon(notification.type)} {notification.title}
                       </h3>
                       <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
-                      <p className="text-xs text-gray-400 mt-2">{formatTime(notification.time)}</p>
+                      <p className="text-xs text-gray-400 mt-2">{formatTime(notification.createdAt)}</p>
                     </div>
                     
-                    <div className="flex items-center gap-1 ml-4">
-                      {notification.link && (
-                        <Link
-                          to={notification.link}
-                          onClick={() => markAsRead(notification.id)}
-                          className="px-3 py-1 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                        >
-                          Zobacz
-                        </Link>
-                      )}
+                    <div className="flex items-center gap-1 ml-4" onClick={(e) => e.stopPropagation()}>
                       {!notification.read && (
                         <button
                           onClick={() => markAsRead(notification.id)}

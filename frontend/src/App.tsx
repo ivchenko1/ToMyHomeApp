@@ -130,36 +130,42 @@ function App() {
 
   // 🔥 Firebase Auth State Listener
   useEffect(() => {
+    console.log('🔥 Setting up auth listener...');
+    
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      console.log('🔥 Auth state changed:', currentUser?.email || 'no user');
       setFirebaseUser(currentUser);
 
       if (currentUser) {
         try {
           // Pobierz dane użytkownika z Firestore
           const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+          console.log('🔥 User doc exists:', userDoc.exists());
           
           if (userDoc.exists()) {
             const firestoreData = userDoc.data() as UserData;
+            console.log('🔥 Firestore data:', firestoreData);
             setUserData(firestoreData);
 
             // Konwertuj na format User (dla kompatybilności)
             const legacyUser: User = {
               id: currentUser.uid,
-              email: currentUser.email || firestoreData.email,
-              username: firestoreData.username || currentUser.displayName || '',
+              email: currentUser.email || firestoreData.email || '',
+              username: firestoreData.username || currentUser.displayName || 'Użytkownik',
               phone: firestoreData.phone || '',
               accountType: firestoreData.accountType || 'client',
               businessName: firestoreData.businessName,
               avatar: firestoreData.avatar || currentUser.photoURL || undefined,
             };
+            console.log('🔥 Legacy user:', legacyUser);
             setUser(legacyUser);
           } else {
             // Użytkownik w Auth ale bez dokumentu Firestore
-            // Utwórz podstawowy obiekt user
+            console.log('🔥 No Firestore doc, creating basic user');
             const basicUser: User = {
               id: currentUser.uid,
               email: currentUser.email || '',
-              username: currentUser.displayName || '',
+              username: currentUser.displayName || 'Użytkownik',
               phone: '',
               accountType: 'client',
             };
@@ -167,11 +173,21 @@ function App() {
             setUserData(null);
           }
         } catch (error) {
-          console.error('Error fetching user data:', error);
+          console.error('🔥 Error fetching user data:', error);
+          // Mimo błędu, ustaw podstawowe dane użytkownika
+          const fallbackUser: User = {
+            id: currentUser.uid,
+            email: currentUser.email || '',
+            username: currentUser.displayName || 'Użytkownik',
+            phone: '',
+            accountType: 'client',
+          };
+          setUser(fallbackUser);
           setUserData(null);
         }
       } else {
         // Użytkownik wylogowany
+        console.log('🔥 User logged out');
         setUser(null);
         setUserData(null);
       }
