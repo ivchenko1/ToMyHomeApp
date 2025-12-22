@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../App';
 import messageService, { Conversation, Message } from '../../services/messageService';
+import providerService from '../../services/providerService';
 
 const BusinessMessages = () => {
   const { user } = useAuth();
@@ -20,24 +21,53 @@ const BusinessMessages = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [providerId, setProviderId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Subskrybuj konwersacje
+  // Pobierz providerId i subskrybuj konwersacje
   useEffect(() => {
     if (!user?.id) {
       setIsLoading(false);
       return;
     }
 
-    const unsubscribe = messageService.subscribeToConversations(
-      user.id,
-      (newConversations) => {
-        setConversations(newConversations);
+    const initMessages = async () => {
+      try {
+        // Znajdź providerId dla tego użytkownika
+        const providers = await providerService.getByOwner(user.id);
+        
+        if (providers.length === 0) {
+          setIsLoading(false);
+          return;
+        }
+
+        const provider = providers[0];
+        setProviderId(provider.id);
+
+        // Subskrybuj konwersacje dla tego providera
+        const unsubscribe = messageService.subscribeToProviderConversations(
+          provider.id,
+          (newConversations) => {
+            setConversations(newConversations);
+            setIsLoading(false);
+          }
+        );
+
+        return unsubscribe;
+      } catch (error) {
+        console.error('Error loading messages:', error);
         setIsLoading(false);
       }
-    );
+    };
 
-    return () => unsubscribe();
+    let unsubscribe: (() => void) | undefined;
+    initMessages().then(unsub => {
+      unsubscribe = unsub;
+    });
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, [user?.id]);
 
   // Subskrybuj wiadomości z wybranej konwersacji

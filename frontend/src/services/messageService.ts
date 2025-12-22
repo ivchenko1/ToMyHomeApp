@@ -33,9 +33,14 @@ export interface Message {
 
 export interface Conversation {
   id: string;
-  participants: string[]; // [userId1, userId2]
+  participants: string[]; // [clientUserId, providerOwnerId]
   participantNames: { [userId: string]: string };
   participantAvatars: { [userId: string]: string };
+  // Powiązanie z providerem
+  providerId: string; // ID profilu usługodawcy
+  providerOwnerId: string; // ID właściciela (użytkownik Firebase)
+  clientId: string; // ID klienta (użytkownik Firebase)
+  // Wiadomości
   lastMessage: string;
   lastMessageAt: string;
   lastMessageSenderId: string;
@@ -60,31 +65,28 @@ const generateId = (): string => {
 
 export const messageService = {
   /**
-   * Pobierz lub utwórz konwersację między dwoma użytkownikami
+   * Pobierz lub utwórz konwersację między klientem a usługodawcą
    */
   async getOrCreateConversation(
-    user1Id: string,
-    user1Name: string,
-    user1Avatar: string,
-    user2Id: string,
-    user2Name: string,
-    user2Avatar: string
+    clientId: string,
+    clientName: string,
+    clientAvatar: string,
+    providerId: string,
+    providerOwnerId: string,
+    providerName: string,
+    providerAvatar: string
   ): Promise<Conversation> {
     try {
-      // Szukaj istniejącej konwersacji
+      // Szukaj istniejącej konwersacji po providerId i clientId
       const q = query(
         collection(db, CONVERSATIONS_COLLECTION),
-        where('participants', 'array-contains', user1Id)
+        where('providerId', '==', providerId),
+        where('clientId', '==', clientId)
       );
       const snapshot = await getDocs(q);
       
-      const existing = snapshot.docs.find(doc => {
-        const data = doc.data();
-        return data.participants.includes(user2Id);
-      });
-      
-      if (existing) {
-        return existing.data() as Conversation;
+      if (!snapshot.empty) {
+        return snapshot.docs[0].data() as Conversation;
       }
       
       // Utwórz nową konwersację
@@ -93,21 +95,26 @@ export const messageService = {
       
       const conversation: Conversation = {
         id,
-        participants: [user1Id, user2Id],
+        participants: [clientId, providerOwnerId],
         participantNames: {
-          [user1Id]: user1Name,
-          [user2Id]: user2Name,
+          [clientId]: clientName,
+          [providerOwnerId]: providerName,
         },
         participantAvatars: {
-          [user1Id]: user1Avatar || '',
-          [user2Id]: user2Avatar || '',
+          [clientId]: clientAvatar || '',
+          [providerOwnerId]: providerAvatar || '',
         },
+        // Powiązanie
+        providerId,
+        providerOwnerId,
+        clientId,
+        // Wiadomości
         lastMessage: '',
         lastMessageAt: now,
         lastMessageSenderId: '',
         unreadCount: {
-          [user1Id]: 0,
-          [user2Id]: 0,
+          [clientId]: 0,
+          [providerOwnerId]: 0,
         },
         createdAt: now,
       };
@@ -141,6 +148,26 @@ export const messageService = {
   },
 
   /**
+   * Pobierz konwersacje dla konkretnego providera (dla panelu biznes)
+   */
+  async getConversationsByProvider(providerId: string): Promise<Conversation[]> {
+    try {
+      const q = query(
+        collection(db, CONVERSATIONS_COLLECTION),
+        where('providerId', '==', providerId)
+      );
+      const snapshot = await getDocs(q);
+      const conversations = snapshot.docs.map(doc => doc.data() as Conversation);
+      return conversations.sort((a, b) => 
+        new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
+      );
+    } catch (error) {
+      console.error('getConversationsByProvider error:', error);
+      return [];
+    }
+  },
+
+  /**
    * Subskrybuj konwersacje użytkownika (real-time)
    */
   subscribeToConversations(
@@ -150,6 +177,27 @@ export const messageService = {
     const q = query(
       collection(db, CONVERSATIONS_COLLECTION),
       where('participants', 'array-contains', userId)
+    );
+    
+    return onSnapshot(q, (snapshot) => {
+      const conversations = snapshot.docs.map(doc => doc.data() as Conversation);
+      conversations.sort((a, b) => 
+        new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
+      );
+      callback(conversations);
+    });
+  },
+
+  /**
+   * Subskrybuj konwersacje dla providera (real-time, dla panelu biznes)
+   */
+  subscribeToProviderConversations(
+    providerId: string,
+    callback: (conversations: Conversation[]) => void
+  ): () => void {
+    const q = query(
+      collection(db, CONVERSATIONS_COLLECTION),
+      where('providerId', '==', providerId)
     );
     
     return onSnapshot(q, (snapshot) => {

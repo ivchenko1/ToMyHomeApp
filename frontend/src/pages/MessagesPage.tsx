@@ -40,7 +40,8 @@ const MessagesPage = () => {
           user.id,
           user.username || 'Użytkownik',
           user.avatar || '',
-          provider.ownerId,
+          provider.id, // providerId
+          provider.ownerId, // providerOwnerId
           provider.name,
           provider.image || ''
         );
