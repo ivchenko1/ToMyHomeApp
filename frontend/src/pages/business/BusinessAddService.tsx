@@ -113,7 +113,7 @@ const BusinessAddService = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [_imageFile, setImageFile] = useState<File | null>(null);
   
   // Location search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -158,7 +158,7 @@ const BusinessAddService = () => {
     description: '',
   });
 
-  const [newFeature, setNewFeature] = useState('');
+  const [_newFeature, setNewFeature] = useState('');
   const [markerPosition, setMarkerPosition] = useState<[number, number]>([52.2297, 21.0122]);
 
   // Search location using Nominatim (OpenStreetMap)

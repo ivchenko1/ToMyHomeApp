@@ -15,7 +15,7 @@ import {
   Clock,
   Heart,
   MessageCircle,
-  X,
+
   Award,
   Shield,
   Share2,

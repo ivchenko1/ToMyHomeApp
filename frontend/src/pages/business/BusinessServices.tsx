@@ -11,10 +11,10 @@ import {
   ToggleRight,
   Search,
   Filter,
-  Loader2,
+
 } from 'lucide-react';
 import { useAuth, useToast } from '../../App';
-import providerService, { Provider, ServiceItem } from '../../services/providerService';
+import providerService, { ServiceItem } from '../../services/providerService';
 
 interface Service {
   id: string;

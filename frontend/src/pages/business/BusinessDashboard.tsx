@@ -2,13 +2,10 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   TrendingUp,
-  Users,
   Calendar,
   DollarSign,
   Star,
   Clock,
-  ArrowUpRight,
-  ArrowDownRight,
   Plus,
   Eye,
   Loader2,
@@ -43,7 +40,6 @@ const BusinessDashboard = () => {
   });
 
   const [recentBookings, setRecentBookings] = useState<Booking[]>([]);
-  const [providerId, setProviderId] = useState<string | null>(null);
   const [hasProvider, setHasProvider] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -65,7 +61,6 @@ const BusinessDashboard = () => {
         if (providers.length > 0) {
           setHasProvider(true);
           const provider = providers[0];
-          setProviderId(provider.id);
           
           // Pobierz statystyki z bookingService
           const providerStats = await bookingService.getProviderStats(provider.id);

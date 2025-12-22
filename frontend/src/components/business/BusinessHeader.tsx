@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Menu, X, Bell, Settings, User, LogOut } from 'lucide-react';
 import { useAuth } from '../../App';
 
@@ -7,7 +7,7 @@ const BusinessHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const { user, logout } = useAuth();
-  const location = useLocation();
+  // const location = useLocation();
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">

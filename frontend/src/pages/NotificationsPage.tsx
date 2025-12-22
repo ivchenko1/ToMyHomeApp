@@ -7,7 +7,7 @@ import {
   Star,
   Check,
   Trash2,
-  Settings,
+
   Filter,
   Loader2,
 } from 'lucide-react';

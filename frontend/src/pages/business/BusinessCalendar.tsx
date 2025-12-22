@@ -6,11 +6,8 @@ import {
   User,
   Phone,
   Mail,
-  MapPin,
   Check,
   X,
-  MoreVertical,
-  Plus,
   Calendar as CalendarIcon,
   Loader2,
 } from 'lucide-react';
@@ -30,7 +27,6 @@ const BusinessCalendar = () => {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [providerId, setProviderId] = useState<string | null>(null);
 
   // Pobierz rezerwacje z Firebase
   useEffect(() => {
@@ -50,7 +46,6 @@ const BusinessCalendar = () => {
         
         if (providers.length > 0) {
           const provider = providers[0];
-          setProviderId(provider.id);
           
           // Subskrybuj rezerwacje real-time
           const unsubscribe = bookingService.subscribeToProviderBookings(
@@ -555,7 +550,7 @@ const BusinessCalendar = () => {
             <div className="text-2xl font-bold text-purple-600">
               {bookings
                 .filter((b) => b.date === new Date().toISOString().split('T')[0])
-                .reduce((sum, b) => sum + b.price, 0)} zł
+                .reduce((sum, b) => sum + b.servicePrice, 0)} zł
             </div>
             <div className="text-sm text-purple-600">Przychód dziś</div>
           </div>
@@ -617,24 +612,18 @@ const BusinessCalendar = () => {
                       {selectedBooking.clientEmail}
                     </a>
                   </div>
-                  {selectedBooking.address && (
-                    <div className="flex items-center gap-3">
-                      <MapPin className="w-5 h-5 text-gray-400" />
-                      <span>{selectedBooking.address}</span>
-                    </div>
-                  )}
                 </div>
 
                 {/* Service Info */}
                 <div className="p-4 bg-emerald-50 rounded-xl">
-                  <div className="font-bold text-emerald-700">{selectedBooking.service}</div>
+                  <div className="font-bold text-emerald-700">{selectedBooking.serviceName}</div>
                   <div className="flex items-center gap-4 mt-2 text-sm text-emerald-600">
                     <span className="flex items-center gap-1">
                       <Clock className="w-4 h-4" />
                       {selectedBooking.time}
                     </span>
-                    <span>{selectedBooking.duration} min</span>
-                    <span className="font-bold">{selectedBooking.price} zł</span>
+                    <span>{selectedBooking.serviceDuration}</span>
+                    <span className="font-bold">{selectedBooking.servicePrice} zł</span>
                   </div>
                 </div>
 
