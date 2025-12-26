@@ -197,9 +197,20 @@ const ProvidersPage = () => {
       if (category) {
         const categoryNames = categoryMapping[category] || [category];
         allProviders = allProviders.filter((p) => {
-          if (!p.category) return false;
-          const providerCategory = p.category.toLowerCase();
-          return categoryNames.some(cat => providerCategory.includes(cat.toLowerCase()));
+          // Sprawdź category
+          const providerCategory = (p.category || '').toLowerCase();
+          // Sprawdź profession
+          const providerProfession = (p.profession || '').toLowerCase();
+          // Sprawdź services (nazwy usług)
+          const serviceNames = p.serviceNames?.map(s => s.toLowerCase()) || [];
+          const servicesText = serviceNames.join(' ');
+          
+          return categoryNames.some(cat => {
+            const catLower = cat.toLowerCase();
+            return providerCategory.includes(catLower) 
+              || providerProfession.includes(catLower)
+              || servicesText.includes(catLower);
+          });
         });
       }
 
@@ -208,9 +219,17 @@ const ProvidersPage = () => {
         const specCategories = specializationToCategory[specializationFilter] || [];
         if (specCategories.length > 0) {
           allProviders = allProviders.filter((p) => {
-            if (!p.category) return false;
-            const providerCategory = p.category.toLowerCase();
-            return specCategories.some(cat => providerCategory.includes(cat.toLowerCase()));
+            const providerCategory = (p.category || '').toLowerCase();
+            const providerProfession = (p.profession || '').toLowerCase();
+            const serviceNames = p.serviceNames?.map(s => s.toLowerCase()) || [];
+            const servicesText = serviceNames.join(' ');
+            
+            return specCategories.some(cat => {
+              const catLower = cat.toLowerCase();
+              return providerCategory.includes(catLower) 
+                || providerProfession.includes(catLower)
+                || servicesText.includes(catLower);
+            });
           });
         }
       }
