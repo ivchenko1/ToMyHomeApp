@@ -13,7 +13,6 @@ import {
   Trash2,
   Pause,
   Play,
-  ExternalLink,
 } from 'lucide-react';
 import adminService, { AdminProvider } from '../../services/adminService';
 import { useToast, useAuth } from '../../App';

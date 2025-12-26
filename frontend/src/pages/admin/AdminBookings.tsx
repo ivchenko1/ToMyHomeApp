@@ -6,7 +6,6 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
-  Filter,
   DollarSign,
   User,
   Briefcase,
