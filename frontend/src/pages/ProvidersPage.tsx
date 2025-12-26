@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Star, MapPin, Check, Filter, Loader2 } from 'lucide-react';
-import { Provider } from '../types';
 import { useToast } from '../App';
-
-const API_URL = '';
+import providerService, { Provider } from '../services/providerService';
 
 // Mapowanie kategorii URL na nazwy kategorii w danych
 const categoryMapping: { [key: string]: string[] } = {
@@ -36,7 +34,7 @@ const ProvidersPage = () => {
   const [minRating, setMinRating] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState('rating');
 
-  // Pobierz usługodawców z API
+  // Pobierz usługodawców z Firebase
   const fetchProviders = async (append = false) => {
     if (append) {
       setIsLoadingMore(true);
@@ -45,44 +43,13 @@ const ProvidersPage = () => {
     }
 
     try {
-      const params = new URLSearchParams();
-      if (category) params.append('category', category);
-      if (locationFilter) params.append('location', locationFilter);
-      if (minRating) params.append('minRating', minRating.toString());
-
-      const response = await fetch(`${API_URL}/api/providers?${params.toString()}`);
-      
-      let apiData: Provider[] = [];
-      if (response.ok) {
-        apiData = await response.json();
-      }
-
-      // Pobierz lokalne usługi
-      const localProviders = JSON.parse(localStorage.getItem('localProviders') || '[]');
-      
-      // Połącz dane z API i lokalne
-      let allProviders = [...apiData, ...localProviders.map((p: any) => ({
-        id: p.id,
-        name: p.name,
-        profession: p.profession || '',
-        rating: p.rating || 0,
-        reviewsCount: p.reviewsCount || 0,
-        location: p.location || '',
-        distance: p.distance || '0 km',
-        description: p.description || '',
-        services: p.services || [],
-        features: p.features || [],
-        priceFrom: p.priceFrom || 0,
-        image: p.image || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400&h=400&fit=crop',
-        isPremium: p.isPremium || false,
-        isAvailableToday: p.isAvailableToday !== false,
-        category: p.category || '',
-      }))];
+      // Pobierz z Firebase przez providerService
+      let allProviders = await providerService.getAll();
 
       // Filtruj po kategorii jeśli podana
       if (category) {
         const categoryNames = categoryMapping[category] || [category];
-        allProviders = allProviders.filter((p: any) => {
+        allProviders = allProviders.filter((p) => {
           if (!p.category) return false;
           const providerCategory = p.category.toLowerCase();
           return categoryNames.some(cat => providerCategory.includes(cat.toLowerCase()));
@@ -91,62 +58,28 @@ const ProvidersPage = () => {
 
       // Sortowanie
       if (sortBy === 'rating') {
-        allProviders.sort((a: Provider, b: Provider) => b.rating - a.rating);
+        allProviders.sort((a, b) => b.rating - a.rating);
       } else if (sortBy === 'price-asc') {
-        allProviders.sort((a: Provider, b: Provider) => a.priceFrom - b.priceFrom);
+        allProviders.sort((a, b) => a.priceFrom - b.priceFrom);
       } else if (sortBy === 'price-desc') {
-        allProviders.sort((a: Provider, b: Provider) => b.priceFrom - a.priceFrom);
+        allProviders.sort((a, b) => b.priceFrom - a.priceFrom);
       }
 
       // Filtrowanie po quickFilters
       if (activeQuickFilters.includes('available-today')) {
-        allProviders = allProviders.filter((p: Provider) => p.isAvailableToday);
+        allProviders = allProviders.filter((p) => p.isAvailableToday);
+      }
+      
+      if (activeQuickFilters.includes('with-travel')) {
+        allProviders = allProviders.filter((p) => p.hasTravel);
       }
 
       setProviders(allProviders);
       setTotalCount(allProviders.length);
       setHasMore(false);
     } catch (error) {
-      console.error('Błąd API, używam danych lokalnych:', error);
-      
-      // Pobierz lokalne usługi
-      const localProviders = JSON.parse(localStorage.getItem('localProviders') || '[]');
-      
-      let allProviders = localProviders.map((p: any) => ({
-        id: p.id,
-        name: p.name,
-        profession: p.profession || '',
-        rating: p.rating || 0,
-        reviewsCount: p.reviewsCount || 0,
-        location: p.location || '',
-        distance: p.distance || '0 km',
-        description: p.description || '',
-        services: p.services || [],
-        features: p.features || [],
-        priceFrom: p.priceFrom || 0,
-        image: p.image || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400&h=400&fit=crop',
-        isPremium: p.isPremium || false,
-        isAvailableToday: p.isAvailableToday !== false,
-        category: p.category || '',
-      }));
-
-      // Filtruj po kategorii
-      if (category) {
-        const categoryNames = categoryMapping[category] || [category];
-        allProviders = allProviders.filter((p: any) => {
-          if (!p.category) return false;
-          const providerCategory = p.category.toLowerCase();
-          return categoryNames.some(cat => providerCategory.includes(cat.toLowerCase()));
-        });
-      }
-      
-      if (activeQuickFilters.includes('available-today')) {
-        allProviders = allProviders.filter((p: Provider) => p.isAvailableToday);
-      }
-      
-      setProviders(allProviders);
-      setTotalCount(allProviders.length);
-      setHasMore(false);
+      console.error('Błąd pobierania usługodawców:', error);
+      showToast('Błąd ładowania danych', 'error');
     } finally {
       setIsLoading(false);
       setIsLoadingMore(false);
@@ -438,24 +371,22 @@ const ProvidersPage = () => {
                 {/* Location */}
                 <div className="flex items-center gap-2 text-gray-500 mb-4">
                   <MapPin className="w-4 h-4" />
-                  <span>
-                    {provider.location} ({provider.distance})
-                  </span>
+                  <span>{provider.locationString}</span>
                 </div>
 
                 {/* Services */}
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {provider.services.slice(0, 4).map((service) => (
+                  {provider.serviceNames.slice(0, 4).map((serviceName, idx) => (
                     <span
-                      key={service}
+                      key={idx}
                       className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm"
                     >
-                      {service}
+                      {serviceName}
                     </span>
                   ))}
-                  {provider.services.length > 4 && (
+                  {provider.serviceNames.length > 4 && (
                     <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">
-                      +{provider.services.length - 4}
+                      +{provider.serviceNames.length - 4}
                     </span>
                   )}
                 </div>

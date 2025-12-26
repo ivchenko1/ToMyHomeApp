@@ -13,7 +13,7 @@ import {
   Check,
   AlertTriangle,
   Phone,
-  Smartphone,
+
 } from 'lucide-react';
 import { useAuth, useToast } from '../../App';
 import PhoneInput, { validatePhoneNumber } from '../../components/PhoneInput';

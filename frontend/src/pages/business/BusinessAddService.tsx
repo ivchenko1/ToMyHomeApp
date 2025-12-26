@@ -17,6 +17,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useAuth, useToast } from '../../App';
+import providerService from '../../services/providerService';
 
 // Leaflet imports
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
@@ -106,13 +107,13 @@ const MapRecenter = ({ lat, lng }: { lat: number; lng: number }) => {
 
 const BusinessAddService = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, userData } = useAuth();
   const { showToast } = useToast();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [_imageFile, setImageFile] = useState<File | null>(null);
   
   // Location search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -157,7 +158,7 @@ const BusinessAddService = () => {
     description: '',
   });
 
-  const [newFeature, setNewFeature] = useState('');
+  const [_newFeature, setNewFeature] = useState('');
   const [markerPosition, setMarkerPosition] = useState<[number, number]>([52.2297, 21.0122]);
 
   // Search location using Nominatim (OpenStreetMap)
@@ -361,39 +362,69 @@ const BusinessAddService = () => {
     setIsLoading(true);
 
     try {
-      // Save to localStorage (demo mode)
-      const localProviders = JSON.parse(localStorage.getItem('localProviders') || '[]');
+      const ownerId = user?.id?.toString() || '';
       
-      const newProvider = {
-        id: Date.now(),
-        ownerId: user?.id,
+      console.log('=== DEBUG SAVE ===');
+      console.log('user:', user);
+      console.log('ownerId:', ownerId);
+      console.log('formData:', formData);
+      
+      if (!ownerId) {
+        showToast('Błąd: brak ID użytkownika', 'error');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Sprawdź czy użytkownik ma już profil w Firebase
+      const existingProviders = await providerService.getByOwner(ownerId);
+      console.log('existingProviders:', existingProviders);
+      const existingProvider = existingProviders[0];
+      
+      const providerData = {
+        // Dane z formularza
         name: formData.businessName,
         profession: formData.profession,
         category: formData.category,
         description: formData.description,
-        location: `${formData.location.city}${formData.location.district ? ', ' + formData.location.district : ''}`,
-        locationData: formData.location,
-        services: formData.services.map(s => s.name),
-        servicesData: formData.services,
+        experience: formData.experience || '',
+        location: formData.location,
+        services: formData.services.map(s => ({
+          ...s,
+          id: s.id || `service_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          category: 'Usługi',
+        })),
         features: formData.features,
-        priceFrom: Math.min(...formData.services.map(s => s.price)),
-        image: imagePreview || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400&h=400&fit=crop',
-        isPremium: false,
-        isAvailableToday: true,
-        rating: 0,
-        reviewsCount: 0,
-        distance: '0 km',
+        image: imagePreview || existingProvider?.image || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400&h=400&fit=crop',
         workingHours: formData.workingHours,
         travelRadius: formData.travelRadius,
-        createdAt: new Date().toISOString(),
+        hasTravel: formData.features.includes('Dojazd do klienta'),
+        acceptsCard: formData.features.includes('Płatność kartą'),
+        
+        // Dane użytkownika
+        ownerEmail: userData?.email || user?.email || '',
+        ownerUsername: userData?.username || user?.username || '',
+        ownerPhone: userData?.phone || user?.phone || '',
+        ownerAvatar: userData?.avatar || user?.avatar || '',
+        isVerified: userData?.isVerified || false,
       };
 
-      localProviders.push(newProvider);
-      localStorage.setItem('localProviders', JSON.stringify(localProviders));
+      if (existingProvider) {
+        // Aktualizuj istniejący profil w Firebase
+        console.log('Aktualizuję istniejący profil:', existingProvider.id);
+        await providerService.update(existingProvider.id, providerData);
+        showToast('🎉 Profil zaktualizowany!', 'success');
+      } else {
+        // Utwórz nowy profil w Firebase
+        console.log('Tworzę nowy profil z ownerId:', ownerId);
+        console.log('providerData:', providerData);
+        const created = await providerService.create(providerData, ownerId);
+        console.log('Utworzony provider:', created);
+        showToast('🎉 Profil utworzony pomyślnie!', 'success');
+      }
 
-      showToast('🎉 Usługa dodana pomyślnie!', 'success');
       navigate('/biznes/uslugi');
     } catch (error) {
+      console.error('Błąd zapisywania:', error);
       showToast('Błąd podczas zapisywania', 'error');
     } finally {
       setIsLoading(false);

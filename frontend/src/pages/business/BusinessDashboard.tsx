@@ -2,117 +2,151 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   TrendingUp,
-  Users,
   Calendar,
   DollarSign,
   Star,
   Clock,
-  ArrowUpRight,
-  ArrowDownRight,
   Plus,
   Eye,
+  Loader2,
+  Check,
+  X,
 } from 'lucide-react';
-import { useAuth } from '../../App';
+import { useAuth, useToast } from '../../App';
+import providerService from '../../services/providerService';
+import bookingService, { Booking } from '../../services/bookingService';
 
 interface DashboardStats {
   totalBookings: number;
-  bookingsChange: number;
+  pendingBookings: number;
+  completedBookings: number;
   revenue: number;
-  revenueChange: number;
-  clients: number;
-  clientsChange: number;
+  thisMonthRevenue: number;
   rating: number;
   reviewsCount: number;
 }
 
-interface RecentBooking {
-  id: number;
-  clientName: string;
-  service: string;
-  date: string;
-  time: string;
-  price: number;
-  status: 'pending' | 'confirmed' | 'completed';
-}
-
 const BusinessDashboard = () => {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [stats, setStats] = useState<DashboardStats>({
-    totalBookings: 24,
-    bookingsChange: 12,
-    revenue: 3450,
-    revenueChange: 8,
-    clients: 18,
-    clientsChange: -3,
-    rating: 4.9,
-    reviewsCount: 47,
+    totalBookings: 0,
+    pendingBookings: 0,
+    completedBookings: 0,
+    revenue: 0,
+    thisMonthRevenue: 0,
+    rating: 0,
+    reviewsCount: 0,
   });
 
-  const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([
-    {
-      id: 1,
-      clientName: 'Anna Nowak',
-      service: 'Strzyżenie damskie',
-      date: '2025-12-02',
-      time: '10:00',
-      price: 80,
-      status: 'confirmed',
-    },
-    {
-      id: 2,
-      clientName: 'Piotr Kowalski',
-      service: 'Strzyżenie męskie',
-      date: '2025-12-02',
-      time: '11:30',
-      price: 60,
-      status: 'pending',
-    },
-    {
-      id: 3,
-      clientName: 'Maria Wiśniewska',
-      service: 'Koloryzacja',
-      date: '2025-12-02',
-      time: '14:00',
-      price: 150,
-      status: 'confirmed',
-    },
-  ]);
-
+  const [recentBookings, setRecentBookings] = useState<Booking[]>([]);
   const [hasProvider, setHasProvider] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user has a provider profile
-    const localProviders = JSON.parse(localStorage.getItem('localProviders') || '[]');
-    const userProvider = localProviders.find((p: any) => p.ownerId === user?.id);
-    setHasProvider(!!userProvider || localProviders.length > 0);
+    const loadData = async () => {
+      if (!user || !user.id) {
+        console.log('BusinessDashboard: No user or user.id');
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log('BusinessDashboard: Loading for user', user.id);
+      
+      try {
+        // Pobierz profil usługodawcy
+        const providers = await providerService.getByOwner(user.id);
+        console.log('BusinessDashboard: Found providers', providers.length);
+        
+        if (providers.length > 0) {
+          setHasProvider(true);
+          const provider = providers[0];
+          
+          // Pobierz statystyki z bookingService
+          const providerStats = await bookingService.getProviderStats(provider.id);
+          
+          setStats({
+            totalBookings: providerStats.totalBookings,
+            pendingBookings: providerStats.pendingBookings,
+            completedBookings: providerStats.completedBookings,
+            revenue: providerStats.totalRevenue,
+            thisMonthRevenue: providerStats.thisMonthRevenue,
+            rating: provider.rating || 0,
+            reviewsCount: provider.reviewsCount || 0,
+          });
+          
+          // Subskrybuj rezerwacje real-time
+          const unsubscribe = bookingService.subscribeToProviderBookings(
+            provider.id,
+            (bookings) => {
+              // Filtruj tylko pending i confirmed, sortuj po dacie
+              const upcoming = bookings
+                .filter(b => b.status === 'pending' || b.status === 'confirmed')
+                .slice(0, 5);
+              setRecentBookings(upcoming);
+            }
+          );
+          
+          return () => unsubscribe();
+        } else {
+          setHasProvider(false);
+        }
+      } catch (error) {
+        console.error('Błąd ładowania danych:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadData();
   }, [user]);
+
+  // Potwierdź rezerwację
+  const handleConfirm = async (bookingId: string) => {
+    try {
+      await bookingService.confirm(bookingId);
+      showToast('Rezerwacja potwierdzona! ✅', 'success');
+    } catch (error) {
+      showToast('Błąd potwierdzania rezerwacji', 'error');
+    }
+  };
+
+  // Anuluj rezerwację
+  const handleCancel = async (bookingId: string) => {
+    try {
+      await bookingService.cancel(bookingId, 'provider');
+      showToast('Rezerwacja anulowana', 'info');
+    } catch (error) {
+      showToast('Błąd anulowania rezerwacji', 'error');
+    }
+  };
 
   const statCards = [
     {
       title: 'Rezerwacje',
       value: stats.totalBookings,
-      change: stats.bookingsChange,
+      subtitle: `${stats.pendingBookings} oczekuje`,
       icon: Calendar,
       color: 'emerald',
     },
     {
       title: 'Przychód',
       value: `${stats.revenue} zł`,
-      change: stats.revenueChange,
+      subtitle: `${stats.thisMonthRevenue} zł ten miesiąc`,
       icon: DollarSign,
       color: 'blue',
     },
     {
-      title: 'Klienci',
-      value: stats.clients,
-      change: stats.clientsChange,
-      icon: Users,
+      title: 'Ukończone',
+      value: stats.completedBookings,
+      subtitle: 'wizyt',
+      icon: Check,
       color: 'purple',
     },
     {
       title: 'Ocena',
-      value: stats.rating,
-      subtitle: `${stats.reviewsCount} opinii`,
+      value: stats.rating > 0 ? stats.rating.toFixed(1) : '-',
+      subtitle: stats.reviewsCount > 0 ? `${stats.reviewsCount} opinii` : 'brak opinii',
       icon: Star,
       color: 'amber',
     },
@@ -130,6 +164,15 @@ const BusinessDashboard = () => {
         return null;
     }
   };
+
+  // If loading, show spinner
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-12 h-12 animate-spin text-emerald-500" />
+      </div>
+    );
+  }
 
   // If no provider profile, show empty state
   if (!hasProvider) {
@@ -195,7 +238,7 @@ const BusinessDashboard = () => {
             Witaj, {user?.username || 'Użytkowniku'}! 👋
           </h1>
           <p className="text-gray-600">
-            Oto przegląd Twojego biznesu na dziś
+            Oto przegląd Twojego biznesu
           </p>
         </div>
         <Link
@@ -215,23 +258,9 @@ const BusinessDashboard = () => {
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center bg-${stat.color}-100`}>
                 <stat.icon className={`w-5 h-5 text-${stat.color}-600`} />
               </div>
-              {stat.change !== undefined && (
-                <div className={`flex items-center gap-1 text-sm font-medium ${
-                  stat.change >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {stat.change >= 0 ? (
-                    <ArrowUpRight className="w-4 h-4" />
-                  ) : (
-                    <ArrowDownRight className="w-4 h-4" />
-                  )}
-                  {Math.abs(stat.change)}%
-                </div>
-              )}
             </div>
             <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
-            <div className="text-sm text-gray-500">
-              {stat.subtitle || stat.title}
-            </div>
+            <div className="text-sm text-gray-500">{stat.subtitle}</div>
           </div>
         ))}
       </div>
@@ -257,21 +286,44 @@ const BusinessDashboard = () => {
                   </div>
                   <div>
                     <div className="font-medium text-gray-900">{booking.clientName}</div>
-                    <div className="text-sm text-gray-500">{booking.service}</div>
+                    <div className="text-sm text-gray-500">{booking.serviceName}</div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-                    <Clock className="w-4 h-4" />
-                    {booking.time}
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <div className="text-sm text-gray-600">{booking.date}</div>
+                    <div className="flex items-center gap-1 text-sm text-gray-500">
+                      <Clock className="w-3 h-3" />
+                      {booking.time}
+                    </div>
                   </div>
-                  {getStatusBadge(booking.status)}
+                  {booking.status === 'pending' && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleConfirm(booking.id)}
+                        className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors"
+                        title="Potwierdź"
+                      >
+                        <Check className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleCancel(booking.id)}
+                        className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                        title="Anuluj"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                  {booking.status === 'confirmed' && getStatusBadge(booking.status)}
                 </div>
               </div>
             ))}
             {recentBookings.length === 0 && (
               <div className="p-8 text-center text-gray-500">
-                Brak nadchodzących rezerwacji
+                <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <p>Brak nadchodzących rezerwacji</p>
+                <p className="text-sm mt-1">Rezerwacje pojawią się tutaj, gdy klienci je złożą</p>
               </div>
             )}
           </div>
