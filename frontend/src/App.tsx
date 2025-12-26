@@ -36,6 +36,14 @@ import BusinessMessages from './pages/business/BusinessMessages';
 import BusinessSettings from './pages/business/BusinessSettings';
 import BusinessWorkingHours from './pages/business/BusinessWorkingHours';
 
+// Admin Pages
+import AdminLayout from './components/admin/AdminLayout';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminProviders from './pages/admin/AdminProviders';
+import AdminBookings from './pages/admin/AdminBookings';
+import AdminSettings from './pages/admin/AdminSettings';
+
 // Shared Components
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -56,12 +64,15 @@ const ScrollToTop = () => {
 };
 
 // ==================== TYPES ====================
+export type UserRole = 'user' | 'admin' | 'superadmin';
+
 interface UserData {
   uid: string;
   username: string;
   email: string;
   phone: string;
   accountType: 'client' | 'provider';
+  role: UserRole;
   businessName?: string;
   avatar?: string;
   createdAt: string;
@@ -69,6 +80,7 @@ interface UserData {
   isVerified?: boolean;
   rating?: number;
   reviewsCount?: number;
+  blocked?: boolean;
 }
 
 // ==================== AUTH CONTEXT ====================
@@ -80,6 +92,8 @@ interface AuthContextType {
   login: (user: User) => void;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
+  isAdmin: boolean;
+  isSuperAdmin: boolean;
 }
 
 export const AuthContext = createContext<AuthContextType>({
@@ -90,6 +104,8 @@ export const AuthContext = createContext<AuthContextType>({
   login: () => {},
   logout: async () => {},
   isAuthenticated: false,
+  isAdmin: false,
+  isSuperAdmin: false,
 });
 
 // ==================== TOAST CONTEXT ====================
@@ -275,10 +291,21 @@ function App() {
       loading,
       login, 
       logout, 
-      isAuthenticated: !!firebaseUser 
+      isAuthenticated: !!firebaseUser,
+      isAdmin: userData?.role === 'admin' || userData?.role === 'superadmin',
+      isSuperAdmin: userData?.role === 'superadmin'
     }}>
       <ToastContext.Provider value={{ showToast }}>
         <Routes>
+          {/* Admin Panel Routes */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="uzytkownicy" element={<AdminUsers />} />
+            <Route path="uslugodawcy" element={<AdminProviders />} />
+            <Route path="rezerwacje" element={<AdminBookings />} />
+            <Route path="ustawienia" element={<AdminSettings />} />
+          </Route>
+
           {/* Business Panel Routes */}
           <Route path="/biznes" element={<BusinessLayout />}>
             <Route index element={<BusinessDashboard />} />
