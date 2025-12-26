@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { useState, useEffect, createContext, useContext } from 'react';
 
 // 🔥 Firebase imports
@@ -15,6 +15,16 @@ import ProviderDetailPage from './pages/ProviderDetailPage';
 import MessagesPage from './pages/MessagesPage';
 import NotificationsPage from './pages/NotificationsPage';
 
+// Static Pages
+import AboutPage from './pages/static/AboutPage';
+import CareerPage from './pages/static/CareerPage';
+import BlogPage from './pages/static/BlogPage';
+import ContactPage from './pages/static/ContactPage';
+import FAQPage from './pages/static/FAQPage';
+import TermsPage from './pages/static/TermsPage';
+import PrivacyPage from './pages/static/PrivacyPage';
+import SupportPage from './pages/static/SupportPage';
+
 // Business Pages
 import BusinessLayout from './components/business/BusinessLayout';
 import BusinessDashboard from './pages/business/BusinessDashboard';
@@ -24,6 +34,7 @@ import BusinessCalendar from './pages/business/BusinessCalendar';
 import BusinessStatistics from './pages/business/BusinessStatistics';
 import BusinessMessages from './pages/business/BusinessMessages';
 import BusinessSettings from './pages/business/BusinessSettings';
+import BusinessWorkingHours from './pages/business/BusinessWorkingHours';
 
 // Shared Components
 import Header from './components/Header';
@@ -32,6 +43,17 @@ import Toast from './components/Toast';
 import AnimatedBackground from './components/AnimatedBackground';
 
 import { User, ToastMessage } from './types';
+
+// ==================== SCROLL TO TOP ====================
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  
+  return null;
+};
 
 // ==================== TYPES ====================
 interface UserData {
@@ -86,6 +108,7 @@ export const useToast = () => useContext(ToastContext);
 const ClientLayout = () => {
   return (
     <div className="min-h-screen flex flex-col">
+      <ScrollToTop />
       <AnimatedBackground />
       <Header />
       <main className="flex-grow">
@@ -98,6 +121,16 @@ const ClientLayout = () => {
           <Route path="/uslugodawcy" element={<ProvidersPage />} />
           <Route path="/wiadomosci" element={<MessagesPage />} />
           <Route path="/powiadomienia" element={<NotificationsPage />} />
+          
+          {/* Static Pages */}
+          <Route path="/o-nas" element={<AboutPage />} />
+          <Route path="/kariera" element={<CareerPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/kontakt" element={<ContactPage />} />
+          <Route path="/faq" element={<FAQPage />} />
+          <Route path="/regulamin" element={<TermsPage />} />
+          <Route path="/prywatnosc" element={<PrivacyPage />} />
+          <Route path="/wsparcie" element={<SupportPage />} />
         </Routes>
       </main>
       <Footer />
@@ -251,6 +284,7 @@ function App() {
             <Route index element={<BusinessDashboard />} />
             <Route path="uslugi" element={<BusinessServices />} />
             <Route path="dodaj-usluge" element={<BusinessAddService />} />
+            <Route path="godziny-pracy" element={<BusinessWorkingHours />} />
             <Route path="kalendarz" element={<BusinessCalendar />} />
             <Route path="wiadomosci" element={<BusinessMessages />} />
             <Route path="statystyki" element={<BusinessStatistics />} />

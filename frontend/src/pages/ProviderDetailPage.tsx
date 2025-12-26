@@ -192,13 +192,34 @@ const ProviderDetailPage = () => {
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
     const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
     
+    // Mapowanie dnia tygodnia na klucz workingHours
+    const dayKeyMap: { [key: number]: string } = {
+      1: 'monday',
+      2: 'tuesday',
+      3: 'wednesday',
+      4: 'thursday',
+      5: 'friday',
+      6: 'saturday',
+      0: 'sunday',
+    };
+    
     for (let i = 0; i < 35; i++) {
       const date = new Date(today.getFullYear(), today.getMonth(), i - startDay + 1);
       const isCurrentMonth = date.getMonth() === today.getMonth();
+      const isPast = date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      
+      // Sprawdź czy dzień jest zamknięty według workingHours
+      let isClosed = false;
+      if (provider) {
+        const dayKey = dayKeyMap[date.getDay()] as keyof typeof provider.workingHours;
+        isClosed = !provider.workingHours[dayKey]?.enabled;
+      }
+      
       days.push({
         day: date.getDate(),
         isToday: date.toDateString() === today.toDateString(),
-        disabled: !isCurrentMonth || date < today || date.getDay() === 0,
+        disabled: !isCurrentMonth || isPast || isClosed,
+        isClosed,
         fullDate: date,
       });
     }
@@ -222,20 +243,84 @@ const ProviderDetailPage = () => {
     loadBookedSlots();
   }, [provider?.id, selectedDate]);
 
-  // Dostępne godziny - generowane dynamicznie z godzin pracy
+  // Mapowanie dnia tygodnia na klucz workingHours
+  const getDayKey = (date: Date): keyof typeof provider.workingHours | null => {
+    const dayMap: { [key: number]: keyof typeof provider.workingHours } = {
+      1: 'monday',
+      2: 'tuesday',
+      3: 'wednesday',
+      4: 'thursday',
+      5: 'friday',
+      6: 'saturday',
+      0: 'sunday',
+    };
+    return dayMap[date.getDay()] || null;
+  };
+
+  // Dostępne godziny - generowane dynamicznie z godzin pracy providera
   const generateTimeSlots = () => {
-    const slots = [];
-    for (let hour = 9; hour <= 18; hour++) {
-      const time = `${String(hour).padStart(2, '0')}:00`;
+    if (!provider || !selectedDate) {
+      return [];
+    }
+
+    const slots: { time: string; disabled: boolean }[] = [];
+    
+    // Znajdź pełną datę dla wybranego dnia
+    const now = new Date();
+    const selectedFullDate = new Date(now.getFullYear(), now.getMonth(), selectedDate);
+    const dayKey = getDayKey(selectedFullDate);
+    
+    if (!dayKey) return [];
+    
+    const dayHours = provider.workingHours[dayKey];
+    
+    // Jeśli dzień jest zamknięty
+    if (!dayHours.enabled) {
+      return [];
+    }
+
+    // Parsuj godziny otwarcia
+    const [fromHour, fromMin] = dayHours.from.split(':').map(Number);
+    const [toHour, toMin] = dayHours.to.split(':').map(Number);
+    
+    // Generuj sloty co 30 minut
+    let currentHour = fromHour;
+    let currentMin = fromMin;
+    
+    while (currentHour < toHour || (currentHour === toHour && currentMin < toMin)) {
+      const time = `${String(currentHour).padStart(2, '0')}:${String(currentMin).padStart(2, '0')}`;
+      
+      // Sprawdź czy slot nie jest w przeszłości (dla dzisiejszego dnia)
+      const isToday = selectedFullDate.toDateString() === now.toDateString();
+      const slotInPast = isToday && (currentHour < now.getHours() || (currentHour === now.getHours() && currentMin <= now.getMinutes()));
+      
       slots.push({
         time,
-        disabled: bookedSlots.includes(time),
+        disabled: bookedSlots.includes(time) || slotInPast,
       });
+      
+      // Następny slot (+30 min)
+      currentMin += 30;
+      if (currentMin >= 60) {
+        currentMin = 0;
+        currentHour++;
+      }
     }
+    
     return slots;
   };
 
   const timeSlots = generateTimeSlots();
+  
+  // Sprawdź czy wybrany dzień jest otwarty
+  const isSelectedDayOpen = () => {
+    if (!provider || !selectedDate) return true;
+    const now = new Date();
+    const selectedFullDate = new Date(now.getFullYear(), now.getMonth(), selectedDate);
+    const dayKey = getDayKey(selectedFullDate);
+    if (!dayKey) return false;
+    return provider.workingHours[dayKey].enabled;
+  };
 
   // Potwierdź rezerwację - tworzy prawdziwą rezerwację w Firebase
   const confirmBooking = async () => {
@@ -446,7 +531,30 @@ const ProviderDetailPage = () => {
                   {provider.hasTravel && <p className="text-sm text-green-600 mt-1">✓ Dojazd do klienta (do {provider.travelRadius} km)</p>}
                 </div>
               </div>
-              <div className="h-48 bg-gray-100 rounded-xl flex items-center justify-center"><p className="text-gray-400">Mapa lokalizacji</p></div>
+              {provider.location?.lat && provider.location?.lng ? (
+                <div className="h-48 rounded-xl overflow-hidden">
+                  <iframe
+                    title="Lokalizacja usługodawcy"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${provider.location.lng - 0.01}%2C${provider.location.lat - 0.01}%2C${provider.location.lng + 0.01}%2C${provider.location.lat + 0.01}&layer=mapnik&marker=${provider.location.lat}%2C${provider.location.lng}`}
+                  />
+                  <a 
+                    href={`https://www.openstreetmap.org/?mlat=${provider.location.lat}&mlon=${provider.location.lng}#map=16/${provider.location.lat}/${provider.location.lng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block text-center text-sm text-primary hover:underline mt-2"
+                  >
+                    Otwórz większą mapę
+                  </a>
+                </div>
+              ) : (
+                <div className="h-48 bg-gray-100 rounded-xl flex items-center justify-center">
+                  <p className="text-gray-400">Brak danych lokalizacji</p>
+                </div>
+              )}
             </div>
 
             {/* Working Hours */}
@@ -488,9 +596,35 @@ const ProviderDetailPage = () => {
               </div>
               <div className="mb-4">
                 <label className="text-sm font-medium text-gray-700 mb-2 block">Godzina</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {timeSlots.map(slot => <button key={slot.time} disabled={slot.disabled} onClick={() => !slot.disabled && setSelectedTime(slot.time)} className={`py-2 text-sm rounded-lg transition-colors ${slot.disabled ? 'opacity-30 cursor-not-allowed bg-gray-100' : selectedTime === slot.time ? 'bg-primary text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>{slot.time}</button>)}
-                </div>
+                {!selectedDate ? (
+                  <p className="text-sm text-gray-500 p-4 bg-gray-50 rounded-xl text-center">
+                    Wybierz datę, aby zobaczyć dostępne godziny
+                  </p>
+                ) : timeSlots.length === 0 ? (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-center">
+                    <p className="text-red-600 font-medium">Dzień zamknięty</p>
+                    <p className="text-sm text-red-500 mt-1">Wybierz inny dzień</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2">
+                    {timeSlots.map(slot => (
+                      <button 
+                        key={slot.time} 
+                        disabled={slot.disabled} 
+                        onClick={() => !slot.disabled && setSelectedTime(slot.time)} 
+                        className={`py-2 text-sm rounded-lg transition-colors ${
+                          slot.disabled 
+                            ? 'opacity-30 cursor-not-allowed bg-gray-100' 
+                            : selectedTime === slot.time 
+                              ? 'bg-primary text-white' 
+                              : 'bg-gray-100 hover:bg-gray-200'
+                        }`}
+                      >
+                        {slot.time}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <button 
                 onClick={confirmBooking} 

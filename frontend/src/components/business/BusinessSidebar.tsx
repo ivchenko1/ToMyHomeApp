@@ -8,6 +8,7 @@ import {
   BarChart3,
   Settings,
   HelpCircle,
+  Clock,
 } from 'lucide-react';
 
 interface BusinessSidebarProps {
@@ -34,6 +35,11 @@ const BusinessSidebar = ({ isOpen = true, onClose }: BusinessSidebarProps) => {
       icon: PlusCircle, 
       label: 'Dodaj usługę', 
       to: '/biznes/dodaj-usluge' 
+    },
+    { 
+      icon: Clock, 
+      label: 'Godziny pracy', 
+      to: '/biznes/godziny-pracy' 
     },
     { 
       icon: Calendar, 

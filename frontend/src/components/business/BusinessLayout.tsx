@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Outlet, Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../App';
 import BusinessHeader from './BusinessHeader';
 import BusinessSidebar from './BusinessSidebar';
@@ -7,6 +7,12 @@ import BusinessSidebar from './BusinessSidebar';
 const BusinessLayout = () => {
   const { isAuthenticated, user } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { pathname } = useLocation();
+
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
 
   // Sprawdź czy użytkownik jest usługodawcą
   const isProvider = user?.accountType === 'provider' || !!user?.businessName;

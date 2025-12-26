@@ -21,7 +21,7 @@ const BusinessMessages = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
-  const [providerId, setProviderId] = useState<string | null>(null);
+  const [, setProviderId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Pobierz providerId i subskrybuj konwersacje
