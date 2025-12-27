@@ -22,7 +22,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useToast, useAuth } from '../App';
-import providerService, { Provider, ServiceItem, WorkingHours } from '../services/providerService';
+import providerService, { Provider, ServiceItem } from '../services/providerService';
 import bookingService from '../services/bookingService';
 
 // ============================================
@@ -244,8 +244,8 @@ const ProviderDetailPage = () => {
   }, [provider?.id, selectedDate]);
 
   // Mapowanie dnia tygodnia na klucz workingHours
-  const getDayKey = (date: Date): keyof WorkingHours | null => {
-    const dayMap: { [key: number]: keyof WorkingHours } = {
+  const getDayKey = (date: Date): keyof typeof provider.workingHours | null => {
+    const dayMap: { [key: number]: keyof typeof provider.workingHours } = {
       1: 'monday',
       2: 'tuesday',
       3: 'wednesday',
@@ -311,6 +311,16 @@ const ProviderDetailPage = () => {
   };
 
   const timeSlots = generateTimeSlots();
+  
+  // Sprawdź czy wybrany dzień jest otwarty
+  const isSelectedDayOpen = () => {
+    if (!provider || !selectedDate) return true;
+    const now = new Date();
+    const selectedFullDate = new Date(now.getFullYear(), now.getMonth(), selectedDate);
+    const dayKey = getDayKey(selectedFullDate);
+    if (!dayKey) return false;
+    return provider.workingHours[dayKey].enabled;
+  };
 
   // Potwierdź rezerwację - tworzy prawdziwą rezerwację w Firebase
   const confirmBooking = async () => {

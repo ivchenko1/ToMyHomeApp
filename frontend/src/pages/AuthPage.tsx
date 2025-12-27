@@ -196,7 +196,6 @@ const AuthPage = () => {
         email: registerData.email,
         phone: formattedPhone,
         accountType: registerData.accountType,
-        role: 'user', // Domyślna rola - zwykły użytkownik
         businessName: registerData.businessName || null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

@@ -286,7 +286,7 @@ const BusinessSettings = () => {
   };
 
   // Generuj opcje godzin
-  const timeOptions: string[] = [];
+  const timeOptions = [];
   for (let h = 0; h < 24; h++) {
     for (let m = 0; m < 60; m += 30) {
       const time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
@@ -391,9 +391,11 @@ const BusinessSettings = () => {
                     Numer telefonu
                   </label>
                   <PhoneInput
-                    value={profileData.phone}
                     countryCode={profileData.phoneCountryCode}
-                    onChange={(phone: string, countryCode: string) => setProfileData({ ...profileData, phone, phoneCountryCode: countryCode })}
+                    phoneNumber={profileData.phone}
+                    onCountryCodeChange={(code) => setProfileData({ ...profileData, phoneCountryCode: code })}
+                    onPhoneNumberChange={(number) => setProfileData({ ...profileData, phone: number })}
+                    placeholder="123 456 789"
                   />
                 </div>
 

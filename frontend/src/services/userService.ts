@@ -4,11 +4,7 @@ import {
   getDoc, 
   updateDoc, 
   deleteDoc,
-  serverTimestamp,
-  collection,
-  getDocs,
-  query,
-  orderBy
+  serverTimestamp 
 } from 'firebase/firestore';
 import { 
   updateProfile, 
@@ -26,8 +22,6 @@ import {
 import { db, auth, storage } from '../firebase';
 
 // ==================== TYPES ====================
-export type UserRole = 'user' | 'admin' | 'superadmin';
-
 export interface UserProfile {
   uid: string;
   email: string;
@@ -35,7 +29,6 @@ export interface UserProfile {
   phone: string;
   avatar?: string;
   accountType: 'client' | 'provider';
-  role: UserRole;
   businessName?: string;
   createdAt: string;
   updatedAt?: string;
@@ -245,64 +238,6 @@ export const deleteUserAccount = async (password: string): Promise<void> => {
       throw new Error('Zaloguj się ponownie i spróbuj jeszcze raz');
     }
     
-    throw error;
-  }
-};
-// ==================== ADMIN FUNCTIONS ====================
-
-/**
- * Pobierz wszystkich użytkowników (tylko dla adminów)
- */
-export const getAllUsers = async (): Promise<UserProfile[]> => {
-  try {
-    const usersRef = collection(db, 'users');
-    const q = query(usersRef, orderBy('createdAt', 'desc'));
-    const snapshot = await getDocs(q);
-    
-    return snapshot.docs.map(doc => ({
-      uid: doc.id,
-      ...doc.data()
-    } as UserProfile));
-  } catch (error) {
-    console.error('Error getting all users:', error);
-    throw error;
-  }
-};
-
-/**
- * Zmień rolę użytkownika (tylko dla superadminów)
- */
-export const setUserRole = async (
-  userId: string, 
-  role: UserRole
-): Promise<void> => {
-  try {
-    const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, {
-      role,
-      updatedAt: serverTimestamp(),
-    });
-  } catch (error) {
-    console.error('Error setting user role:', error);
-    throw error;
-  }
-};
-
-/**
- * Zablokuj/odblokuj użytkownika
- */
-export const setUserBlocked = async (
-  userId: string, 
-  blocked: boolean
-): Promise<void> => {
-  try {
-    const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, {
-      blocked,
-      updatedAt: serverTimestamp(),
-    });
-  } catch (error) {
-    console.error('Error blocking user:', error);
     throw error;
   }
 };

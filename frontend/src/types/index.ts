@@ -1,6 +1,4 @@
 // User types
-export type UserRole = 'user' | 'admin' | 'superadmin';
-
 export interface User {
   id: string; 
   username: string;
@@ -9,9 +7,7 @@ export interface User {
   avatar?: string;
   createdAt?: string;
   accountType?: 'client' | 'provider';
-  role?: UserRole;
   businessName?: string;
-  blocked?: boolean;
 }
 
 export interface LoginRequest {

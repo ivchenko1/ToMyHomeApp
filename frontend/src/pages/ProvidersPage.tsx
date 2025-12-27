@@ -201,15 +201,14 @@ const ProvidersPage = () => {
           const providerCategory = (p.category || '').toLowerCase();
           // Sprawdź profession
           const providerProfession = (p.profession || '').toLowerCase();
-          // Sprawdź services (nazwy usług)
-          const serviceNames = p.serviceNames?.map(s => s.toLowerCase()) || [];
-          const servicesText = serviceNames.join(' ');
+          // Sprawdź serviceNames
+          const serviceNamesText = (p.serviceNames || []).join(' ').toLowerCase();
           
           return categoryNames.some(cat => {
             const catLower = cat.toLowerCase();
             return providerCategory.includes(catLower) 
               || providerProfession.includes(catLower)
-              || servicesText.includes(catLower);
+              || serviceNamesText.includes(catLower);
           });
         });
       }
@@ -221,14 +220,13 @@ const ProvidersPage = () => {
           allProviders = allProviders.filter((p) => {
             const providerCategory = (p.category || '').toLowerCase();
             const providerProfession = (p.profession || '').toLowerCase();
-            const serviceNames = p.serviceNames?.map(s => s.toLowerCase()) || [];
-            const servicesText = serviceNames.join(' ');
+            const serviceNamesText = (p.serviceNames || []).join(' ').toLowerCase();
             
             return specCategories.some(cat => {
               const catLower = cat.toLowerCase();
               return providerCategory.includes(catLower) 
                 || providerProfession.includes(catLower)
-                || servicesText.includes(catLower);
+                || serviceNamesText.includes(catLower);
             });
           });
         }

@@ -1,4 +1,5 @@
 import { Calendar, User, ArrowRight, Clock } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const BlogPage = () => {
   const featuredPost = {
