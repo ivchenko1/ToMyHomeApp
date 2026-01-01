@@ -127,7 +127,24 @@ const ProviderDetailPage = () => {
   const [currentMonth] = useState({ month: 'Grudzień', year: 2025 });
 
   // Sprawdź czy użytkownik jest właścicielem tego profilu
-  const isOwner = user?.id && provider?.ownerId && user.id.toString() === provider.ownerId.toString();
+  const isOwner = (() => {
+    if (!user || !provider) return false;
+    
+    const userId = user.id?.toString() || user.uid?.toString() || '';
+    const providerOwnerId = provider.ownerId?.toString() || '';
+    
+    // Debug - usuń później
+    console.log('=== isOwner check ===');
+    console.log('user:', user);
+    console.log('user.id:', user.id);
+    console.log('user.uid:', user.uid);
+    console.log('userId:', userId);
+    console.log('provider.ownerId:', provider.ownerId);
+    console.log('providerOwnerId:', providerOwnerId);
+    console.log('Match:', userId === providerOwnerId && userId !== '');
+    
+    return userId === providerOwnerId && userId !== '';
+  })();
 
   // Załaduj dane usługodawcy z Firebase
   useEffect(() => {
