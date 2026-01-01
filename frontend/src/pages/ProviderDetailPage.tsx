@@ -126,6 +126,9 @@ const ProviderDetailPage = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [currentMonth] = useState({ month: 'Grudzień', year: 2025 });
 
+  // Sprawdź czy użytkownik jest właścicielem tego profilu
+  const isOwner = user?.id && provider?.ownerId && user.id.toString() === provider.ownerId.toString();
+
   // Załaduj dane usługodawcy z Firebase
   useEffect(() => {
     const loadProvider = async () => {
@@ -574,6 +577,40 @@ const ProviderDetailPage = () => {
           {/* Right Column - Booking */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-sm p-6 sticky top-20">
+              {isOwner ? (
+                /* Panel dla właściciela - bez rezerwacji */
+                <div className="text-center">
+                  <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-2xl">👁️</span>
+                  </div>
+                  <h3 className="text-lg font-bold mb-2">Podgląd profilu</h3>
+                  <p className="text-gray-500 text-sm mb-6">
+                    Tak widzą Cię klienci. Rezerwacje są wyłączone w tym widoku.
+                  </p>
+                  <div className="space-y-2">
+                    <button 
+                      onClick={() => navigate('/biznes/dodaj-usluge')} 
+                      className="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-medium hover:shadow-lg transition-all text-sm"
+                    >
+                      ✏️ Edytuj profil
+                    </button>
+                    <button 
+                      onClick={() => navigate('/biznes/uslugi')} 
+                      className="w-full py-2.5 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors text-sm"
+                    >
+                      📋 Zarządzaj usługami
+                    </button>
+                    <button 
+                      onClick={() => navigate('/biznes')} 
+                      className="w-full py-2.5 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors text-sm"
+                    >
+                      📊 Dashboard
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Normalny panel rezerwacji dla klientów */
+                <>
               <h3 className="text-lg font-bold mb-4">Zarezerwuj wizytę</h3>
               {selectedServices.length > 0 ? (
                 <div className="mb-4 p-4 bg-primary/5 rounded-xl">
@@ -660,6 +697,8 @@ const ProviderDetailPage = () => {
                 <MessageCircle className="w-5 h-5" />
                 Napisz wiadomość
               </button>
+                </>
+              )}
             </div>
           </div>
         </div>
