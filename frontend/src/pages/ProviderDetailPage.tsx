@@ -113,6 +113,11 @@ const ProviderDetailPage = () => {
   const { showToast } = useToast();
   const { user } = useAuth();
 
+  // TEST - sprawdź czy nowy kod się ładuje
+  useEffect(() => {
+    alert('NOWY KOD ZAŁADOWANY - ProviderDetailPage v2');
+  }, []);
+
   // State
   const [provider, setProvider] = useState<Provider | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -136,8 +141,14 @@ const ProviderDetailPage = () => {
       }
       
       try {
+        // TEST - usuń później
+        alert('Sprawdzam właściciela: user.id=' + user.id + ', profileId=' + id);
+        
         const myProviders = await providerService.getByOwner(user.id.toString());
         const ownsThisProfile = myProviders.some(p => p.id === id);
+        
+        alert('Moje providery: ' + myProviders.length + ', isOwner=' + ownsThisProfile);
+        
         setIsOwner(ownsThisProfile);
       } catch (error) {
         setIsOwner(false);
