@@ -125,26 +125,27 @@ const ProviderDetailPage = () => {
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [isFavorite, setIsFavorite] = useState(false);
   const [currentMonth] = useState({ month: 'Grudzień', year: 2025 });
+  const [isOwner, setIsOwner] = useState(false);
 
-  // Sprawdź czy użytkownik jest właścicielem tego profilu
-  const isOwner = (() => {
-    if (!user || !provider) return false;
+  // Sprawdź czy użytkownik jest właścicielem
+  useEffect(() => {
+    const checkOwnership = async () => {
+      if (!user?.id || !id) {
+        setIsOwner(false);
+        return;
+      }
+      
+      try {
+        const myProviders = await providerService.getByOwner(user.id.toString());
+        const ownsThisProfile = myProviders.some(p => p.id === id);
+        setIsOwner(ownsThisProfile);
+      } catch (error) {
+        setIsOwner(false);
+      }
+    };
     
-    const userId = user.id?.toString() || user.uid?.toString() || '';
-    const providerOwnerId = provider.ownerId?.toString() || '';
-    
-    // Debug - usuń później
-    console.log('=== isOwner check ===');
-    console.log('user:', user);
-    console.log('user.id:', user.id);
-    console.log('user.uid:', user.uid);
-    console.log('userId:', userId);
-    console.log('provider.ownerId:', provider.ownerId);
-    console.log('providerOwnerId:', providerOwnerId);
-    console.log('Match:', userId === providerOwnerId && userId !== '');
-    
-    return userId === providerOwnerId && userId !== '';
-  })();
+    checkOwnership();
+  }, [user?.id, id]);
 
   // Załaduj dane usługodawcy z Firebase
   useEffect(() => {
