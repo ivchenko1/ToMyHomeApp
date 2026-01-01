@@ -31,6 +31,11 @@ const BusinessWorkingHours = () => {
     sunday: 'Niedziela',
   };
 
+  // Jawna kolejność dni (chronologiczna)
+  const daysOrder: (keyof WorkingHours)[] = [
+    'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'
+  ];
+
   // Generuj opcje godzin
   const timeOptions: string[] = [];
   for (let h = 0; h < 24; h++) {
@@ -214,7 +219,7 @@ const BusinessWorkingHours = () => {
             <h3 className="font-semibold text-gray-900 mb-6">Dostosuj godziny dla każdego dnia</h3>
             
             <div className="space-y-4">
-              {(Object.keys(workingHours) as (keyof WorkingHours)[]).map((day) => (
+              {daysOrder.map((day) => (
                 <div
                   key={day}
                   className={`p-4 rounded-xl border-2 transition-all ${

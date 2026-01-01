@@ -112,6 +112,8 @@ const BusinessAddService = () => {
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [existingProviderId, setExistingProviderId] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [_imageFile, setImageFile] = useState<File | null>(null);
   
@@ -160,6 +162,52 @@ const BusinessAddService = () => {
 
   const [_newFeature, setNewFeature] = useState('');
   const [markerPosition, setMarkerPosition] = useState<[number, number]>([52.2297, 21.0122]);
+
+  // Wczytaj istniejący profil przy starcie
+  useEffect(() => {
+    const loadExistingProfile = async () => {
+      if (!user?.id) {
+        setIsLoadingProfile(false);
+        return;
+      }
+
+      try {
+        const providers = await providerService.getByOwner(user.id.toString());
+        if (providers.length > 0) {
+          const provider = providers[0];
+          setExistingProviderId(provider.id);
+          
+          // Wypełnij formularz istniejącymi danymi (bez usług - te dodajemy osobno)
+          setFormData(prev => ({
+            ...prev,
+            businessName: provider.name || prev.businessName,
+            profession: provider.profession || prev.profession,
+            description: provider.description || prev.description,
+            experience: provider.experience || prev.experience,
+            location: provider.location || prev.location,
+            features: provider.features || prev.features,
+            workingHours: provider.workingHours || prev.workingHours,
+            category: provider.category || prev.category,
+            travelRadius: provider.travelRadius || prev.travelRadius,
+          }));
+          
+          if (provider.location?.lat && provider.location?.lng) {
+            setMarkerPosition([provider.location.lat, provider.location.lng]);
+          }
+          
+          if (provider.image) {
+            setImagePreview(provider.image);
+          }
+        }
+      } catch (error) {
+        console.error('Błąd ładowania profilu:', error);
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    loadExistingProfile();
+  }, [user?.id]);
 
   // Search location using Nominatim (OpenStreetMap)
   const searchLocation = async (query: string) => {
@@ -410,8 +458,24 @@ const BusinessAddService = () => {
 
       if (existingProvider) {
         // Aktualizuj istniejący profil w Firebase
+        // WAŻNE: Połącz istniejące usługi z nowymi (nie nadpisuj!)
+        const existingServices = existingProvider.services || [];
+        const newServicesFromForm = providerData.services || [];
+        
+        // Połącz: stare usługi + nowe (unikaj duplikatów po ID)
+        const existingIds = new Set(existingServices.map((s: any) => s.id));
+        const uniqueNewServices = newServicesFromForm.filter((s: any) => !existingIds.has(s.id));
+        const mergedServices = [...existingServices, ...uniqueNewServices];
+        
         console.log('Aktualizuję istniejący profil:', existingProvider.id);
-        await providerService.update(existingProvider.id, providerData);
+        console.log('Istniejące usługi:', existingServices.length);
+        console.log('Nowe usługi:', newServicesFromForm.length);
+        console.log('Po połączeniu:', mergedServices.length);
+        
+        await providerService.update(existingProvider.id, {
+          ...providerData,
+          services: mergedServices,
+        });
         showToast('🎉 Profil zaktualizowany!', 'success');
       } else {
         // Utwórz nowy profil w Firebase
@@ -461,6 +525,16 @@ const BusinessAddService = () => {
     { number: 4, title: 'Szczegóły', icon: FileText },
   ];
 
+  // Pokaż loader podczas wczytywania profilu
+  if (isLoadingProfile) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <Loader2 className="w-12 h-12 animate-spin text-emerald-500 mb-4" />
+        <p className="text-gray-500">Wczytywanie danych...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto">
       {/* Header */}
@@ -472,9 +546,14 @@ const BusinessAddService = () => {
           <ArrowLeft className="w-5 h-5" />
           Wróć
         </button>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Dodaj nową usługę</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          {existingProviderId ? 'Dodaj nową usługę' : 'Utwórz profil usługodawcy'}
+        </h1>
         <p className="text-gray-600">
-          Stwórz profil swojej usługi i zacznij przyjmować klientów
+          {existingProviderId 
+            ? 'Dodaj kolejną usługę do swojego profilu. Dane firmy zostały wczytane.'
+            : 'Stwórz profil swojej usługi i zacznij przyjmować klientów'
+          }
         </p>
       </div>
 
