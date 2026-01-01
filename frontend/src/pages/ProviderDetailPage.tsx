@@ -125,38 +125,13 @@ const ProviderDetailPage = () => {
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [isFavorite, setIsFavorite] = useState(false);
   const [currentMonth] = useState({ month: 'Grudzień', year: 2025 });
-  const [isOwner, setIsOwner] = useState(false);
 
-  // Sprawdź czy to własny profil
-  useEffect(() => {
-    const checkOwnership = async () => {
-      if (!user?.id || !id) {
-        setIsOwner(false);
-        return;
-      }
-      
-      // Metoda 1: Porównaj ownerId
-      if (provider?.ownerId) {
-        const userId = String(user.id);
-        const ownerId = String(provider.ownerId);
-        if (userId === ownerId) {
-          setIsOwner(true);
-          return;
-        }
-      }
-      
-      // Metoda 2: Sprawdź przez getByOwner
-      try {
-        const myProviders = await providerService.getByOwner(String(user.id));
-        const isMyProfile = myProviders.some(p => p.id === id);
-        setIsOwner(isMyProfile);
-      } catch {
-        setIsOwner(false);
-      }
-    };
-    
-    checkOwnership();
-  }, [user?.id, id, provider?.ownerId]);
+  // Sprawdź czy to własny profil - PROSTO
+  const isOwner = Boolean(
+    user?.id && 
+    provider?.ownerId && 
+    String(user.id) === String(provider.ownerId)
+  );
 
   // Załaduj dane usługodawcy z Firebase
   useEffect(() => {

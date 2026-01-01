@@ -211,7 +211,6 @@ const BusinessServices = () => {
           </div>
           <Link
             to={`/uslugodawcy/profil/${profile.id}`}
-            target="_blank"
             className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
           >
             <Eye className="w-4 h-4" />
