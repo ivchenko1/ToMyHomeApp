@@ -113,11 +113,6 @@ const ProviderDetailPage = () => {
   const { showToast } = useToast();
   const { user } = useAuth();
 
-  // TEST - sprawdź czy nowy kod się ładuje
-  useEffect(() => {
-    alert('NOWY KOD ZAŁADOWANY - ProviderDetailPage v2');
-  }, []);
-
   // State
   const [provider, setProvider] = useState<Provider | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -132,7 +127,7 @@ const ProviderDetailPage = () => {
   const [currentMonth] = useState({ month: 'Grudzień', year: 2025 });
   const [isOwner, setIsOwner] = useState(false);
 
-  // Sprawdź czy użytkownik jest właścicielem
+  // Sprawdź czy to własny profil
   useEffect(() => {
     const checkOwnership = async () => {
       if (!user?.id || !id) {
@@ -140,23 +135,28 @@ const ProviderDetailPage = () => {
         return;
       }
       
+      // Metoda 1: Porównaj ownerId
+      if (provider?.ownerId) {
+        const userId = String(user.id);
+        const ownerId = String(provider.ownerId);
+        if (userId === ownerId) {
+          setIsOwner(true);
+          return;
+        }
+      }
+      
+      // Metoda 2: Sprawdź przez getByOwner
       try {
-        // TEST - usuń później
-        alert('Sprawdzam właściciela: user.id=' + user.id + ', profileId=' + id);
-        
-        const myProviders = await providerService.getByOwner(user.id.toString());
-        const ownsThisProfile = myProviders.some(p => p.id === id);
-        
-        alert('Moje providery: ' + myProviders.length + ', isOwner=' + ownsThisProfile);
-        
-        setIsOwner(ownsThisProfile);
-      } catch (error) {
+        const myProviders = await providerService.getByOwner(String(user.id));
+        const isMyProfile = myProviders.some(p => p.id === id);
+        setIsOwner(isMyProfile);
+      } catch {
         setIsOwner(false);
       }
     };
     
     checkOwnership();
-  }, [user?.id, id]);
+  }, [user?.id, id, provider?.ownerId]);
 
   // Załaduj dane usługodawcy z Firebase
   useEffect(() => {
@@ -658,21 +658,19 @@ const ProviderDetailPage = () => {
                   </div>
                 )}
               </div>
-              
-              {/* Przycisk rezerwacji - zablokowany dla właściciela */}
               <button 
                 onClick={confirmBooking} 
                 disabled={selectedServices.length === 0 || isSubmitting || isOwner} 
                 className={`w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
                   isOwner
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                     : selectedServices.length > 0 && !isSubmitting 
                       ? 'bg-gradient-to-r from-primary to-secondary text-white hover:shadow-lg hover:-translate-y-0.5' 
                       : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                 }`}
               >
                 {isOwner ? (
-                  '👁️ Podgląd - rezerwacja wyłączona'
+                  '🔒 To Twój profil'
                 ) : isSubmitting ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -684,8 +682,6 @@ const ProviderDetailPage = () => {
                   'Wybierz usługę'
                 )}
               </button>
-              
-              {/* Przycisk wiadomości - zablokowany dla właściciela */}
               <button 
                 onClick={() => {
                   if (isOwner) return;
@@ -698,21 +694,24 @@ const ProviderDetailPage = () => {
                 }} 
                 disabled={isOwner}
                 className={`w-full mt-3 py-3 border-2 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
-                  isOwner 
-                    ? 'border-gray-100 text-gray-400 cursor-not-allowed bg-gray-50'
+                  isOwner
+                    ? 'border-gray-200 text-gray-400 cursor-not-allowed'
                     : 'border-gray-200 text-gray-700 hover:border-primary hover:text-primary'
                 }`}
               >
                 <MessageCircle className="w-5 h-5" />
-                {isOwner ? 'Podgląd - wiadomości wyłączone' : 'Napisz wiadomość'}
+                {isOwner ? '🔒 To Twój profil' : 'Napisz wiadomość'}
               </button>
               
-              {/* Info dla właściciela */}
               {isOwner && (
-                <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                  <p className="text-xs text-amber-700 text-center">
-                    👁️ To jest podgląd Twojego profilu. Funkcje rezerwacji i wiadomości są wyłączone.
-                  </p>
+                <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-center">
+                  <p className="text-sm text-amber-700">👁️ Podgląd profilu - rezerwacje wyłączone</p>
+                  <button 
+                    onClick={() => navigate('/biznes/uslugi')}
+                    className="mt-2 text-sm text-amber-600 underline hover:text-amber-800"
+                  >
+                    Przejdź do panelu biznesowego
+                  </button>
                 </div>
               )}
             </div>
