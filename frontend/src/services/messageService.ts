@@ -77,24 +77,21 @@ export const messageService = {
     providerAvatar: string
   ): Promise<Conversation> {
     try {
-      // Szukaj istniejącej konwersacji po providerId i clientId
-      const q = query(
-        collection(db, CONVERSATIONS_COLLECTION),
-        where('providerId', '==', providerId),
-        where('clientId', '==', clientId)
-      );
-      const snapshot = await getDocs(q);
+      // Stałe ID konwersacji oparte na kliencie i providerze - zapobiega duplikatom
+      const conversationId = `conv_${clientId}_${providerId}`;
       
-      if (!snapshot.empty) {
-        return snapshot.docs[0].data() as Conversation;
+      // Sprawdź czy konwersacja już istnieje
+      const existingDoc = await getDoc(doc(db, CONVERSATIONS_COLLECTION, conversationId));
+      
+      if (existingDoc.exists()) {
+        return existingDoc.data() as Conversation;
       }
       
       // Utwórz nową konwersację
-      const id = generateId();
       const now = new Date().toISOString();
       
       const conversation: Conversation = {
-        id,
+        id: conversationId,
         participants: [clientId, providerOwnerId],
         participantNames: {
           [clientId]: clientName,
@@ -119,7 +116,7 @@ export const messageService = {
         createdAt: now,
       };
       
-      await setDoc(doc(db, CONVERSATIONS_COLLECTION, id), conversation);
+      await setDoc(doc(db, CONVERSATIONS_COLLECTION, conversationId), conversation);
       return conversation;
     } catch (error) {
       console.error('getOrCreateConversation error:', error);
@@ -180,7 +177,17 @@ export const messageService = {
     );
     
     return onSnapshot(q, (snapshot) => {
-      const conversations = snapshot.docs.map(doc => doc.data() as Conversation);
+      const conversationsMap = new Map<string, Conversation>();
+      
+      // Deduplikacja po ID konwersacji
+      snapshot.docs.forEach(doc => {
+        const conv = doc.data() as Conversation;
+        if (!conversationsMap.has(conv.id)) {
+          conversationsMap.set(conv.id, conv);
+        }
+      });
+      
+      const conversations = Array.from(conversationsMap.values());
       conversations.sort((a, b) => 
         new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
       );

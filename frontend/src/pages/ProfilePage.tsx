@@ -28,6 +28,8 @@ import {
   changePassword,
   deleteUserAccount 
 } from '../services/userService';
+import favoriteService, { Favorite } from '../services/favoriteService';
+import { Link } from 'react-router-dom';
 
 type SectionType =
   | 'dashboard'
@@ -44,12 +46,47 @@ const ProfilePage = () => {
   const { showToast } = useToast();
   const [activeSection, setActiveSection] = useState<SectionType>('dashboard');
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [favorites, setFavorites] = useState<Favorite[]>([]);
+  const [favoritesLoading, setFavoritesLoading] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/auth');
     }
   }, [isAuthenticated, navigate]);
+
+  // Ładuj ulubione gdy zmienia się sekcja na favorites
+  useEffect(() => {
+    const loadFavorites = async () => {
+      if (activeSection !== 'favorites' || !user?.id) return;
+      
+      setFavoritesLoading(true);
+      try {
+        const favs = await favoriteService.getByUser(String(user.id));
+        setFavorites(favs);
+      } catch (error) {
+        console.error('Error loading favorites:', error);
+        showToast('Błąd ładowania ulubionych', 'error');
+      } finally {
+        setFavoritesLoading(false);
+      }
+    };
+    
+    loadFavorites();
+  }, [activeSection, user?.id]);
+
+  // Usuń z ulubionych
+  const removeFavorite = async (providerId: string) => {
+    if (!user?.id) return;
+    
+    try {
+      await favoriteService.remove(String(user.id), providerId);
+      setFavorites(prev => prev.filter(f => f.providerId !== providerId));
+      showToast('Usunięto z ulubionych', 'success');
+    } catch (error) {
+      showToast('Błąd podczas usuwania', 'error');
+    }
+  };
 
   const menuItems = [
     { id: 'dashboard', label: 'Panel Główny', icon: Home },
@@ -219,9 +256,60 @@ const ProfilePage = () => {
 
       case 'favorites':
         return (
-          <div className="text-center py-16">
-            <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">Nie masz jeszcze ulubionych miejsc.</p>
+          <div>
+            {favoritesLoading ? (
+              <div className="text-center py-16">
+                <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
+                <p className="text-gray-500">Ładowanie ulubionych...</p>
+              </div>
+            ) : favorites.length === 0 ? (
+              <div className="text-center py-16">
+                <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 mb-4">Nie masz jeszcze ulubionych miejsc.</p>
+                <Link 
+                  to="/uslugodawcy" 
+                  className="inline-block px-6 py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 transition-colors"
+                >
+                  Przeglądaj usługodawców
+                </Link>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {favorites.map((fav) => (
+                  <div key={fav.id} className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 hover:shadow-md transition-shadow">
+                    <Link to={`/uslugodawcy/profil/${fav.providerId}`}>
+                      <div className="relative h-40">
+                        <img 
+                          src={fav.providerImage || 'https://via.placeholder.com/300x200'} 
+                          alt={fav.providerName}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                        <div className="absolute bottom-3 left-3 text-white">
+                          <h3 className="font-bold">{fav.providerName}</h3>
+                          <p className="text-sm text-white/80">{fav.providerProfession}</p>
+                        </div>
+                      </div>
+                    </Link>
+                    <div className="p-3 flex items-center justify-between">
+                      <Link 
+                        to={`/uslugodawcy/profil/${fav.providerId}`}
+                        className="text-sm text-primary font-medium hover:underline"
+                      >
+                        Zobacz profil
+                      </Link>
+                      <button
+                        onClick={() => removeFavorite(fav.providerId)}
+                        className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                        title="Usuń z ulubionych"
+                      >
+                        <Heart className="w-5 h-5 fill-current" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         );
 

@@ -15,7 +15,8 @@ import {
   Clock,
   Heart,
   MessageCircle,
-
+  ChevronLeft,
+  ChevronRight,
   Award,
   Shield,
   Share2,
@@ -24,6 +25,7 @@ import {
 import { useToast, useAuth } from '../App';
 import providerService, { Provider, ServiceItem } from '../services/providerService';
 import bookingService from '../services/bookingService';
+import favoriteService from '../services/favoriteService';
 
 // ============================================
 // KOMPONENTY POMOCNICZE
@@ -124,7 +126,73 @@ const ProviderDetailPage = () => {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [currentMonth] = useState({ month: 'Grudzień', year: 2025 });
+  const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  // Sprawdź czy jest w ulubionych
+  useEffect(() => {
+    const checkFavorite = async () => {
+      if (!user?.id || !id) return;
+      try {
+        const isFav = await favoriteService.isFavorite(String(user.id), id);
+        setIsFavorite(isFav);
+      } catch (error) {
+        console.error('Error checking favorite:', error);
+      }
+    };
+    checkFavorite();
+  }, [user?.id, id]);
+
+  // Toggle ulubione
+  const toggleFavorite = async () => {
+    if (!user?.id) {
+      showToast('Zaloguj się, aby dodać do ulubionych', 'info');
+      navigate(`/auth?mode=login&redirect=/uslugodawcy/profil/${id}`);
+      return;
+    }
+    if (!provider) return;
+
+    setIsFavoriteLoading(true);
+    try {
+      const newState = await favoriteService.toggle(String(user.id), {
+        id: provider.id,
+        name: provider.name,
+        image: provider.image,
+        profession: provider.profession,
+      });
+      setIsFavorite(newState);
+      showToast(newState ? '❤️ Dodano do ulubionych' : 'Usunięto z ulubionych', 'success');
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      showToast('Błąd podczas zapisywania', 'error');
+    } finally {
+      setIsFavoriteLoading(false);
+    }
+  };
+
+  // Nazwy miesięcy po polsku
+  const monthNames = [
+    'Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec',
+    'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'
+  ];
+
+  // Nawigacja między miesiącami
+  const goToPrevMonth = () => {
+    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+    setSelectedDate(null);
+  };
+
+  const goToNextMonth = () => {
+    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+    setSelectedDate(null);
+  };
+
+  // Czy można cofnąć się do poprzedniego miesiąca (nie wcześniej niż obecny)
+  const canGoPrev = () => {
+    const now = new Date();
+    return currentDate.getFullYear() > now.getFullYear() || 
+           (currentDate.getFullYear() === now.getFullYear() && currentDate.getMonth() > now.getMonth());
+  };
 
   // Sprawdź czy to własny profil - PROSTO
   const isOwner = Boolean(
@@ -196,7 +264,9 @@ const ProviderDetailPage = () => {
   const generateCalendarDays = () => {
     const today = new Date();
     const days = [];
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const firstDay = new Date(year, month, 1);
     const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
     
     // Mapowanie dnia tygodnia na klucz workingHours
@@ -210,9 +280,10 @@ const ProviderDetailPage = () => {
       0: 'sunday',
     };
     
-    for (let i = 0; i < 35; i++) {
-      const date = new Date(today.getFullYear(), today.getMonth(), i - startDay + 1);
-      const isCurrentMonth = date.getMonth() === today.getMonth();
+    for (let i = 0; i < 42; i++) {
+      const dayNum = i - startDay + 1;
+      const date = new Date(year, month, dayNum);
+      const isCurrentMonth = date.getMonth() === month;
       const isPast = date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
       
       // Sprawdź czy dzień jest zamknięty według workingHours
@@ -228,6 +299,7 @@ const ProviderDetailPage = () => {
         disabled: !isCurrentMonth || isPast || isClosed,
         isClosed,
         fullDate: date,
+        isCurrentMonth,
       });
     }
     return days;
@@ -240,19 +312,20 @@ const ProviderDetailPage = () => {
     const loadBookedSlots = async () => {
       if (!provider?.id || !selectedDate) return;
       
-      const now = new Date();
-      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`;
+      // Użyj wybranego miesiąca/roku z kalendarza
+      const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`;
       
       const slots = await bookingService.getBookedSlots(provider.id, dateStr);
       setBookedSlots(slots);
     };
     
     loadBookedSlots();
-  }, [provider?.id, selectedDate]);
+  }, [provider?.id, selectedDate, currentDate]);
 
   // Mapowanie dnia tygodnia na klucz workingHours
-  const getDayKey = (date: Date): keyof typeof provider.workingHours | null => {
-    const dayMap: { [key: number]: keyof typeof provider.workingHours } = {
+  type DayKey = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+  const getDayKey = (date: Date): DayKey | null => {
+    const dayMap: { [key: number]: DayKey } = {
       1: 'monday',
       2: 'tuesday',
       3: 'wednesday',
@@ -272,9 +345,9 @@ const ProviderDetailPage = () => {
 
     const slots: { time: string; disabled: boolean }[] = [];
     
-    // Znajdź pełną datę dla wybranego dnia
+    // Znajdź pełną datę dla wybranego dnia (używając wybranego miesiąca)
     const now = new Date();
-    const selectedFullDate = new Date(now.getFullYear(), now.getMonth(), selectedDate);
+    const selectedFullDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), selectedDate);
     const dayKey = getDayKey(selectedFullDate);
     
     if (!dayKey) return [];
@@ -318,16 +391,6 @@ const ProviderDetailPage = () => {
   };
 
   const timeSlots = generateTimeSlots();
-  
-  // Sprawdź czy wybrany dzień jest otwarty
-  const isSelectedDayOpen = () => {
-    if (!provider || !selectedDate) return true;
-    const now = new Date();
-    const selectedFullDate = new Date(now.getFullYear(), now.getMonth(), selectedDate);
-    const dayKey = getDayKey(selectedFullDate);
-    if (!dayKey) return false;
-    return provider.workingHours[dayKey].enabled;
-  };
 
   // Potwierdź rezerwację - tworzy prawdziwą rezerwację w Firebase
   const confirmBooking = async () => {
@@ -353,8 +416,8 @@ const ProviderDetailPage = () => {
     console.log('Creating booking for user:', user.id);
 
     try {
-      const now = new Date();
-      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`;
+      // Użyj wybranego miesiąca/roku z kalendarza
+      const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`;
       
       // Sprawdź czy termin jest wolny
       const isAvailable = await bookingService.isTimeSlotAvailable(provider.id, dateStr, selectedTime);
@@ -440,7 +503,11 @@ const ProviderDetailPage = () => {
               <span className="hidden sm:inline">Wróć</span>
             </button>
             <div className="flex items-center gap-2">
-              <button onClick={() => setIsFavorite(!isFavorite)} className={`p-2 rounded-full transition-colors ${isFavorite ? 'text-red-500 bg-red-50' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'}`}>
+              <button 
+                onClick={toggleFavorite} 
+                disabled={isFavoriteLoading}
+                className={`p-2 rounded-full transition-colors ${isFavorite ? 'text-red-500 bg-red-50' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'}`}
+              >
                 <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
               </button>
               <button className="p-2 rounded-full text-gray-400 hover:text-primary hover:bg-primary/10 transition-colors">
@@ -593,11 +660,48 @@ const ProviderDetailPage = () => {
                 <p className="text-sm text-gray-500 mb-4 p-4 bg-gray-50 rounded-xl">Wybierz usługi z listy</p>
               )}
               <div className="mb-4">
-                <div className="flex justify-between items-center mb-2"><label className="text-sm font-medium text-gray-700">Data</label><span className="text-sm text-gray-500">{currentMonth.month} {currentMonth.year}</span></div>
+                <div className="flex justify-between items-center mb-3">
+                  <label className="text-sm font-medium text-gray-700">Data</label>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={goToPrevMonth}
+                      disabled={!canGoPrev()}
+                      className={`p-1 rounded-full transition-colors ${canGoPrev() ? 'hover:bg-gray-100 text-gray-600' : 'text-gray-300 cursor-not-allowed'}`}
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <span className="text-sm font-medium text-gray-700 min-w-[120px] text-center">
+                      {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                    </span>
+                    <button 
+                      onClick={goToNextMonth}
+                      className="p-1 rounded-full hover:bg-gray-100 text-gray-600 transition-colors"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
                 <div className="grid grid-cols-7 gap-1 text-center">
                   {['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'].map(d => <div key={d} className="text-xs font-medium text-gray-400 py-1">{d}</div>)}
-                  {calendarDays.slice(0, 35).map((d, i) => (
-                    <button key={i} disabled={d.disabled} onClick={() => !d.disabled && setSelectedDate(d.day)} className={`aspect-square text-sm rounded-lg transition-colors ${d.disabled ? 'opacity-30 cursor-not-allowed' : selectedDate === d.day ? 'bg-primary text-white' : d.isToday ? 'ring-2 ring-primary text-primary' : 'hover:bg-gray-100'}`}>{d.day}</button>
+                  {calendarDays.slice(0, 42).map((d, i) => (
+                    <button 
+                      key={i} 
+                      disabled={d.disabled} 
+                      onClick={() => !d.disabled && setSelectedDate(d.day)} 
+                      className={`aspect-square text-sm rounded-lg transition-colors ${
+                        !d.isCurrentMonth 
+                          ? 'text-gray-300' 
+                          : d.disabled 
+                            ? 'opacity-30 cursor-not-allowed' 
+                            : selectedDate === d.day 
+                              ? 'bg-primary text-white' 
+                              : d.isToday 
+                                ? 'ring-2 ring-primary text-primary' 
+                                : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      {d.day}
+                    </button>
                   ))}
                 </div>
               </div>
@@ -715,7 +819,7 @@ const ProviderDetailPage = () => {
                 </p>
               </div>
               <div className="bg-gray-50 rounded-xl p-4 text-left mb-4">
-                <p className="text-sm mb-1"><strong>Data:</strong> {selectedDate} {currentMonth.month}</p>
+                <p className="text-sm mb-1"><strong>Data:</strong> {selectedDate} {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</p>
                 <p className="text-sm mb-1"><strong>Godzina:</strong> {selectedTime}</p>
                 <p className="text-sm mb-1"><strong>Usługi:</strong> {selectedServices.map(s => s.name).join(', ')}</p>
                 <p className="text-sm"><strong>Łącznie:</strong> {totalPrice} zł</p>

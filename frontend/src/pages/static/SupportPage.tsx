@@ -1,4 +1,4 @@
-import { MessageCircle, Phone, Mail, Clock, FileText, HelpCircle, ChevronRight, ExternalLink } from 'lucide-react';
+import { MessageCircle, Phone, Mail, Clock, FileText, HelpCircle, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const SupportPage = () => {
