@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { Eye, EyeOff, User, Briefcase, ArrowLeft, Check, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, User, Briefcase, ArrowLeft, Check, Loader2, Mail, RefreshCw } from 'lucide-react';
 import { useAuth, useToast } from '../App';
 import PhoneInput, { validatePhoneNumber } from '../components/PhoneInput';
 
@@ -8,7 +8,8 @@ import PhoneInput, { validatePhoneNumber } from '../components/PhoneInput';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
-  updateProfile
+  updateProfile,
+  sendEmailVerification
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
@@ -46,6 +47,9 @@ const AuthPage = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
+  const [resendingEmail, setResendingEmail] = useState(false);
 
   // Handle URL params
   useEffect(() => {
@@ -80,7 +84,18 @@ const AuthPage = () => {
     setIsLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, loginData.email, loginData.password);
+      const userCredential = await signInWithEmailAndPassword(auth, loginData.email, loginData.password);
+      
+      // Sprawdź czy email jest zweryfikowany
+      if (!userCredential.user.emailVerified) {
+        // Wyloguj użytkownika
+        await auth.signOut();
+        setVerificationEmail(loginData.email);
+        setError('Twój email nie został zweryfikowany. Sprawdź skrzynkę pocztową i kliknij link weryfikacyjny.');
+        setVerificationSent(true);
+        setIsLoading(false);
+        return;
+      }
       
       showToast('Logowanie pomyślne! Witaj z powrotem!', 'success');
       const redirect = searchParams.get('redirect');
@@ -115,6 +130,32 @@ const AuthPage = () => {
       showToast('Błąd logowania', 'error');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Wyślij ponownie email weryfikacyjny
+  const resendVerificationEmail = async () => {
+    if (!verificationEmail) return;
+    
+    setResendingEmail(true);
+    try {
+      // Musimy zalogować użytkownika tymczasowo aby wysłać email
+      const userCredential = await signInWithEmailAndPassword(auth, verificationEmail, loginData.password);
+      await sendEmailVerification(userCredential.user, {
+        url: window.location.origin + '/#/auth?mode=login&verified=true',
+        handleCodeInApp: false,
+      });
+      await auth.signOut();
+      showToast('Email weryfikacyjny został wysłany ponownie!', 'success');
+    } catch (err: any) {
+      console.error('Resend error:', err);
+      if (err.code === 'auth/too-many-requests') {
+        showToast('Poczekaj chwilę przed ponownym wysłaniem', 'error');
+      } else {
+        showToast('Nie udało się wysłać emaila. Spróbuj się zalogować ponownie.', 'error');
+      }
+    } finally {
+      setResendingEmail(false);
     }
   };
 
@@ -208,17 +249,23 @@ const AuthPage = () => {
         })
       });
 
-      showToast('Konto utworzone pomyślnie! Witamy w ToMyHomeApp!', 'success');
+      // 4. Wyślij email weryfikacyjny
+      await sendEmailVerification(user, {
+        url: window.location.origin + '/#/auth?mode=login&verified=true',
+        handleCodeInApp: false,
+      });
+
+      // Wyloguj użytkownika - musi zweryfikować email przed zalogowaniem
+      await auth.signOut();
+
+      showToast('Konto utworzone! Sprawdź swoją skrzynkę email i kliknij link weryfikacyjny.', 'success');
       
-      // Poczekaj chwilę aż onAuthStateChanged zaktualizuje stan
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Przekieruj na stronę informacyjną o weryfikacji
+      setMode('login');
+      setError('');
+      setVerificationSent(true);
+      setVerificationEmail(registerData.email);
       
-      // Redirect based on account type
-      if (registerData.accountType === 'provider') {
-        navigate('/biznes/dodaj-usluge');
-      } else {
-        navigate('/');
-      }
     } catch (err: any) {
       console.error('Registration error:', err);
       
@@ -341,6 +388,37 @@ const AuthPage = () => {
               <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm flex items-start gap-2">
                 <span>⚠️</span>
                 <span>{error}</span>
+              </div>
+            )}
+
+            {/* Komunikat o weryfikacji email */}
+            {verificationSent && (
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Mail className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-blue-900">Sprawdź swoją skrzynkę</h3>
+                    <p className="text-sm text-blue-700">{verificationEmail}</p>
+                  </div>
+                </div>
+                <p className="text-sm text-blue-700 mb-3">
+                  Wysłaliśmy link weryfikacyjny na Twój adres email. Kliknij w link aby aktywować konto.
+                </p>
+                <button
+                  type="button"
+                  onClick={resendVerificationEmail}
+                  disabled={resendingEmail}
+                  className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
+                >
+                  {resendingEmail ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" />
+                  )}
+                  {resendingEmail ? 'Wysyłanie...' : 'Wyślij ponownie'}
+                </button>
               </div>
             )}
 
