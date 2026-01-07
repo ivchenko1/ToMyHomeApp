@@ -487,9 +487,19 @@ const BusinessAddService = () => {
       }
 
       navigate('/biznes/uslugi');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Błąd zapisywania:', error);
-      showToast('Błąd podczas zapisywania', 'error');
+      
+      // Obsłuż błąd duplikatu nazwy
+      if (error.message === 'DUPLICATE_NAME') {
+        showToast('❌ Salon o takiej nazwie już istnieje! Wybierz inną nazwę.', 'error');
+        setCurrentStep(1); // Wróć do kroku z nazwą
+      } else if (error.message === 'DUPLICATE_PHONE') {
+        showToast('❌ Ten numer telefonu jest już używany przez inny salon!', 'error');
+        setCurrentStep(2); // Wróć do kroku z lokalizacją/kontaktem
+      } else {
+        showToast('Błąd podczas zapisywania', 'error');
+      }
     } finally {
       setIsLoading(false);
     }
