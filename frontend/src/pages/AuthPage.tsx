@@ -86,8 +86,15 @@ const AuthPage = () => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, loginData.email, loginData.password);
       
-      // Sprawdź czy email jest zweryfikowany
-      if (!userCredential.user.emailVerified) {
+      // Sprawdź czy email jest zweryfikowany (tylko dla nowych kont)
+      // Stare konta (utworzone przed 2026-01-08) nie wymagają weryfikacji
+      const creationTime = userCredential.user.metadata.creationTime;
+      const accountCreatedAt = creationTime ? new Date(creationTime) : new Date(0);
+      const verificationRequiredAfter = new Date('2026-01-08');
+      
+      const isNewAccount = accountCreatedAt > verificationRequiredAfter;
+      
+      if (isNewAccount && !userCredential.user.emailVerified) {
         // Wyloguj użytkownika
         await auth.signOut();
         setVerificationEmail(loginData.email);
