@@ -210,6 +210,9 @@ const AuthPage = () => {
 
       showToast('Konto utworzone pomyślnie! Witamy w ToMyHomeApp!', 'success');
       
+      // Poczekaj chwilę aż onAuthStateChanged zaktualizuje stan
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       // Redirect based on account type
       if (registerData.accountType === 'provider') {
         navigate('/biznes/dodaj-usluge');
