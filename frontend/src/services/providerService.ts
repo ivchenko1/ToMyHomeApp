@@ -312,7 +312,7 @@ export const providerService = {
                 if (excludeId && provider.id === excludeId) continue;
                 
                 // Porównaj znormalizowane numery (tylko cyfry)
-                const providerPhone = (provider.phone || '').replace(/\D/g, '');
+                const providerPhone = (provider.ownerPhone || '').replace(/\D/g, '');
                 if (providerPhone && providerPhone.includes(normalizedPhone.slice(-9))) {
                     return false;
                 }
@@ -337,8 +337,8 @@ export const providerService = {
         }
 
         // Sprawdź unikalność telefonu
-        if (data.phone) {
-            const isPhoneUnique = await this.isPhoneUnique(data.phone);
+        if (data.ownerPhone) {
+            const isPhoneUnique = await this.isPhoneUnique(data.ownerPhone);
             if (!isPhoneUnique) {
                 throw new Error('DUPLICATE_PHONE');
             }
@@ -379,8 +379,8 @@ export const providerService = {
             }
 
             // Sprawdź unikalność telefonu (jeśli się zmienia)
-            if (data.phone && data.phone !== existing.phone) {
-                const isPhoneUnique = await this.isPhoneUnique(data.phone, id);
+            if (data.ownerPhone && data.ownerPhone !== existing.ownerPhone) {
+                const isPhoneUnique = await this.isPhoneUnique(data.ownerPhone, id);
                 if (!isPhoneUnique) {
                     throw new Error('DUPLICATE_PHONE');
                 }
