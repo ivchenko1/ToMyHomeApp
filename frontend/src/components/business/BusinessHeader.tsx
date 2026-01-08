@@ -50,8 +50,7 @@ const BusinessHeader = () => {
 
   // Oznacz powiadomienie jako przeczytane
   const markAsRead = async (notificationId: string) => {
-    if (!user?.id) return;
-    await notificationService.markAsRead(user.id, notificationId);
+    await notificationService.markAsRead(notificationId);
   };
 
   // Oznacz wszystkie jako przeczytane
@@ -64,14 +63,22 @@ const BusinessHeader = () => {
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'booking':
+      case 'booking_request':
+      case 'booking_confirmed':
         return <Calendar className="w-4 h-4 text-emerald-500" />;
       case 'message':
+      case 'new_message':
         return <MessageSquare className="w-4 h-4 text-blue-500" />;
       case 'payment':
         return <CreditCard className="w-4 h-4 text-purple-500" />;
       default:
         return <Bell className="w-4 h-4 text-gray-500" />;
     }
+  };
+
+  // Pobierz link z powiadomienia
+  const getNotificationLink = (notification: Notification): string | undefined => {
+    return notification.data?.link;
   };
 
   // Zamknij dropdown po kliknięciu poza
@@ -164,13 +171,15 @@ const BusinessHeader = () => {
                         <p className="text-sm">Brak powiadomień</p>
                       </div>
                     ) : (
-                      notifications.map((notification) => (
+                      notifications.map((notification) => {
+                        const link = getNotificationLink(notification);
+                        return (
                         <div
                           key={notification.id}
                           onClick={() => {
                             markAsRead(notification.id);
-                            if (notification.link) {
-                              navigate(notification.link);
+                            if (link) {
+                              navigate(link);
                             }
                             setShowNotifications(false);
                           }}
@@ -194,7 +203,8 @@ const BusinessHeader = () => {
                             )}
                           </div>
                         </div>
-                      ))
+                      );
+                      })
                     )}
                   </div>
                   
