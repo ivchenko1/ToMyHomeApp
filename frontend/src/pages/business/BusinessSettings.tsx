@@ -685,90 +685,87 @@ const BusinessSettings = () => {
               </div>
 
               <div className="space-y-6">
-                {/* Email Notifications */}
-                <div>
+                {/* Email Notifications - DISABLED */}
+                <div className="opacity-50">
                   <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
                     <Mail className="w-5 h-5 text-gray-400" />
                     Powiadomienia email
+                    <span className="text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full">Wkrótce</span>
                   </h3>
                   <div className="space-y-3">
-                    <label className="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-not-allowed">
                       <div>
-                        <p className="font-medium text-gray-900">Nowe rezerwacje</p>
-                        <p className="text-sm text-gray-500">Otrzymuj email gdy ktoś zarezerwuje wizytę</p>
+                        <p className="font-medium text-gray-400">Nowe rezerwacje</p>
+                        <p className="text-sm text-gray-400">Otrzymuj email gdy ktoś zarezerwuje wizytę</p>
                       </div>
                       <input
                         type="checkbox"
-                        checked={notifications.emailBookings}
-                        onChange={(e) => setNotifications({ ...notifications, emailBookings: e.target.checked })}
-                        className="w-5 h-5 rounded text-emerald-500 focus:ring-emerald-500"
+                        disabled
+                        className="w-5 h-5 rounded text-gray-300 cursor-not-allowed"
                       />
-                    </label>
+                    </div>
 
-                    <label className="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-not-allowed">
                       <div>
-                        <p className="font-medium text-gray-900">Nowe wiadomości</p>
-                        <p className="text-sm text-gray-500">Otrzymuj email gdy ktoś wyśle wiadomość</p>
+                        <p className="font-medium text-gray-400">Nowe wiadomości</p>
+                        <p className="text-sm text-gray-400">Otrzymuj email gdy ktoś wyśle wiadomość</p>
                       </div>
                       <input
                         type="checkbox"
-                        checked={notifications.emailMessages}
-                        onChange={(e) => setNotifications({ ...notifications, emailMessages: e.target.checked })}
-                        className="w-5 h-5 rounded text-emerald-500 focus:ring-emerald-500"
+                        disabled
+                        className="w-5 h-5 rounded text-gray-300 cursor-not-allowed"
                       />
-                    </label>
+                    </div>
 
-                    <label className="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-not-allowed">
                       <div>
-                        <p className="font-medium text-gray-900">Newsletter i promocje</p>
-                        <p className="text-sm text-gray-500">Informacje o nowościach i promocjach</p>
+                        <p className="font-medium text-gray-400">Newsletter i promocje</p>
+                        <p className="text-sm text-gray-400">Informacje o nowościach i promocjach</p>
                       </div>
                       <input
                         type="checkbox"
-                        checked={notifications.emailMarketing}
-                        onChange={(e) => setNotifications({ ...notifications, emailMarketing: e.target.checked })}
-                        className="w-5 h-5 rounded text-emerald-500 focus:ring-emerald-500"
+                        disabled
+                        className="w-5 h-5 rounded text-gray-300 cursor-not-allowed"
                       />
-                    </label>
+                    </div>
                   </div>
                 </div>
 
-                {/* SMS Notifications */}
-                <div>
+                {/* SMS Notifications - DISABLED */}
+                <div className="opacity-50">
                   <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
                     <Phone className="w-5 h-5 text-gray-400" />
                     Powiadomienia SMS
+                    <span className="text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full">Wkrótce</span>
                   </h3>
                   <div className="space-y-3">
-                    <label className="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-not-allowed">
                       <div>
-                        <p className="font-medium text-gray-900">Nowe rezerwacje</p>
-                        <p className="text-sm text-gray-500">Otrzymuj SMS gdy ktoś zarezerwuje wizytę</p>
+                        <p className="font-medium text-gray-400">Nowe rezerwacje</p>
+                        <p className="text-sm text-gray-400">Otrzymuj SMS gdy ktoś zarezerwuje wizytę</p>
                       </div>
                       <input
                         type="checkbox"
-                        checked={notifications.smsBookings}
-                        onChange={(e) => setNotifications({ ...notifications, smsBookings: e.target.checked })}
-                        className="w-5 h-5 rounded text-emerald-500 focus:ring-emerald-500"
+                        disabled
+                        className="w-5 h-5 rounded text-gray-300 cursor-not-allowed"
                       />
-                    </label>
+                    </div>
 
-                    <label className="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-not-allowed">
                       <div>
-                        <p className="font-medium text-gray-900">Przypomnienia o wizytach</p>
-                        <p className="text-sm text-gray-500">Otrzymuj SMS przed nadchodzącą wizytą</p>
+                        <p className="font-medium text-gray-400">Przypomnienia o wizytach</p>
+                        <p className="text-sm text-gray-400">Otrzymuj SMS przed nadchodzącą wizytą</p>
                       </div>
                       <input
                         type="checkbox"
-                        checked={notifications.smsReminders}
-                        onChange={(e) => setNotifications({ ...notifications, smsReminders: e.target.checked })}
-                        className="w-5 h-5 rounded text-emerald-500 focus:ring-emerald-500"
+                        disabled
+                        className="w-5 h-5 rounded text-gray-300 cursor-not-allowed"
                       />
-                    </label>
+                    </div>
                   </div>
                 </div>
 
-                {/* Push Notifications */}
+                {/* Push Notifications - ACTIVE */}
                 <div>
                   <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
                     <Bell className="w-5 h-5 text-gray-400" />

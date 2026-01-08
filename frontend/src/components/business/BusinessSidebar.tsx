@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -10,6 +11,8 @@ import {
   HelpCircle,
   Clock,
 } from 'lucide-react';
+import { useAuth } from '../../App';
+import messageService from '../../services/messageService';
 
 interface BusinessSidebarProps {
   isOpen?: boolean;
@@ -18,6 +21,25 @@ interface BusinessSidebarProps {
 
 const BusinessSidebar = ({ isOpen = true, onClose }: BusinessSidebarProps) => {
   const location = useLocation();
+  const { user } = useAuth();
+  const [unreadMessages, setUnreadMessages] = useState(0);
+
+  // Subskrybuj nieprzeczytane wiadomości
+  useEffect(() => {
+    if (!user?.id) {
+      setUnreadMessages(0);
+      return;
+    }
+    
+    const unsubscribe = messageService.subscribeToUnreadCount(
+      user.id,
+      (count) => {
+        setUnreadMessages(count);
+      }
+    );
+    
+    return () => unsubscribe();
+  }, [user?.id]);
 
   const menuItems = [
     { 
@@ -50,7 +72,7 @@ const BusinessSidebar = ({ isOpen = true, onClose }: BusinessSidebarProps) => {
       icon: MessageSquare, 
       label: 'Wiadomości', 
       to: '/biznes/wiadomosci',
-      badge: 3
+      hasBadge: true
     },
     { 
       icon: BarChart3, 
@@ -116,15 +138,13 @@ const BusinessSidebar = ({ isOpen = true, onClose }: BusinessSidebarProps) => {
               >
                 <item.icon className="w-5 h-5" />
                 <span className="flex-1">{item.label}</span>
-                {item.badge && (
+                {item.hasBadge && unreadMessages > 0 && (
                   <span className={`
-                    px-2 py-0.5 text-xs font-bold rounded-full
+                    w-2.5 h-2.5 rounded-full
                     ${isActive(item.to, item.exact) 
-                      ? 'bg-white/20 text-white' 
-                      : 'bg-red-100 text-red-600'}
-                  `}>
-                    {item.badge}
-                  </span>
+                      ? 'bg-white' 
+                      : 'bg-red-500'}
+                  `} />
                 )}
               </Link>
             ))}

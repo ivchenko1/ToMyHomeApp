@@ -76,10 +76,10 @@ const ProfilePage = () => {
     loadBookings();
   }, [user?.id]);
 
-  // Ładuj ulubione gdy zmienia się sekcja na favorites
+  // Ładuj ulubione przy starcie
   useEffect(() => {
     const loadFavorites = async () => {
-      if (activeSection !== 'favorites' || !user?.id) return;
+      if (!user?.id) return;
       
       setFavoritesLoading(true);
       try {
@@ -87,14 +87,13 @@ const ProfilePage = () => {
         setFavorites(favs);
       } catch (error) {
         console.error('Error loading favorites:', error);
-        showToast('Błąd ładowania ulubionych', 'error');
       } finally {
         setFavoritesLoading(false);
       }
     };
     
     loadFavorites();
-  }, [activeSection, user?.id]);
+  }, [user?.id]);
 
   // Pobierz nadchodzące wizyty (od dziś)
   const getUpcomingBookings = () => {
@@ -275,6 +274,9 @@ const ProfilePage = () => {
   const renderContent = () => {
     switch (activeSection) {
       case 'dashboard':
+        const upcomingCount = getUpcomingBookings().length;
+        const favoritesCount = favorites.length;
+        
         return (
           <div>
             <div className="bg-gradient-to-r from-primary to-secondary text-white rounded-2xl p-8 mb-8">
@@ -285,18 +287,20 @@ const ProfilePage = () => {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="card p-6 text-center">
-                <div className="text-4xl font-bold text-gray-900 mb-2">0</div>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div 
+                className="card p-6 text-center cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => setActiveSection('visits')}
+              >
+                <div className="text-4xl font-bold text-gray-900 mb-2">{upcomingCount}</div>
                 <div className="text-gray-500">Nadchodzących wizyt</div>
               </div>
-              <div className="card p-6 text-center">
-                <div className="text-4xl font-bold text-gray-900 mb-2">0</div>
+              <div 
+                className="card p-6 text-center cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => setActiveSection('favorites')}
+              >
+                <div className="text-4xl font-bold text-gray-900 mb-2">{favoritesCount}</div>
                 <div className="text-gray-500">Ulubionych miejsc</div>
-              </div>
-              <div className="card p-6 text-center">
-                <div className="text-4xl font-bold text-gray-900 mb-2">0 zł</div>
-                <div className="text-gray-500">W portfelu</div>
               </div>
             </div>
           </div>
