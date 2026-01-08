@@ -401,6 +401,23 @@ export const bookingService = {
   },
 
   /**
+   * Aktualizuj status rezerwacji
+   */
+  async updateStatus(bookingId: string, status: BookingStatus): Promise<void> {
+    try {
+      const bookingRef = doc(db, BOOKINGS_COLLECTION, bookingId);
+      await updateDoc(bookingRef, { 
+        status,
+        updatedAt: new Date().toISOString()
+      });
+      console.log(`Booking ${bookingId} status updated to ${status}`);
+    } catch (error) {
+      console.error('Error updating booking status:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Nasłuchuj na zmiany rezerwacji klienta (real-time)
    */
   subscribeToClientBookings(

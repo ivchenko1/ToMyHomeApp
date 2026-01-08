@@ -18,7 +18,6 @@ import {
   Lock,
   Save,
   Clock,
-  MapPin,
   X,
 } from 'lucide-react';
 import { useAuth, useToast } from '../App';
