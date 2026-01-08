@@ -5,7 +5,6 @@ import {
   Home,
   Gift,
   Heart,
-  Wallet,
   Calendar,
   Settings,
   HelpCircle,
@@ -18,7 +17,9 @@ import {
   EyeOff,
   Lock,
   Save,
-
+  Clock,
+  MapPin,
+  X,
 } from 'lucide-react';
 import { useAuth, useToast } from '../App';
 import PhoneInput, { validatePhoneNumber } from '../components/PhoneInput';
@@ -29,13 +30,13 @@ import {
   deleteUserAccount 
 } from '../services/userService';
 import favoriteService, { Favorite } from '../services/favoriteService';
+import bookingService, { Booking } from '../services/bookingService';
 import { Link } from 'react-router-dom';
 
 type SectionType =
   | 'dashboard'
   | 'referral'
   | 'favorites'
-  | 'wallet'
   | 'visits'
   | 'settings'
   | 'help';
@@ -48,12 +49,33 @@ const ProfilePage = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [favoritesLoading, setFavoritesLoading] = useState(false);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/auth');
     }
   }, [isAuthenticated, navigate]);
+
+  // Ładuj rezerwacje użytkownika
+  useEffect(() => {
+    const loadBookings = async () => {
+      if (!user?.id) return;
+      
+      setBookingsLoading(true);
+      try {
+        const userBookings = await bookingService.getByClient(String(user.id));
+        setBookings(userBookings);
+      } catch (error) {
+        console.error('Error loading bookings:', error);
+      } finally {
+        setBookingsLoading(false);
+      }
+    };
+    
+    loadBookings();
+  }, [user?.id]);
 
   // Ładuj ulubione gdy zmienia się sekcja na favorites
   useEffect(() => {
@@ -75,6 +97,50 @@ const ProfilePage = () => {
     loadFavorites();
   }, [activeSection, user?.id]);
 
+  // Pobierz nadchodzące wizyty (od dziś)
+  const getUpcomingBookings = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return bookings
+      .filter(b => {
+        const bookingDate = new Date(b.date);
+        return bookingDate >= today && b.status !== 'cancelled';
+      })
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  };
+
+  // Pobierz daty z rezerwacjami w danym miesiącu
+  const getBookingDatesInMonth = () => {
+    const dates = new Set<number>();
+    bookings.forEach(b => {
+      const bookingDate = new Date(b.date);
+      if (
+        bookingDate.getMonth() === currentMonth.getMonth() &&
+        bookingDate.getFullYear() === currentMonth.getFullYear() &&
+        b.status !== 'cancelled'
+      ) {
+        dates.add(bookingDate.getDate());
+      }
+    });
+    return dates;
+  };
+
+  // Anuluj rezerwację
+  const cancelBooking = async (bookingId: string) => {
+    if (!confirm('Czy na pewno chcesz anulować tę wizytę?')) return;
+    
+    try {
+      await bookingService.updateStatus(bookingId, 'cancelled');
+      setBookings(prev => prev.map(b => 
+        b.id === bookingId ? { ...b, status: 'cancelled' as const } : b
+      ));
+      showToast('Wizyta została anulowana', 'success');
+    } catch (error) {
+      showToast('Błąd podczas anulowania', 'error');
+    }
+  };
+
   // Usuń z ulubionych
   const removeFavorite = async (providerId: string) => {
     if (!user?.id) return;
@@ -92,7 +158,6 @@ const ProfilePage = () => {
     { id: 'dashboard', label: 'Panel Główny', icon: Home },
     { id: 'referral', label: 'Poleć znajomym', icon: Gift },
     { id: 'favorites', label: 'Ulubione', icon: Heart },
-    { id: 'wallet', label: 'Portfel', icon: Wallet },
     { id: 'visits', label: 'Moje wizyty', icon: Calendar },
     { id: 'settings', label: 'Ustawienia', icon: Settings },
     { id: 'help', label: 'Pomoc', icon: HelpCircle },
@@ -130,6 +195,7 @@ const ProfilePage = () => {
     const firstDay = getFirstDayOfMonth(currentMonth);
     const today = new Date();
     const dayNames = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb', 'Nd'];
+    const bookingDates = getBookingDatesInMonth();
 
     return (
       <div className="bg-white rounded-xl border-2 border-gray-100 p-6">
@@ -170,20 +236,38 @@ const ProfilePage = () => {
               day === today.getDate() &&
               currentMonth.getMonth() === today.getMonth() &&
               currentMonth.getFullYear() === today.getFullYear();
+            const hasBooking = bookingDates.has(day);
 
             return (
               <div
                 key={day}
-                className={`py-3 rounded-lg cursor-pointer transition-all hover:scale-110 ${
+                className={`py-3 rounded-lg cursor-pointer transition-all hover:scale-110 relative ${
                   isToday
                     ? 'bg-primary text-white font-bold'
+                    : hasBooking
+                    ? 'bg-emerald-100 text-emerald-700 font-semibold'
                     : 'bg-gray-50 hover:bg-gray-100'
                 }`}
               >
                 {day}
+                {hasBooking && !isToday && (
+                  <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                )}
               </div>
             );
           })}
+        </div>
+        
+        {/* Legenda */}
+        <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-4 text-xs text-gray-500">
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 bg-primary rounded" />
+            <span>Dziś</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 bg-emerald-100 rounded" />
+            <span>Masz wizytę</span>
+          </div>
         </div>
       </div>
     );
@@ -313,30 +397,161 @@ const ProfilePage = () => {
           </div>
         );
 
-      case 'wallet':
-        return (
-          <div className="bg-gradient-to-r from-emerald-500 to-green-400 text-white rounded-2xl p-8">
-            <h2 className="text-xl mb-2">Dostępne środki</h2>
-            <div className="text-5xl font-bold mb-6">0.00 zł</div>
-            <button
-              onClick={() => showToast('Funkcja w budowie', 'info')}
-              className="btn bg-white text-emerald-600 font-bold"
-            >
-              Doładuj
-            </button>
-          </div>
-        );
-
       case 'visits':
+        const upcomingBookings = getUpcomingBookings();
+        const pastBookings = bookings
+          .filter(b => {
+            const bookingDate = new Date(b.date);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            return bookingDate < today || b.status === 'cancelled';
+          })
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+          .slice(0, 20);
+
         return (
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
               <h3 className="font-bold text-lg mb-4">Kalendarz wizyt</h3>
               {renderCalendar()}
+              
+              {/* Historia wizyt */}
+              {pastBookings.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="font-bold text-lg mb-4">Historia wizyt</h3>
+                  <div className="space-y-3">
+                    {pastBookings.map(booking => (
+                      <div 
+                        key={booking.id} 
+                        className={`bg-white rounded-xl border p-4 ${
+                          booking.status === 'cancelled' ? 'opacity-60' : ''
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <img 
+                            src={booking.providerImage || 'https://via.placeholder.com/50'} 
+                            alt={booking.providerName}
+                            className="w-12 h-12 rounded-full object-cover"
+                          />
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-900">{booking.serviceName}</p>
+                            <p className="text-sm text-gray-500">{booking.providerName}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-medium text-gray-700">
+                              {new Date(booking.date).toLocaleDateString('pl-PL')}
+                            </p>
+                            <p className={`text-xs ${
+                              booking.status === 'cancelled' ? 'text-red-500' : 
+                              booking.status === 'completed' ? 'text-green-500' : 'text-gray-400'
+                            }`}>
+                              {booking.status === 'cancelled' ? 'Anulowana' : 
+                               booking.status === 'completed' ? 'Zakończona' : 'Minęła'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
+            
             <div>
               <h3 className="font-bold text-lg mb-4">Nadchodzące wizyty</h3>
-              <p className="text-gray-500">Brak nadchodzących wizyt.</p>
+              {bookingsLoading ? (
+                <div className="text-center py-8">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+                </div>
+              ) : upcomingBookings.length === 0 ? (
+                <div className="bg-gray-50 rounded-xl p-6 text-center">
+                  <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500 mb-4">Brak nadchodzących wizyt</p>
+                  <Link 
+                    to="/uslugodawcy"
+                    className="inline-block px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90"
+                  >
+                    Znajdź usługodawcę
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {upcomingBookings.map(booking => {
+                    const bookingDate = new Date(booking.date);
+                    const isToday = bookingDate.toDateString() === new Date().toDateString();
+                    const isTomorrow = bookingDate.toDateString() === new Date(Date.now() + 86400000).toDateString();
+                    
+                    return (
+                      <div 
+                        key={booking.id} 
+                        className={`bg-white rounded-xl border-2 p-4 ${
+                          isToday ? 'border-primary bg-primary/5' : 
+                          isTomorrow ? 'border-yellow-400 bg-yellow-50' : 'border-gray-100'
+                        }`}
+                      >
+                        {isToday && (
+                          <div className="text-xs font-bold text-primary mb-2">📅 DZISIAJ</div>
+                        )}
+                        {isTomorrow && (
+                          <div className="text-xs font-bold text-yellow-600 mb-2">⏰ JUTRO</div>
+                        )}
+                        
+                        <div className="flex items-start gap-3">
+                          <img 
+                            src={booking.providerImage || 'https://via.placeholder.com/50'} 
+                            alt={booking.providerName}
+                            className="w-14 h-14 rounded-xl object-cover"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-gray-900 truncate">{booking.serviceName}</p>
+                            <p className="text-sm text-gray-600">{booking.providerName}</p>
+                            
+                            <div className="flex items-center gap-3 mt-2 text-sm text-gray-500">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="w-4 h-4" />
+                                <span>{bookingDate.toLocaleDateString('pl-PL', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-4 h-4" />
+                                <span>{booking.time}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                          <span className="font-bold text-primary">{booking.servicePrice} zł</span>
+                          <div className="flex gap-2">
+                            <Link
+                              to={`/uslugodawcy/profil/${booking.providerId}`}
+                              className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                            >
+                              Zobacz profil
+                            </Link>
+                            <button
+                              onClick={() => cancelBooking(booking.id)}
+                              className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        
+                        {booking.status === 'pending' && (
+                          <div className="mt-2 text-xs text-yellow-600 bg-yellow-50 px-2 py-1 rounded">
+                            ⏳ Oczekuje na potwierdzenie
+                          </div>
+                        )}
+                        {booking.status === 'confirmed' && (
+                          <div className="mt-2 text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
+                            ✅ Potwierdzona
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         );
@@ -854,7 +1069,6 @@ const ProfilePage = () => {
               {activeSection === 'dashboard' && 'Przegląd Twojej aktywności'}
               {activeSection === 'referral' && 'Zapraszaj znajomych i zarabiaj'}
               {activeSection === 'favorites' && 'Twoje ulubione miejsca i usługi'}
-              {activeSection === 'wallet' && 'Zarządzaj swoimi środkami'}
               {activeSection === 'visits' && 'Kalendarz i historia rezerwacji'}
               {activeSection === 'settings' && 'Personalizuj swoje konto'}
               {activeSection === 'help' && 'FAQ i Kontakt'}

@@ -26,6 +26,7 @@ import { useToast, useAuth } from '../App';
 import providerService, { Provider, ServiceItem } from '../services/providerService';
 import bookingService from '../services/bookingService';
 import favoriteService from '../services/favoriteService';
+import PaymentModal from '../components/PaymentModal';
 
 // ============================================
 // KOMPONENTY POMOCNICZE
@@ -124,6 +125,7 @@ const ProviderDetailPage = () => {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [activeServiceFilter, setActiveServiceFilter] = useState('Wszystkie');
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [isFavorite, setIsFavorite] = useState(false);
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
@@ -392,7 +394,7 @@ const ProviderDetailPage = () => {
 
   const timeSlots = generateTimeSlots();
 
-  // Potwierdź rezerwację - tworzy prawdziwą rezerwację w Firebase
+  // Potwierdź rezerwację - otwiera modal płatności
   const confirmBooking = async () => {
     if (!user || !user.id) {
       showToast('Zaloguj się, aby zarezerwować wizytę', 'info');
@@ -412,8 +414,16 @@ const ProviderDetailPage = () => {
 
     if (!provider) return;
 
+    // Otwórz modal płatności
+    setShowPaymentModal(true);
+  };
+
+  // Po udanej płatności - tworzy rezerwację
+  const handlePaymentSuccess = async () => {
+    if (!user || !provider || !selectedDate || !selectedTime) return;
+
     setIsSubmitting(true);
-    console.log('Creating booking for user:', user.id);
+    console.log('Payment successful, creating booking for user:', user.id);
 
     try {
       // Użyj wybranego miesiąca/roku z kalendarza
@@ -448,6 +458,13 @@ const ProviderDetailPage = () => {
 
       console.log('Booking created successfully');
       setShowBookingModal(true);
+      
+      // Reset selekcji
+      setSelectedServices([]);
+      setSelectedDate(null);
+      setSelectedTime(null);
+      
+      showToast('🎉 Rezerwacja opłacona i potwierdzona!', 'success');
     } catch (error) {
       console.error('Błąd rezerwacji:', error);
       showToast('Błąd podczas tworzenia rezerwacji', 'error');
@@ -840,6 +857,16 @@ const ProviderDetailPage = () => {
           </div>
         </div>
       )}
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        onSuccess={handlePaymentSuccess}
+        amount={totalPrice}
+        serviceName={selectedServices.map(s => s.name).join(', ') || 'Usługa'}
+        providerName={provider?.name || ''}
+      />
     </div>
   );
 };
