@@ -11,11 +11,13 @@ const categoryMapping: { [key: string]: string[] } = {
   'paznokcie': ['paznokcie', 'manicure', 'nails', 'stylizacja paznokci'],
   'masaz': ['masaż', 'masaz', 'massage'],
   'makijaz': ['makijaż', 'makijaz', 'makeup', 'wizaż'],
-  'pielegnacja-twarzy': ['pielęgnacja twarzy', 'kosmetyka', 'facial'],
+  'pielegnacja-twarzy': ['pielęgnacja twarzy', 'kosmetyka', 'facial', 'twarz'],
+  'twarz': ['twarz', 'pielęgnacja twarzy', 'kosmetyka', 'facial', 'kosmetyka / twarz'],
   'depilacja': ['depilacja', 'wax', 'waxing'],
   'barber': ['barber', 'fryzjer męski', 'barbershop'],
-  'tatuaz': ['tatuaż', 'tatuaz', 'tattoo'],
-  'kosmetyka': ['kosmetyka', 'kosmetyczka', 'beauty'],
+  'tatuaz': ['tatuaż', 'tatuaz', 'tattoo', 'tatuaze'],
+  'tatuaze': ['tatuaż', 'tatuaz', 'tattoo', 'tatuaze'],
+  'kosmetyka': ['kosmetyka', 'kosmetyczka', 'beauty', 'twarz', 'pielęgnacja twarzy', 'kosmetyka / twarz'],
   'brwi-rzesy': ['brwi', 'rzęsy', 'lashes', 'brows'],
   'inne': ['inne', 'other'],
 };
@@ -83,12 +85,12 @@ const specializations = [
 const specializationToCategory: { [key: string]: string[] } = {
   'Fryzjer': ['fryzjer', 'fryzjerstwo', 'hair'],
   'Barber': ['barber', 'fryzjer męski', 'barbershop'],
-  'Kosmetyka': ['kosmetyka', 'kosmetyczka', 'beauty'],
+  'Kosmetyka': ['kosmetyka', 'kosmetyczka', 'beauty', 'twarz', 'pielęgnacja twarzy'],
   'Paznokcie / Manicure': ['paznokcie', 'manicure', 'nails', 'stylizacja paznokci'],
   'Pedicure': ['pedicure', 'pediküre'],
   'Masaż': ['masaż', 'masaz', 'massage'],
   'Makijaż': ['makijaż', 'makijaz', 'makeup', 'wizaż'],
-  'Pielęgnacja twarzy': ['pielęgnacja twarzy', 'kosmetyka', 'facial'],
+  'Pielęgnacja twarzy': ['pielęgnacja twarzy', 'kosmetyka', 'facial', 'twarz'],
   'Depilacja': ['depilacja', 'wax', 'waxing'],
   'Brwi i rzęsy': ['brwi', 'rzęsy', 'lashes', 'brows'],
   'Tatuaż': ['tatuaż', 'tatuaz', 'tattoo'],
@@ -196,11 +198,19 @@ const ProvidersPage = () => {
       // Filtruj po kategorii z URL jeśli podana
       if (category) {
         const categoryNames = categoryMapping[category] || [category];
+        console.log('🔍 Filtrowanie po kategorii:', category);
+        console.log('🔍 Szukane nazwy:', categoryNames);
+        console.log('🔍 Wszystkie kategorie providerów:', allProviders.map(p => p.category));
+        
         allProviders = allProviders.filter((p) => {
           if (!p.category) return false;
           const providerCategory = p.category.toLowerCase();
-          return categoryNames.some(cat => providerCategory.includes(cat.toLowerCase()));
+          const matches = categoryNames.some(cat => providerCategory.includes(cat.toLowerCase()));
+          console.log(`🔍 Provider "${p.name}" kategoria "${p.category}" -> matches: ${matches}`);
+          return matches;
         });
+        
+        console.log('🔍 Po filtrowaniu:', allProviders.length, 'wyników');
       }
 
       // Filtruj po specjalizacji

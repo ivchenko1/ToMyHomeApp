@@ -26,6 +26,7 @@ import { useToast, useAuth } from '../App';
 import providerService, { Provider, ServiceItem } from '../services/providerService';
 import bookingService from '../services/bookingService';
 import favoriteService from '../services/favoriteService';
+import reviewService, { Review } from '../services/reviewService';
 import PaymentModal from '../components/PaymentModal';
 
 // ============================================
@@ -130,6 +131,8 @@ const ProviderDetailPage = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
 
   // Sprawdź czy jest w ulubionych
   useEffect(() => {
@@ -144,6 +147,23 @@ const ProviderDetailPage = () => {
     };
     checkFavorite();
   }, [user?.id, id]);
+
+  // Ładuj opinie
+  useEffect(() => {
+    const loadReviews = async () => {
+      if (!id) return;
+      setReviewsLoading(true);
+      try {
+        const providerReviews = await reviewService.getByProvider(id);
+        setReviews(providerReviews);
+      } catch (error) {
+        console.error('Error loading reviews:', error);
+      } finally {
+        setReviewsLoading(false);
+      }
+    };
+    loadReviews();
+  }, [id]);
 
   // Toggle ulubione
   const toggleFavorite = async () => {
@@ -465,9 +485,21 @@ const ProviderDetailPage = () => {
       setSelectedTime(null);
       
       showToast('🎉 Rezerwacja opłacona i potwierdzona!', 'success');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Błąd rezerwacji:', error);
-      showToast('Błąd podczas tworzenia rezerwacji', 'error');
+      
+      if (error.message === 'SLOT_TAKEN') {
+        showToast('Ten termin został właśnie zarezerwowany przez kogoś innego. Wybierz inny termin.', 'error');
+        // Odśwież listę zajętych slotów
+        if (provider && selectedDate) {
+          const refreshDateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`;
+          const slots = await bookingService.getBookedSlots(provider.id, refreshDateStr);
+          setBookedSlots(slots);
+        }
+        setSelectedTime(null);
+      } else {
+        showToast('Błąd podczas tworzenia rezerwacji', 'error');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -659,6 +691,77 @@ const ProviderDetailPage = () => {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Reviews Section */}
+            <div className="bg-white rounded-2xl shadow-sm p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Opinie klientów</h2>
+                {provider.reviewsCount > 0 && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
+                      <span className="font-bold">{provider.rating.toFixed(1)}</span>
+                    </div>
+                    <span className="text-gray-500 text-sm">({provider.reviewsCount} opinii)</span>
+                  </div>
+                )}
+              </div>
+
+              {reviewsLoading ? (
+                <div className="text-center py-8">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+                </div>
+              ) : reviews.length === 0 ? (
+                <div className="text-center py-8">
+                  <Star className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+                  <p className="text-gray-500">Brak opinii</p>
+                  <p className="text-sm text-gray-400">Bądź pierwszy i wystaw opinię po skorzystaniu z usługi!</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {reviews.slice(0, 5).map((review) => (
+                    <div key={review.id} className="border-b border-gray-100 pb-4 last:border-0">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center text-white font-bold">
+                            {review.clientName.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">{review.clientName}</p>
+                            <p className="text-xs text-gray-500">{review.serviceName}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="flex items-center gap-0.5">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star 
+                                key={star}
+                                className={`w-4 h-4 ${star <= review.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-200'}`}
+                              />
+                            ))}
+                          </div>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {new Date(review.createdAt).toLocaleDateString('pl-PL')}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-gray-600 text-sm">{review.comment}</p>
+                      {review.providerResponse && (
+                        <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                          <p className="text-xs font-medium text-gray-500 mb-1">Odpowiedź usługodawcy:</p>
+                          <p className="text-sm text-gray-600">{review.providerResponse}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {reviews.length > 5 && (
+                    <p className="text-center text-sm text-gray-500">
+                      ... i {reviews.length - 5} więcej opinii
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

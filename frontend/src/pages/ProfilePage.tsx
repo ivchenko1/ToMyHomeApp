@@ -19,6 +19,7 @@ import {
   Save,
   Clock,
   X,
+  Star,
 } from 'lucide-react';
 import { useAuth, useToast } from '../App';
 import PhoneInput, { validatePhoneNumber } from '../components/PhoneInput';
@@ -30,6 +31,7 @@ import {
 } from '../services/userService';
 import favoriteService, { Favorite } from '../services/favoriteService';
 import bookingService, { Booking } from '../services/bookingService';
+import reviewService from '../services/reviewService';
 import { Link } from 'react-router-dom';
 
 type SectionType =
@@ -50,6 +52,14 @@ const ProfilePage = () => {
   const [favoritesLoading, setFavoritesLoading] = useState(false);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
+  
+  // Stan dla modalu opinii
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewBooking, setReviewBooking] = useState<Booking | null>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewedBookings, setReviewedBookings] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -94,6 +104,66 @@ const ProfilePage = () => {
     
     loadFavorites();
   }, [user?.id]);
+
+  // Sprawdź które rezerwacje mają już opinie
+  useEffect(() => {
+    const checkReviews = async () => {
+      if (!bookings.length) return;
+      
+      const reviewed = new Set<string>();
+      for (const booking of bookings) {
+        if (booking.status === 'completed' || (booking.status !== 'cancelled' && new Date(booking.date) < new Date())) {
+          const hasReview = await reviewService.hasReviewForBooking(booking.id);
+          if (hasReview) {
+            reviewed.add(booking.id);
+          }
+        }
+      }
+      setReviewedBookings(reviewed);
+    };
+    
+    checkReviews();
+  }, [bookings]);
+
+  // Otwórz modal opinii
+  const openReviewModal = (booking: Booking) => {
+    setReviewBooking(booking);
+    setReviewRating(5);
+    setReviewComment('');
+    setShowReviewModal(true);
+  };
+
+  // Wyślij opinię
+  const submitReview = async () => {
+    if (!reviewBooking || !user) return;
+    
+    if (reviewComment.trim().length < 10) {
+      showToast('Opinia musi mieć minimum 10 znaków', 'error');
+      return;
+    }
+    
+    setReviewSubmitting(true);
+    try {
+      await reviewService.create({
+        bookingId: reviewBooking.id,
+        providerId: reviewBooking.providerId,
+        clientId: user.id,
+        clientName: user.username || 'Klient',
+        rating: reviewRating,
+        comment: reviewComment.trim(),
+        serviceName: reviewBooking.serviceName,
+      });
+      
+      setReviewedBookings(prev => new Set([...prev, reviewBooking.id]));
+      setShowReviewModal(false);
+      showToast('Dziękujemy za opinię! ⭐', 'success');
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      showToast('Błąd podczas wysyłania opinii', 'error');
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
 
   // Pobierz nadchodzące wizyty (od dziś)
   const getUpcomingBookings = () => {
@@ -423,7 +493,11 @@ const ProfilePage = () => {
                 <div className="mt-6">
                   <h3 className="font-bold text-lg mb-4">Historia wizyt</h3>
                   <div className="space-y-3">
-                    {pastBookings.map(booking => (
+                    {pastBookings.map(booking => {
+                      const canReview = booking.status !== 'cancelled' && !reviewedBookings.has(booking.id);
+                      const hasReviewed = reviewedBookings.has(booking.id);
+                      
+                      return (
                       <div 
                         key={booking.id} 
                         className={`bg-white rounded-xl border p-4 ${
@@ -453,8 +527,30 @@ const ProfilePage = () => {
                             </p>
                           </div>
                         </div>
+                        
+                        {/* Przycisk opinii */}
+                        {canReview && (
+                          <div className="mt-3 pt-3 border-t border-gray-100">
+                            <button
+                              onClick={() => openReviewModal(booking)}
+                              className="flex items-center gap-2 text-sm text-amber-600 hover:text-amber-700 font-medium"
+                            >
+                              <Star className="w-4 h-4" />
+                              Wystaw opinię
+                            </button>
+                          </div>
+                        )}
+                        {hasReviewed && (
+                          <div className="mt-3 pt-3 border-t border-gray-100">
+                            <span className="flex items-center gap-2 text-sm text-green-600">
+                              <Star className="w-4 h-4 fill-current" />
+                              Opinia wystawiona
+                            </span>
+                          </div>
+                        )}
                       </div>
-                    ))}
+                    );
+                    })}
                   </div>
                 </div>
               )}
@@ -1081,6 +1177,118 @@ const ProfilePage = () => {
           {renderContent()}
         </main>
       </div>
+
+      {/* Modal wystawiania opinii */}
+      {showReviewModal && reviewBooking && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-start justify-between mb-4">
+                <h3 className="text-xl font-bold">Wystaw opinię</h3>
+                <button
+                  onClick={() => setShowReviewModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Info o wizycie */}
+              <div className="p-4 bg-gray-50 rounded-xl mb-6">
+                <div className="flex items-center gap-3">
+                  <img 
+                    src={reviewBooking.providerImage || 'https://via.placeholder.com/50'} 
+                    alt={reviewBooking.providerName}
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
+                  <div>
+                    <p className="font-semibold">{reviewBooking.providerName}</p>
+                    <p className="text-sm text-gray-500">{reviewBooking.serviceName}</p>
+                    <p className="text-xs text-gray-400">
+                      {new Date(reviewBooking.date).toLocaleDateString('pl-PL')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Ocena gwiazdkowa */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Twoja ocena
+                </label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      onClick={() => setReviewRating(star)}
+                      className="p-1 transition-transform hover:scale-110"
+                    >
+                      <Star 
+                        className={`w-10 h-10 ${
+                          star <= reviewRating 
+                            ? 'text-amber-400 fill-amber-400' 
+                            : 'text-gray-300'
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+                <p className="text-sm text-gray-500 mt-1">
+                  {reviewRating === 1 && 'Bardzo słabo'}
+                  {reviewRating === 2 && 'Słabo'}
+                  {reviewRating === 3 && 'Średnio'}
+                  {reviewRating === 4 && 'Dobrze'}
+                  {reviewRating === 5 && 'Świetnie!'}
+                </p>
+              </div>
+
+              {/* Komentarz */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Twoja opinia
+                </label>
+                <textarea
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  placeholder="Opisz swoje doświadczenie z usługą..."
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-primary focus:ring-0 resize-none"
+                  rows={4}
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Minimum 10 znaków ({reviewComment.length}/10)
+                </p>
+              </div>
+
+              {/* Przyciski */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowReviewModal(false)}
+                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl font-medium hover:bg-gray-50"
+                >
+                  Anuluj
+                </button>
+                <button
+                  onClick={submitReview}
+                  disabled={reviewSubmitting || reviewComment.length < 10}
+                  className="flex-1 px-4 py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {reviewSubmitting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Wysyłanie...
+                    </>
+                  ) : (
+                    <>
+                      <Star className="w-5 h-5" />
+                      Wyślij opinię
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

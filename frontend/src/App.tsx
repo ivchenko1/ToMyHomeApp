@@ -37,6 +37,14 @@ import BusinessMessages from './pages/business/BusinessMessages';
 import BusinessSettings from './pages/business/BusinessSettings';
 import BusinessWorkingHours from './pages/business/BusinessWorkingHours';
 
+// Admin Pages
+import AdminLayout from './components/admin/AdminLayout';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminProviders from './pages/admin/AdminProviders';
+import AdminBookings from './pages/admin/AdminBookings';
+import AdminSettings from './pages/admin/AdminSettings';
+
 // Shared Components
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -281,6 +289,15 @@ function App() {
     }}>
       <ToastContext.Provider value={{ showToast }}>
         <Routes>
+          {/* Admin Panel Routes */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="uzytkownicy" element={<AdminUsers />} />
+            <Route path="uslugodawcy" element={<AdminProviders />} />
+            <Route path="rezerwacje" element={<AdminBookings />} />
+            <Route path="ustawienia" element={<AdminSettings />} />
+          </Route>
+
           {/* Business Panel Routes */}
           <Route path="/biznes" element={<BusinessLayout />}>
             <Route index element={<BusinessDashboard />} />

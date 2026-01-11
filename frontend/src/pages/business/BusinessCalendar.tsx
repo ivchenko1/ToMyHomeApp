@@ -648,13 +648,26 @@ const BusinessCalendar = () => {
                     </>
                   )}
                   {selectedBooking.status === 'confirmed' && (
-                    <button
-                      onClick={() => updateBookingStatus(selectedBooking.id, 'completed')}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500 text-white rounded-xl font-semibold hover:bg-emerald-600"
-                    >
-                      <Check className="w-5 h-5" />
-                      Oznacz jako zakończone
-                    </button>
+                    <div className="flex gap-3 w-full">
+                      <button
+                        onClick={() => updateBookingStatus(selectedBooking.id, 'completed')}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500 text-white rounded-xl font-semibold hover:bg-emerald-600"
+                      >
+                        <Check className="w-5 h-5" />
+                        Oznacz jako zakończone
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm('Czy na pewno chcesz anulować tę rezerwację?')) {
+                            updateBookingStatus(selectedBooking.id, 'cancelled');
+                          }
+                        }}
+                        className="flex items-center justify-center gap-2 px-4 py-3 bg-red-100 text-red-600 rounded-xl font-semibold hover:bg-red-200"
+                      >
+                        <X className="w-5 h-5" />
+                        Anuluj
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>

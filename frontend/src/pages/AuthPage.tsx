@@ -11,8 +11,34 @@ import {
   updateProfile,
   sendEmailVerification
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebase';
+
+// Funkcja sprawdzająca duplikaty w bazie
+const checkDuplicates = async (phone: string, businessName?: string): Promise<{ isDuplicate: boolean; message: string }> => {
+  try {
+    // Sprawdź duplikat telefonu
+    const phoneQuery = query(collection(db, 'users'), where('phone', '==', phone));
+    const phoneSnapshot = await getDocs(phoneQuery);
+    if (!phoneSnapshot.empty) {
+      return { isDuplicate: true, message: 'Ten numer telefonu jest już używany przez inne konto' };
+    }
+
+    // Sprawdź duplikat nazwy salonu (dla usługodawców)
+    if (businessName && businessName.trim()) {
+      const businessQuery = query(collection(db, 'users'), where('businessName', '==', businessName.trim()));
+      const businessSnapshot = await getDocs(businessQuery);
+      if (!businessSnapshot.empty) {
+        return { isDuplicate: true, message: 'Ta nazwa salonu jest już zajęta' };
+      }
+    }
+
+    return { isDuplicate: false, message: '' };
+  } catch (error) {
+    console.error('Error checking duplicates:', error);
+    return { isDuplicate: false, message: '' }; // W razie błędu pozwól kontynuować
+  }
+};
 
 type AuthMode = 'select' | 'login' | 'register-client' | 'register-provider';
 
@@ -195,6 +221,22 @@ const AuthPage = () => {
     setIsLoading(true);
 
     try {
+      // Formatuj numer telefonu z kodem kraju do sprawdzenia
+      const phoneDigits = registerData.phone.replace(/\D/g, '');
+      const formattedPhone = `${registerData.phoneCountryCode} ${phoneDigits}`;
+
+      // 0. Sprawdź duplikaty (telefon i nazwa salonu)
+      const duplicateCheck = await checkDuplicates(
+        formattedPhone, 
+        registerData.accountType === 'provider' ? registerData.businessName : undefined
+      );
+      
+      if (duplicateCheck.isDuplicate) {
+        setError(duplicateCheck.message);
+        setIsLoading(false);
+        return;
+      }
+
       // 1. Tworzenie użytkownika w Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(
         auth, 
@@ -208,10 +250,6 @@ const AuthPage = () => {
       await updateProfile(user, {
         displayName: registerData.username
       });
-
-      // Formatuj numer telefonu z kodem kraju
-      const phoneDigits = registerData.phone.replace(/\D/g, '');
-      const formattedPhone = `${registerData.phoneCountryCode} ${phoneDigits}`;
 
       // 3. Zapisanie dodatkowych danych w Firestore
       await setDoc(doc(db, 'users', user.uid), {

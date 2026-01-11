@@ -79,6 +79,7 @@ const generateId = (): string => {
 export const bookingService = {
   /**
    * Utwórz nową rezerwację (status: pending)
+   * Sprawdza czy termin jest wolny przed utworzeniem
    */
   async create(data: {
     clientId: string;
@@ -96,6 +97,12 @@ export const bookingService = {
     time: string;
     clientNote?: string;
   }): Promise<Booking> {
+    // Sprawdź czy termin jest wolny PRZED utworzeniem rezerwacji
+    const isAvailable = await this.isTimeSlotAvailable(data.providerId, data.date, data.time);
+    if (!isAvailable) {
+      throw new Error('SLOT_TAKEN');
+    }
+    
     const id = generateId();
     const now = new Date().toISOString();
     

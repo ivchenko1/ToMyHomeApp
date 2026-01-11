@@ -92,19 +92,31 @@ const BusinessStatistics = () => {
         const pending = bookings.filter(b => b.status === 'pending').length;
         const confirmed = bookings.filter(b => b.status === 'confirmed').length;
 
-        const totalRevenue = bookings
-          .filter(b => b.status === 'completed' || b.status === 'confirmed')
+        // Przychody liczone tylko dla zrealizowanych wizyt (completed) 
+        // lub potwierdzonych wizyt z przeszłości (data wizyty już minęła)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const completedBookings = bookings.filter(b => {
+          if (b.status === 'completed') return true;
+          if (b.status === 'confirmed' || b.status === 'pending') {
+            const bookingDate = new Date(b.date);
+            bookingDate.setHours(23, 59, 59, 999);
+            return bookingDate < today; // Wizyta już się odbyła
+          }
+          return false;
+        });
+
+        const totalRevenue = completedBookings
           .reduce((sum, b) => sum + (b.servicePrice || 0), 0);
 
         const dayNames = ['Nd', 'Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob'];
         const revenueByDay = dayNames.map(day => ({ day, amount: 0 }));
         
-        bookings
-          .filter(b => b.status === 'completed' || b.status === 'confirmed')
-          .forEach(b => {
-            const dayIndex = new Date(b.date).getDay();
-            revenueByDay[dayIndex].amount += b.servicePrice || 0;
-          });
+        completedBookings.forEach(b => {
+          const dayIndex = new Date(b.date).getDay();
+          revenueByDay[dayIndex].amount += b.servicePrice || 0;
+        });
 
         const sundayRevenue = revenueByDay.shift()!;
         revenueByDay.push(sundayRevenue);
@@ -122,7 +134,19 @@ const BusinessStatistics = () => {
             serviceStats[b.serviceName] = { count: 0, revenue: 0 };
           }
           serviceStats[b.serviceName].count++;
-          if (b.status === 'completed' || b.status === 'confirmed') {
+          
+          // Przychód tylko dla zrealizowanych wizyt
+          const isCompleted = b.status === 'completed';
+          const isPastBooking = (() => {
+            if (b.status === 'confirmed' || b.status === 'pending') {
+              const bookingDate = new Date(b.date);
+              bookingDate.setHours(23, 59, 59, 999);
+              return bookingDate < today;
+            }
+            return false;
+          })();
+          
+          if (isCompleted || isPastBooking) {
             serviceStats[b.serviceName].revenue += b.servicePrice || 0;
           }
         });
