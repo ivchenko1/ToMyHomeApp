@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Bell, MessageSquare, User, LogOut, ChevronDown } from 'lucide-react';
 import { useAuth } from '../App';
+import notificationService, { Notification } from '../services/notificationService';
+import messageService from '../services/messageService';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -20,14 +22,59 @@ const Header = () => {
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
 
-  // Demo notifications
-  const [notifications, setNotifications] = useState([
-    { id: 1, type: 'booking', message: 'Nowa rezerwacja od Anna K.', time: '5 min temu', read: false },
-    { id: 2, type: 'message', message: 'Masz nową wiadomość', time: '1h temu', read: false },
-    { id: 3, type: 'review', message: 'Otrzymałeś nową opinię ⭐⭐⭐⭐⭐', time: '2h temu', read: true },
-  ]);
+  // Real-time powiadomienia z Firebase
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+
+  // Subskrybuj powiadomienia
+  useEffect(() => {
+    if (!user?.id) {
+      setNotifications([]);
+      return;
+    }
+    
+    const unsubscribe = notificationService.subscribe(
+      user.id,
+      (newNotifications) => {
+        setNotifications(newNotifications.slice(0, 5)); // Max 5 w dropdown
+      }
+    );
+    
+    return () => unsubscribe();
+  }, [user?.id]);
+
+  // Subskrybuj nieprzeczytane wiadomości
+  useEffect(() => {
+    if (!user?.id) {
+      setUnreadMessagesCount(0);
+      return;
+    }
+    
+    const unsubscribe = messageService.subscribeToUnreadCount(
+      user.id,
+      (count) => {
+        setUnreadMessagesCount(count);
+      }
+    );
+    
+    return () => unsubscribe();
+  }, [user?.id]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  // Formatuj czas
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    
+    if (minutes < 1) return 'Teraz';
+    if (minutes < 60) return `${minutes} min temu`;
+    if (hours < 24) return `${hours}h temu`;
+    return date.toLocaleDateString('pl-PL');
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -73,8 +120,13 @@ const Header = () => {
     }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  const markAllAsRead = async () => {
+    if (!user?.id) return;
+    try {
+      await notificationService.markAllAsRead(user.id);
+    } catch (error) {
+      console.error('Error marking notifications as read:', error);
+    }
   };
 
   // Hamburger Icon SVG
@@ -159,25 +211,42 @@ const Header = () => {
                     <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50">
                       <div className="p-4 border-b border-gray-100 flex items-center justify-between">
                         <h3 className="font-bold text-gray-900">Powiadomienia</h3>
-                        <button
-                          onClick={markAllAsRead}
-                          className="text-sm text-primary hover:underline"
-                        >
-                          Oznacz jako przeczytane
-                        </button>
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={markAllAsRead}
+                            className="text-sm text-primary hover:underline"
+                          >
+                            Oznacz jako przeczytane
+                          </button>
+                        )}
                       </div>
                       <div className="max-h-80 overflow-y-auto">
-                        {notifications.map((notif) => (
-                          <div
-                            key={notif.id}
-                            className={`p-4 border-b border-gray-50 hover:bg-gray-50 cursor-pointer ${
-                              !notif.read ? 'bg-blue-50' : ''
-                            }`}
-                          >
-                            <p className="text-sm text-gray-900">{notif.message}</p>
-                            <p className="text-xs text-gray-500 mt-1">{notif.time}</p>
+                        {notifications.length === 0 ? (
+                          <div className="p-6 text-center text-gray-500">
+                            <Bell className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                            <p className="text-sm">Brak powiadomień</p>
                           </div>
-                        ))}
+                        ) : (
+                          notifications.map((notif) => (
+                            <div
+                              key={notif.id}
+                              onClick={async () => {
+                                await notificationService.markAsRead(notif.id);
+                                setShowNotifications(false);
+                                navigate('/powiadomienia');
+                              }}
+                              className={`p-4 border-b border-gray-50 hover:bg-gray-50 cursor-pointer ${
+                                !notif.read ? 'bg-blue-50' : ''
+                              }`}
+                            >
+                              <p className="text-sm font-medium text-gray-900">
+                                {notificationService.getIcon(notif.type)} {notif.title}
+                              </p>
+                              <p className="text-sm text-gray-600 mt-1">{notif.message}</p>
+                              <p className="text-xs text-gray-400 mt-1">{formatTime(notif.createdAt)}</p>
+                            </div>
+                          ))
+                        )}
                       </div>
                       <Link
                         to="/powiadomienia"
@@ -196,9 +265,11 @@ const Header = () => {
                   className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <MessageSquare className="w-5 h-5" />
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-white text-xs font-bold rounded-full flex items-center justify-center">
-                    2
-                  </span>
+                  {unreadMessagesCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-white text-xs font-bold rounded-full flex items-center justify-center">
+                      {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
+                    </span>
+                  )}
                 </Link>
 
                 {/* Panel Biznes - tylko dla usługodawców */}

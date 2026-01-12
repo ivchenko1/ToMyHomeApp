@@ -85,6 +85,11 @@ export interface Provider {
     isAvailableToday: boolean;
     createdAt: string;
     updatedAt: string;
+    // Dane właściciela/użytkownika
+    ownerEmail?: string;
+    ownerUsername?: string;
+    ownerPhone?: string;
+    ownerAvatar?: string;
 }
 
 // ============================================
@@ -187,6 +192,11 @@ const normalizeProvider = (data: any, id?: string): Provider => {
         isAvailableToday: data.isAvailableToday ?? true,
         createdAt: data.createdAt || now,
         updatedAt: data.updatedAt || now,
+        // Dane właściciela/użytkownika
+        ownerEmail: data.ownerEmail || '',
+        ownerUsername: data.ownerUsername || '',
+        ownerPhone: data.ownerPhone || '',
+        ownerAvatar: data.ownerAvatar || '',
     };
 };
 
@@ -259,9 +269,81 @@ export const providerService = {
     },
 
     /**
+     * Sprawdź czy nazwa salonu jest unikalna
+     */
+    async isNameUnique(name: string, excludeId?: string): Promise<boolean> {
+        try {
+            const normalizedName = name.trim().toLowerCase();
+            const q = query(collection(db, FIREBASE_COLLECTION));
+            const snapshot = await getDocs(q);
+            
+            for (const doc of snapshot.docs) {
+                const provider = doc.data() as Provider;
+                // Pomiń własny profil przy edycji
+                if (excludeId && provider.id === excludeId) continue;
+                
+                // Porównaj znormalizowane nazwy
+                if (provider.name.trim().toLowerCase() === normalizedName) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (error) {
+            console.error('isNameUnique error:', error);
+            return true; // W razie błędu pozwól kontynuować
+        }
+    },
+
+    /**
+     * Sprawdź czy numer telefonu jest unikalny
+     */
+    async isPhoneUnique(phone: string, excludeId?: string): Promise<boolean> {
+        try {
+            // Wyciągnij tylko cyfry z numeru
+            const normalizedPhone = phone.replace(/\D/g, '');
+            if (!normalizedPhone || normalizedPhone.length < 9) return true;
+            
+            const q = query(collection(db, FIREBASE_COLLECTION));
+            const snapshot = await getDocs(q);
+            
+            for (const doc of snapshot.docs) {
+                const provider = doc.data() as Provider;
+                // Pomiń własny profil przy edycji
+                if (excludeId && provider.id === excludeId) continue;
+                
+                // Porównaj znormalizowane numery (tylko cyfry)
+                const providerPhone = (provider.ownerPhone || '').replace(/\D/g, '');
+                if (providerPhone && providerPhone.includes(normalizedPhone.slice(-9))) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (error) {
+            console.error('isPhoneUnique error:', error);
+            return true; // W razie błędu pozwól kontynuować
+        }
+    },
+
+    /**
      * Utwórz nowego usługodawcę w Firebase
      */
     async create(data: Partial<Provider>, ownerId: string): Promise<Provider> {
+        // Sprawdź unikalność nazwy
+        if (data.name) {
+            const isUnique = await this.isNameUnique(data.name);
+            if (!isUnique) {
+                throw new Error('DUPLICATE_NAME');
+            }
+        }
+
+        // Sprawdź unikalność telefonu
+        if (data.ownerPhone) {
+            const isPhoneUnique = await this.isPhoneUnique(data.ownerPhone);
+            if (!isPhoneUnique) {
+                throw new Error('DUPLICATE_PHONE');
+            }
+        }
+
         const id = generateId();
         const provider = normalizeProvider({ ...data, ownerId, isActive: true }, id);
 
@@ -287,6 +369,22 @@ export const providerService = {
         try {
             const existing = await this.getById(id);
             if (!existing) return null;
+
+            // Sprawdź unikalność nazwy (jeśli się zmienia)
+            if (data.name && data.name !== existing.name) {
+                const isUnique = await this.isNameUnique(data.name, id);
+                if (!isUnique) {
+                    throw new Error('DUPLICATE_NAME');
+                }
+            }
+
+            // Sprawdź unikalność telefonu (jeśli się zmienia)
+            if (data.ownerPhone && data.ownerPhone !== existing.ownerPhone) {
+                const isPhoneUnique = await this.isPhoneUnique(data.ownerPhone, id);
+                if (!isPhoneUnique) {
+                    throw new Error('DUPLICATE_PHONE');
+                }
+            }
 
             const updated = normalizeProvider({ ...existing, ...data }, id);
             updated.updatedAt = new Date().toISOString();

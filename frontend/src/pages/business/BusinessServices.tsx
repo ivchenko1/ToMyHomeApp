@@ -11,10 +11,10 @@ import {
   ToggleRight,
   Search,
   Filter,
-  Loader2,
+
 } from 'lucide-react';
 import { useAuth, useToast } from '../../App';
-import providerService, { Provider, ServiceItem } from '../../services/providerService';
+import providerService, { ServiceItem } from '../../services/providerService';
 
 interface Service {
   id: string;
@@ -211,7 +211,6 @@ const BusinessServices = () => {
           </div>
           <Link
             to={`/uslugodawcy/profil/${profile.id}`}
-            target="_blank"
             className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
           >
             <Eye className="w-4 h-4" />

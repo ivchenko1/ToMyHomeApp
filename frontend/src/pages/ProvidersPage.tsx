@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Star, MapPin, Check, Filter, Loader2 } from 'lucide-react';
+import { Star, MapPin, Check, Filter, Loader2, Navigation } from 'lucide-react';
 import { useToast } from '../App';
 import providerService, { Provider } from '../services/providerService';
 
@@ -11,10 +11,103 @@ const categoryMapping: { [key: string]: string[] } = {
   'paznokcie': ['paznokcie', 'manicure', 'nails', 'stylizacja paznokci'],
   'masaz': ['masaż', 'masaz', 'massage'],
   'makijaz': ['makijaż', 'makijaz', 'makeup', 'wizaż'],
-  'pielegnacja-twarzy': ['pielęgnacja twarzy', 'kosmetyka', 'facial'],
+  'pielegnacja-twarzy': ['pielęgnacja twarzy', 'kosmetyka', 'facial', 'twarz'],
+  'twarz': ['twarz', 'pielęgnacja twarzy', 'kosmetyka', 'facial', 'kosmetyka / twarz'],
   'depilacja': ['depilacja', 'wax', 'waxing'],
   'barber': ['barber', 'fryzjer męski', 'barbershop'],
-  'tatuaz': ['tatuaż', 'tatuaz', 'tattoo'],
+  'tatuaz': ['tatuaż', 'tatuaz', 'tattoo', 'tatuaze'],
+  'tatuaze': ['tatuaż', 'tatuaz', 'tattoo', 'tatuaze'],
+  'kosmetyka': ['kosmetyka', 'kosmetyczka', 'beauty', 'twarz', 'pielęgnacja twarzy', 'kosmetyka / twarz'],
+  'brwi-rzesy': ['brwi', 'rzęsy', 'lashes', 'brows'],
+  'inne': ['inne', 'other'],
+};
+
+// Lista największych miast w Polsce
+const polishCities = [
+  'Wszystkie miasta',
+  'Warszawa',
+  'Kraków',
+  'Łódź',
+  'Wrocław',
+  'Poznań',
+  'Gdańsk',
+  'Szczecin',
+  'Bydgoszcz',
+  'Lublin',
+  'Białystok',
+  'Katowice',
+  'Gdynia',
+  'Częstochowa',
+  'Radom',
+  'Sosnowiec',
+  'Toruń',
+  'Kielce',
+  'Rzeszów',
+  'Gliwice',
+  'Zabrze',
+  'Olsztyn',
+  'Bielsko-Biała',
+  'Bytom',
+  'Zielona Góra',
+  'Rybnik',
+  'Ruda Śląska',
+  'Opole',
+  'Tychy',
+  'Gorzów Wielkopolski',
+  'Płock',
+  'Dąbrowa Górnicza',
+  'Elbląg',
+  'Wałbrzych',
+  'Włocławek',
+  'Tarnów',
+  'Chorzów',
+  'Koszalin',
+];
+
+// Lista specjalizacji (z categoryMapping)
+const specializations = [
+  'Wszystkie specjalizacje',
+  'Fryzjer',
+  'Barber',
+  'Kosmetyka',
+  'Paznokcie / Manicure',
+  'Pedicure',
+  'Masaż',
+  'Makijaż',
+  'Pielęgnacja twarzy',
+  'Depilacja',
+  'Brwi i rzęsy',
+  'Tatuaż',
+  'Inne usługi',
+];
+
+// Mapowanie specjalizacji na kategorie
+const specializationToCategory: { [key: string]: string[] } = {
+  'Fryzjer': ['fryzjer', 'fryzjerstwo', 'hair'],
+  'Barber': ['barber', 'fryzjer męski', 'barbershop'],
+  'Kosmetyka': ['kosmetyka', 'kosmetyczka', 'beauty', 'twarz', 'pielęgnacja twarzy'],
+  'Paznokcie / Manicure': ['paznokcie', 'manicure', 'nails', 'stylizacja paznokci'],
+  'Pedicure': ['pedicure', 'pediküre'],
+  'Masaż': ['masaż', 'masaz', 'massage'],
+  'Makijaż': ['makijaż', 'makijaz', 'makeup', 'wizaż'],
+  'Pielęgnacja twarzy': ['pielęgnacja twarzy', 'kosmetyka', 'facial', 'twarz'],
+  'Depilacja': ['depilacja', 'wax', 'waxing'],
+  'Brwi i rzęsy': ['brwi', 'rzęsy', 'lashes', 'brows'],
+  'Tatuaż': ['tatuaż', 'tatuaz', 'tattoo'],
+  'Inne usługi': ['inne', 'other'],
+};
+
+// Funkcja do obliczania odległości między dwoma punktami (wzór Haversine)
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371; // Promień Ziemi w km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
 };
 
 const ProvidersPage = () => {
@@ -30,9 +123,65 @@ const ProvidersPage = () => {
   
   // Filtry
   const [activeQuickFilters, setActiveQuickFilters] = useState<string[]>([]);
-  const [locationFilter, setLocationFilter] = useState('');
+  const [cityFilter, setCityFilter] = useState('Wszystkie miasta');
+  const [specializationFilter, setSpecializationFilter] = useState('Wszystkie specjalizacje');
   const [minRating, setMinRating] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState('rating');
+  
+  // Lokalizacja użytkownika
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+
+  // Pobierz lokalizację użytkownika gdy wybrano "Najbliżej"
+  const getUserLocation = () => {
+    if (!navigator.geolocation) {
+      showToast('Twoja przeglądarka nie wspiera geolokalizacji', 'error');
+      return;
+    }
+
+    setIsLoadingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        });
+        setIsLoadingLocation(false);
+        showToast('Lokalizacja pobrana!', 'success');
+      },
+      (error) => {
+        console.error('Błąd geolokalizacji:', error);
+        setIsLoadingLocation(false);
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            showToast('Brak zgody na lokalizację. Włącz w ustawieniach przeglądarki.', 'error');
+            break;
+          case error.POSITION_UNAVAILABLE:
+            showToast('Nie można ustalić lokalizacji', 'error');
+            break;
+          case error.TIMEOUT:
+            showToast('Przekroczono czas oczekiwania na lokalizację', 'error');
+            break;
+          default:
+            showToast('Błąd pobierania lokalizacji', 'error');
+        }
+        // Jeśli nie udało się pobrać lokalizacji, zmień sortowanie
+        setSortBy('rating');
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  };
+
+  // Automatycznie pobierz lokalizację gdy wybrano "distance"
+  useEffect(() => {
+    if (sortBy === 'distance' && !userLocation) {
+      getUserLocation();
+    }
+  }, [sortBy]);
 
   // Pobierz usługodawców z Firebase
   const fetchProviders = async (append = false) => {
@@ -46,23 +195,48 @@ const ProvidersPage = () => {
       // Pobierz z Firebase przez providerService
       let allProviders = await providerService.getAll();
 
-      // Filtruj po kategorii jeśli podana
+      // Filtruj po kategorii z URL jeśli podana
       if (category) {
         const categoryNames = categoryMapping[category] || [category];
+        console.log('🔍 Filtrowanie po kategorii:', category);
+        console.log('🔍 Szukane nazwy:', categoryNames);
+        console.log('🔍 Wszystkie kategorie providerów:', allProviders.map(p => p.category));
+        
         allProviders = allProviders.filter((p) => {
           if (!p.category) return false;
           const providerCategory = p.category.toLowerCase();
-          return categoryNames.some(cat => providerCategory.includes(cat.toLowerCase()));
+          const matches = categoryNames.some(cat => providerCategory.includes(cat.toLowerCase()));
+          console.log(`🔍 Provider "${p.name}" kategoria "${p.category}" -> matches: ${matches}`);
+          return matches;
+        });
+        
+        console.log('🔍 Po filtrowaniu:', allProviders.length, 'wyników');
+      }
+
+      // Filtruj po specjalizacji
+      if (specializationFilter && specializationFilter !== 'Wszystkie specjalizacje') {
+        const specCategories = specializationToCategory[specializationFilter] || [];
+        if (specCategories.length > 0) {
+          allProviders = allProviders.filter((p) => {
+            if (!p.category) return false;
+            const providerCategory = p.category.toLowerCase();
+            return specCategories.some(cat => providerCategory.includes(cat.toLowerCase()));
+          });
+        }
+      }
+
+      // Filtruj po mieście
+      if (cityFilter && cityFilter !== 'Wszystkie miasta') {
+        allProviders = allProviders.filter((p) => {
+          const location = p.locationString?.toLowerCase() || '';
+          const city = p.location?.city?.toLowerCase() || '';
+          return location.includes(cityFilter.toLowerCase()) || city.includes(cityFilter.toLowerCase());
         });
       }
 
-      // Sortowanie
-      if (sortBy === 'rating') {
-        allProviders.sort((a, b) => b.rating - a.rating);
-      } else if (sortBy === 'price-asc') {
-        allProviders.sort((a, b) => a.priceFrom - b.priceFrom);
-      } else if (sortBy === 'price-desc') {
-        allProviders.sort((a, b) => b.priceFrom - a.priceFrom);
+      // Filtruj po ocenie
+      if (minRating) {
+        allProviders = allProviders.filter((p) => p.rating >= minRating);
       }
 
       // Filtrowanie po quickFilters
@@ -72,6 +246,29 @@ const ProvidersPage = () => {
       
       if (activeQuickFilters.includes('with-travel')) {
         allProviders = allProviders.filter((p) => p.hasTravel);
+      }
+
+      // Sortowanie
+      if (sortBy === 'rating') {
+        allProviders.sort((a, b) => b.rating - a.rating);
+      } else if (sortBy === 'price-asc') {
+        allProviders.sort((a, b) => a.priceFrom - b.priceFrom);
+      } else if (sortBy === 'price-desc') {
+        allProviders.sort((a, b) => b.priceFrom - a.priceFrom);
+      } else if (sortBy === 'distance' && userLocation) {
+        // Sortuj po odległości od użytkownika
+        allProviders = allProviders.map(p => {
+          let distance = Infinity;
+          if (p.location?.lat && p.location?.lng) {
+            distance = calculateDistance(
+              userLocation.lat, 
+              userLocation.lng, 
+              p.location.lat, 
+              p.location.lng
+            );
+          }
+          return { ...p, _distance: distance };
+        }).sort((a: any, b: any) => a._distance - b._distance);
       }
 
       setProviders(allProviders);
@@ -89,18 +286,9 @@ const ProvidersPage = () => {
   // Efekt do pobierania danych przy zmianie filtrów
   useEffect(() => {
     fetchProviders();
-  }, [category, locationFilter, minRating, sortBy, activeQuickFilters]);
+  }, [category, cityFilter, specializationFilter, minRating, sortBy, activeQuickFilters, userLocation]);
 
   const filters = {
-    locations: ['Wszystkie dzielnice', 'Centrum', 'Mokotów', 'Wola', 'Praga', 'Ursynów'],
-    specializations: [
-      'Wszystkie',
-      'Fryzjer damski',
-      'Fryzjer męski',
-      'Fryzjer dziecięcy',
-      'Koloryzacja',
-      'Fryzury ślubne',
-    ],
     ratings: [
       { label: 'Wszystkie oceny', value: null },
       { label: '⭐⭐⭐⭐⭐ 5.0', value: 5 },
@@ -126,8 +314,10 @@ const ProvidersPage = () => {
 
   const clearAllFilters = () => {
     setActiveQuickFilters([]);
-    setLocationFilter('');
+    setCityFilter('Wszystkie miasta');
+    setSpecializationFilter('Wszystkie specjalizacje');
     setMinRating(null);
+    setSortBy('rating');
     showToast('Filtry wyczyszczone', 'info');
   };
 
@@ -189,32 +379,39 @@ const ProvidersPage = () => {
 
         {/* Filter Grid */}
         <div className="grid md:grid-cols-4 gap-4 mb-6">
+          {/* Miasto */}
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-2">Lokalizacja</label>
+            <label className="block text-sm font-medium text-gray-600 mb-2">Miasto</label>
             <select 
-              value={locationFilter}
-              onChange={(e) => setLocationFilter(e.target.value === 'Wszystkie dzielnice' ? '' : e.target.value)}
+              value={cityFilter}
+              onChange={(e) => setCityFilter(e.target.value)}
               className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-primary focus:ring-0"
             >
-              {filters.locations.map((loc) => (
-                <option key={loc} value={loc}>
-                  {loc}
+              {polishCities.map((city) => (
+                <option key={city} value={city}>
+                  {city}
                 </option>
               ))}
             </select>
           </div>
 
+          {/* Specjalizacja */}
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-2">Specjalizacja</label>
-            <select className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-primary focus:ring-0">
-              {filters.specializations.map((spec) => (
-                <option key={spec} value={spec.toLowerCase()}>
+            <select 
+              value={specializationFilter}
+              onChange={(e) => setSpecializationFilter(e.target.value)}
+              className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-primary focus:ring-0"
+            >
+              {specializations.map((spec) => (
+                <option key={spec} value={spec}>
                   {spec}
                 </option>
               ))}
             </select>
           </div>
 
+          {/* Ocena */}
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-2">Ocena</label>
             <select 
@@ -222,31 +419,43 @@ const ProvidersPage = () => {
               onChange={(e) => setMinRating(e.target.value ? parseFloat(e.target.value) : null)}
               className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-primary focus:ring-0"
             >
-              {filters.ratings.map((rating) => (
-                <option key={rating.label} value={rating.value ?? ''}>
-                  {rating.label}
+              {filters.ratings.map((r) => (
+                <option key={r.label} value={r.value ?? ''}>
+                  {r.label}
                 </option>
               ))}
             </select>
           </div>
 
+          {/* Przycisk lokalizacji */}
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-2">Zakres cen</label>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                placeholder="Od"
-                defaultValue={50}
-                className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:border-primary focus:ring-0"
-              />
-              <span>-</span>
-              <input
-                type="number"
-                placeholder="Do"
-                defaultValue={200}
-                className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:border-primary focus:ring-0"
-              />
-            </div>
+            <label className="block text-sm font-medium text-gray-600 mb-2">Twoja lokalizacja</label>
+            <button
+              onClick={getUserLocation}
+              disabled={isLoadingLocation}
+              className={`w-full px-4 py-2.5 border-2 rounded-xl flex items-center justify-center gap-2 transition-colors ${
+                userLocation 
+                  ? 'border-green-500 bg-green-50 text-green-700' 
+                  : 'border-gray-200 hover:border-primary hover:text-primary'
+              }`}
+            >
+              {isLoadingLocation ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Pobieranie...
+                </>
+              ) : userLocation ? (
+                <>
+                  <Navigation className="w-4 h-4" />
+                  Lokalizacja pobrana
+                </>
+              ) : (
+                <>
+                  <Navigation className="w-4 h-4" />
+                  Pobierz lokalizację
+                </>
+              )}
+            </button>
           </div>
         </div>
 
@@ -256,7 +465,7 @@ const ProvidersPage = () => {
             <button
               key={filter.id}
               onClick={() => toggleQuickFilter(filter.id)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
                 activeQuickFilters.includes(filter.id)
                   ? 'bg-primary text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -268,7 +477,7 @@ const ProvidersPage = () => {
         </div>
       </section>
 
-      {/* Results Header */}
+      {/* Results Count & Sort */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="text-gray-600">
           {isLoading ? (
@@ -278,8 +487,8 @@ const ProvidersPage = () => {
             </span>
           ) : (
             <>
-              Znaleziono <strong className="text-gray-900">{totalCount} specjalistów</strong> w
-              Twojej okolicy
+              Znaleziono <strong className="text-gray-900">{totalCount} specjalistów</strong>
+              {cityFilter !== 'Wszystkie miasta' && ` w mieście ${cityFilter}`}
             </>
           )}
         </div>
@@ -294,10 +503,20 @@ const ProvidersPage = () => {
             <option value="recommended">Polecane</option>
             <option value="price-asc">Cena: od najniższej</option>
             <option value="price-desc">Cena: od najwyższej</option>
-            <option value="distance">Najbliżej</option>
+            <option value="distance">Najbliżej mnie</option>
           </select>
         </div>
       </div>
+
+      {/* Info o sortowaniu po odległości */}
+      {sortBy === 'distance' && !userLocation && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6 flex items-center gap-3">
+          <Navigation className="w-5 h-5 text-yellow-600" />
+          <p className="text-yellow-700 text-sm">
+            Aby sortować po odległości, kliknij "Pobierz lokalizację" lub zezwól przeglądarce na dostęp do lokalizacji.
+          </p>
+        </div>
+      )}
 
       {/* Loading State */}
       {isLoading && (
@@ -324,7 +543,7 @@ const ProvidersPage = () => {
       {/* Providers Grid */}
       {!isLoading && providers.length > 0 && (
         <div className="grid gap-6">
-          {providers.map((provider) => (
+          {providers.map((provider: any) => (
             <div
               key={provider.id}
               className="card card-hover p-6 grid md:grid-cols-[200px,1fr,200px] gap-6"
@@ -368,15 +587,22 @@ const ProvidersPage = () => {
                   <span className="text-gray-500">({provider.reviewsCount} opinii)</span>
                 </div>
 
-                {/* Location */}
+                {/* Location & Distance */}
                 <div className="flex items-center gap-2 text-gray-500 mb-4">
                   <MapPin className="w-4 h-4" />
                   <span>{provider.locationString}</span>
+                  {sortBy === 'distance' && provider._distance && provider._distance !== Infinity && (
+                    <span className="ml-2 px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs font-medium">
+                      {provider._distance < 1 
+                        ? `${Math.round(provider._distance * 1000)} m` 
+                        : `${provider._distance.toFixed(1)} km`}
+                    </span>
+                  )}
                 </div>
 
                 {/* Services */}
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {provider.serviceNames.slice(0, 4).map((serviceName, idx) => (
+                  {provider.serviceNames.slice(0, 4).map((serviceName: string, idx: number) => (
                     <span
                       key={idx}
                       className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm"
@@ -396,7 +622,7 @@ const ProvidersPage = () => {
 
                 {/* Features */}
                 <div className="flex flex-wrap gap-4">
-                  {provider.features.slice(0, 3).map((feature) => (
+                  {provider.features.slice(0, 3).map((feature: string) => (
                     <span key={feature} className="flex items-center gap-1 text-sm text-gray-600">
                       <Check className="w-4 h-4 text-green-500" />
                       {feature}

@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { useState, useEffect, createContext, useContext } from 'react';
 
 // 🔥 Firebase imports
@@ -9,17 +9,22 @@ import { auth, db } from './firebase';
 // Client Pages
 import HomePage from './pages/HomePage';
 import AuthPage from './pages/AuthPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
 import ProfilePage from './pages/ProfilePage';
 import ProvidersPage from './pages/ProvidersPage';
 import ProviderDetailPage from './pages/ProviderDetailPage';
 import MessagesPage from './pages/MessagesPage';
 import NotificationsPage from './pages/NotificationsPage';
-import ContactPage from './pages/ContactPage';
-import TermsPage from './pages/TermsPage';
-import PrivacyPage from './pages/PrivacyPage';
-import FAQPage from './pages/FAQPage';
-import SupportPage from './pages/SupportPage';
-import AboutPage from './pages/AboutPage';
+
+// Static Pages
+import AboutPage from './pages/static/AboutPage';
+import CareerPage from './pages/static/CareerPage';
+import BlogPage from './pages/static/BlogPage';
+import ContactPage from './pages/static/ContactPage';
+import FAQPage from './pages/static/FAQPage';
+import TermsPage from './pages/static/TermsPage';
+import PrivacyPage from './pages/static/PrivacyPage';
+import SupportPage from './pages/static/SupportPage';
 
 // Business Pages
 import BusinessLayout from './components/business/BusinessLayout';
@@ -30,6 +35,15 @@ import BusinessCalendar from './pages/business/BusinessCalendar';
 import BusinessStatistics from './pages/business/BusinessStatistics';
 import BusinessMessages from './pages/business/BusinessMessages';
 import BusinessSettings from './pages/business/BusinessSettings';
+import BusinessWorkingHours from './pages/business/BusinessWorkingHours';
+
+// Admin Pages
+import AdminLayout from './components/admin/AdminLayout';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminProviders from './pages/admin/AdminProviders';
+import AdminBookings from './pages/admin/AdminBookings';
+import AdminSettings from './pages/admin/AdminSettings';
 
 // Shared Components
 import Header from './components/Header';
@@ -38,6 +52,17 @@ import Toast from './components/Toast';
 import AnimatedBackground from './components/AnimatedBackground';
 
 import { User, ToastMessage } from './types';
+
+// ==================== SCROLL TO TOP ====================
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  
+  return null;
+};
 
 // ==================== TYPES ====================
 interface UserData {
@@ -92,24 +117,30 @@ export const useToast = () => useContext(ToastContext);
 const ClientLayout = () => {
   return (
     <div className="min-h-screen flex flex-col">
+      <ScrollToTop />
       <AnimatedBackground />
       <Header />
       <main className="flex-grow">
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/weryfikacja-email" element={<VerifyEmailPage />} />
           <Route path="/profil" element={<ProfilePage />} />
           <Route path="/uslugodawcy/profil/:id" element={<ProviderDetailPage />} />
           <Route path="/uslugodawcy/:category" element={<ProvidersPage />} />
           <Route path="/uslugodawcy" element={<ProvidersPage />} />
           <Route path="/wiadomosci" element={<MessagesPage />} />
           <Route path="/powiadomienia" element={<NotificationsPage />} />
-          <Route path="/kontakt" element={<ContactPage />} />
-          <Route path="/regulamin" element={<TermsPage />} />
-          <Route path="/polityka-prywatnosci" element={<PrivacyPage />} />
-          <Route path="/faq" element={<FAQPage />} />
-          <Route path="/wsparcie" element={<SupportPage />} />
+          
+          {/* Static Pages */}
           <Route path="/o-nas" element={<AboutPage />} />
+          <Route path="/kariera" element={<CareerPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/kontakt" element={<ContactPage />} />
+          <Route path="/faq" element={<FAQPage />} />
+          <Route path="/regulamin" element={<TermsPage />} />
+          <Route path="/prywatnosc" element={<PrivacyPage />} />
+          <Route path="/wsparcie" element={<SupportPage />} />
         </Routes>
       </main>
       <Footer />
@@ -142,36 +173,42 @@ function App() {
 
   // 🔥 Firebase Auth State Listener
   useEffect(() => {
+    console.log('🔥 Setting up auth listener...');
+    
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      console.log('🔥 Auth state changed:', currentUser?.email || 'no user');
       setFirebaseUser(currentUser);
 
       if (currentUser) {
         try {
           // Pobierz dane użytkownika z Firestore
           const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+          console.log('🔥 User doc exists:', userDoc.exists());
           
           if (userDoc.exists()) {
             const firestoreData = userDoc.data() as UserData;
+            console.log('🔥 Firestore data:', firestoreData);
             setUserData(firestoreData);
 
             // Konwertuj na format User (dla kompatybilności)
             const legacyUser: User = {
               id: currentUser.uid,
-              email: currentUser.email || firestoreData.email,
-              username: firestoreData.username || currentUser.displayName || '',
+              email: currentUser.email || firestoreData.email || '',
+              username: firestoreData.username || currentUser.displayName || 'Użytkownik',
               phone: firestoreData.phone || '',
               accountType: firestoreData.accountType || 'client',
               businessName: firestoreData.businessName,
               avatar: firestoreData.avatar || currentUser.photoURL || undefined,
             };
+            console.log('🔥 Legacy user:', legacyUser);
             setUser(legacyUser);
           } else {
             // Użytkownik w Auth ale bez dokumentu Firestore
-            // Utwórz podstawowy obiekt user
+            console.log('🔥 No Firestore doc, creating basic user');
             const basicUser: User = {
               id: currentUser.uid,
               email: currentUser.email || '',
-              username: currentUser.displayName || '',
+              username: currentUser.displayName || 'Użytkownik',
               phone: '',
               accountType: 'client',
             };
@@ -179,11 +216,21 @@ function App() {
             setUserData(null);
           }
         } catch (error) {
-          console.error('Error fetching user data:', error);
+          console.error('🔥 Error fetching user data:', error);
+          // Mimo błędu, ustaw podstawowe dane użytkownika
+          const fallbackUser: User = {
+            id: currentUser.uid,
+            email: currentUser.email || '',
+            username: currentUser.displayName || 'Użytkownik',
+            phone: '',
+            accountType: 'client',
+          };
+          setUser(fallbackUser);
           setUserData(null);
         }
       } else {
         // Użytkownik wylogowany
+        console.log('🔥 User logged out');
         setUser(null);
         setUserData(null);
       }
@@ -242,11 +289,21 @@ function App() {
     }}>
       <ToastContext.Provider value={{ showToast }}>
         <Routes>
+          {/* Admin Panel Routes */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="uzytkownicy" element={<AdminUsers />} />
+            <Route path="uslugodawcy" element={<AdminProviders />} />
+            <Route path="rezerwacje" element={<AdminBookings />} />
+            <Route path="ustawienia" element={<AdminSettings />} />
+          </Route>
+
           {/* Business Panel Routes */}
           <Route path="/biznes" element={<BusinessLayout />}>
             <Route index element={<BusinessDashboard />} />
             <Route path="uslugi" element={<BusinessServices />} />
             <Route path="dodaj-usluge" element={<BusinessAddService />} />
+            <Route path="godziny-pracy" element={<BusinessWorkingHours />} />
             <Route path="kalendarz" element={<BusinessCalendar />} />
             <Route path="wiadomosci" element={<BusinessMessages />} />
             <Route path="statystyki" element={<BusinessStatistics />} />

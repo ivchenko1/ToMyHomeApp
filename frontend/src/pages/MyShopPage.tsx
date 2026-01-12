@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
-  Store,
   Plus,
   Edit2,
   Trash2,
@@ -51,11 +50,10 @@ interface ShopData {
 
 const MyShopPage = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { showToast } = useToast();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'services' | 'settings'>('overview');
-  const [isEditing, setIsEditing] = useState(false);
   const [editingService, setEditingService] = useState<string | null>(null);
 
   // Przykładowe dane sklepu (normalnie z API)
@@ -158,7 +156,7 @@ const MyShopPage = () => {
   };
 
   // Zapisz zmiany usługi
-  const saveServiceEdit = (id: string) => {
+  const saveServiceEdit = (_id: string) => {
     setEditingService(null);
     showToast('Zmiany zapisane!', 'success');
   };

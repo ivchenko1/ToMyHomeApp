@@ -8,10 +8,37 @@ import PhoneInput, { validatePhoneNumber } from '../components/PhoneInput';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
-  updateProfile
+  updateProfile,
+  sendEmailVerification
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebase';
+
+// Funkcja sprawdzająca duplikaty w bazie
+const checkDuplicates = async (phone: string, businessName?: string): Promise<{ isDuplicate: boolean; message: string }> => {
+  try {
+    // Sprawdź duplikat telefonu
+    const phoneQuery = query(collection(db, 'users'), where('phone', '==', phone));
+    const phoneSnapshot = await getDocs(phoneQuery);
+    if (!phoneSnapshot.empty) {
+      return { isDuplicate: true, message: 'Ten numer telefonu jest już używany przez inne konto' };
+    }
+
+    // Sprawdź duplikat nazwy salonu (dla usługodawców)
+    if (businessName && businessName.trim()) {
+      const businessQuery = query(collection(db, 'users'), where('businessName', '==', businessName.trim()));
+      const businessSnapshot = await getDocs(businessQuery);
+      if (!businessSnapshot.empty) {
+        return { isDuplicate: true, message: 'Ta nazwa salonu jest już zajęta' };
+      }
+    }
+
+    return { isDuplicate: false, message: '' };
+  } catch (error) {
+    console.error('Error checking duplicates:', error);
+    return { isDuplicate: false, message: '' }; // W razie błędu pozwól kontynuować
+  }
+};
 
 type AuthMode = 'select' | 'login' | 'register-client' | 'register-provider';
 
@@ -80,7 +107,30 @@ const AuthPage = () => {
     setIsLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, loginData.email, loginData.password);
+      const userCredential = await signInWithEmailAndPassword(auth, loginData.email, loginData.password);
+      
+      // Sprawdź czy email jest zweryfikowany (tylko dla nowych kont)
+      // Stare konta (utworzone przed 2026-01-08) nie wymagają weryfikacji
+      const creationTime = userCredential.user.metadata.creationTime;
+      const accountCreatedAt = creationTime ? new Date(creationTime) : new Date(0);
+      const verificationRequiredAfter = new Date('2026-01-08');
+      
+      const isNewAccount = accountCreatedAt > verificationRequiredAfter;
+      
+      if (isNewAccount && !userCredential.user.emailVerified) {
+        // Zapisz hasło tymczasowo
+        sessionStorage.setItem('temp_password', loginData.password);
+        const emailForRedirect = loginData.email;
+        // Wyloguj użytkownika
+        await auth.signOut();
+        // Przekieruj na stronę weryfikacji
+        setIsLoading(false);
+        window.location.href = `${window.location.origin}${window.location.pathname}#/weryfikacja-email?email=${encodeURIComponent(emailForRedirect)}`;
+        return;
+      }
+      
+      // Poczekaj chwilę na aktualizację auth state
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       showToast('Logowanie pomyślne! Witaj z powrotem!', 'success');
       const redirect = searchParams.get('redirect');
@@ -171,6 +221,22 @@ const AuthPage = () => {
     setIsLoading(true);
 
     try {
+      // Formatuj numer telefonu z kodem kraju do sprawdzenia
+      const phoneDigits = registerData.phone.replace(/\D/g, '');
+      const formattedPhone = `${registerData.phoneCountryCode} ${phoneDigits}`;
+
+      // 0. Sprawdź duplikaty (telefon i nazwa salonu)
+      const duplicateCheck = await checkDuplicates(
+        formattedPhone, 
+        registerData.accountType === 'provider' ? registerData.businessName : undefined
+      );
+      
+      if (duplicateCheck.isDuplicate) {
+        setError(duplicateCheck.message);
+        setIsLoading(false);
+        return;
+      }
+
       // 1. Tworzenie użytkownika w Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(
         auth, 
@@ -184,10 +250,6 @@ const AuthPage = () => {
       await updateProfile(user, {
         displayName: registerData.username
       });
-
-      // Formatuj numer telefonu z kodem kraju
-      const phoneDigits = registerData.phone.replace(/\D/g, '');
-      const formattedPhone = `${registerData.phoneCountryCode} ${phoneDigits}`;
 
       // 3. Zapisanie dodatkowych danych w Firestore
       await setDoc(doc(db, 'users', user.uid), {
@@ -208,14 +270,26 @@ const AuthPage = () => {
         })
       });
 
-      showToast('Konto utworzone pomyślnie! Witamy w ToMyHomeApp!', 'success');
+      // 4. Wyślij email weryfikacyjny
+      await sendEmailVerification(user, {
+        url: window.location.origin + '/#/auth?mode=login&verified=true',
+        handleCodeInApp: false,
+      });
+
+      // Zapisz hasło tymczasowo (do ponownego wysłania emaila)
+      sessionStorage.setItem('temp_password', registerData.password);
       
-      // Redirect based on account type
-      if (registerData.accountType === 'provider') {
-        navigate('/biznes/dodaj-usluge');
-      } else {
-        navigate('/');
-      }
+      // Zapisz email do przekierowania
+      const emailForRedirect = registerData.email;
+      
+      // Wyloguj użytkownika - musi zweryfikować email przed zalogowaniem
+      await auth.signOut();
+      
+      showToast('Konto utworzone! Sprawdź email.', 'success');
+      
+      // Przekieruj na stronę weryfikacji używając window.location (pewniejsze)
+      window.location.href = `${window.location.origin}${window.location.pathname}#/weryfikacja-email?email=${encodeURIComponent(emailForRedirect)}`;
+      
     } catch (err: any) {
       console.error('Registration error:', err);
       

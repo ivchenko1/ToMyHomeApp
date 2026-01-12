@@ -4,11 +4,9 @@ import {
   Plus,
   Trash2,
   MapPin,
-  Briefcase,
   DollarSign,
   FileText,
   Award,
-  Image,
   Save,
   ArrowLeft,
   Store,
@@ -53,7 +51,7 @@ interface ProviderFormData {
 
 const CreateProviderPage = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { showToast } = useToast();
 
   const [currentStep, setCurrentStep] = useState(1);

@@ -5,7 +5,6 @@ import {
   Home,
   Gift,
   Heart,
-  Wallet,
   Calendar,
   Settings,
   HelpCircle,
@@ -18,7 +17,9 @@ import {
   EyeOff,
   Lock,
   Save,
+  Clock,
   X,
+  Star,
 } from 'lucide-react';
 import { useAuth, useToast } from '../App';
 import PhoneInput, { validatePhoneNumber } from '../components/PhoneInput';
@@ -28,12 +29,15 @@ import {
   changePassword,
   deleteUserAccount 
 } from '../services/userService';
+import favoriteService, { Favorite } from '../services/favoriteService';
+import bookingService, { Booking } from '../services/bookingService';
+import reviewService from '../services/reviewService';
+import { Link } from 'react-router-dom';
 
 type SectionType =
   | 'dashboard'
   | 'referral'
   | 'favorites'
-  | 'wallet'
   | 'visits'
   | 'settings'
   | 'help';
@@ -44,6 +48,18 @@ const ProfilePage = () => {
   const { showToast } = useToast();
   const [activeSection, setActiveSection] = useState<SectionType>('dashboard');
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [favorites, setFavorites] = useState<Favorite[]>([]);
+  const [favoritesLoading, setFavoritesLoading] = useState(false);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+  
+  // Stan dla modalu opinii
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewBooking, setReviewBooking] = useState<Booking | null>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewedBookings, setReviewedBookings] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -51,11 +67,165 @@ const ProfilePage = () => {
     }
   }, [isAuthenticated, navigate]);
 
+  // Ładuj rezerwacje użytkownika
+  useEffect(() => {
+    const loadBookings = async () => {
+      if (!user?.id) return;
+      
+      setBookingsLoading(true);
+      try {
+        const userBookings = await bookingService.getByClient(String(user.id));
+        setBookings(userBookings);
+      } catch (error) {
+        console.error('Error loading bookings:', error);
+      } finally {
+        setBookingsLoading(false);
+      }
+    };
+    
+    loadBookings();
+  }, [user?.id]);
+
+  // Ładuj ulubione przy starcie
+  useEffect(() => {
+    const loadFavorites = async () => {
+      if (!user?.id) return;
+      
+      setFavoritesLoading(true);
+      try {
+        const favs = await favoriteService.getByUser(String(user.id));
+        setFavorites(favs);
+      } catch (error) {
+        console.error('Error loading favorites:', error);
+      } finally {
+        setFavoritesLoading(false);
+      }
+    };
+    
+    loadFavorites();
+  }, [user?.id]);
+
+  // Sprawdź które rezerwacje mają już opinie
+  useEffect(() => {
+    const checkReviews = async () => {
+      if (!bookings.length) return;
+      
+      const reviewed = new Set<string>();
+      for (const booking of bookings) {
+        if (booking.status === 'completed' || (booking.status !== 'cancelled' && new Date(booking.date) < new Date())) {
+          const hasReview = await reviewService.hasReviewForBooking(booking.id);
+          if (hasReview) {
+            reviewed.add(booking.id);
+          }
+        }
+      }
+      setReviewedBookings(reviewed);
+    };
+    
+    checkReviews();
+  }, [bookings]);
+
+  // Otwórz modal opinii
+  const openReviewModal = (booking: Booking) => {
+    setReviewBooking(booking);
+    setReviewRating(5);
+    setReviewComment('');
+    setShowReviewModal(true);
+  };
+
+  // Wyślij opinię
+  const submitReview = async () => {
+    if (!reviewBooking || !user) return;
+    
+    if (reviewComment.trim().length < 10) {
+      showToast('Opinia musi mieć minimum 10 znaków', 'error');
+      return;
+    }
+    
+    setReviewSubmitting(true);
+    try {
+      await reviewService.create({
+        bookingId: reviewBooking.id,
+        providerId: reviewBooking.providerId,
+        clientId: user.id,
+        clientName: user.username || 'Klient',
+        rating: reviewRating,
+        comment: reviewComment.trim(),
+        serviceName: reviewBooking.serviceName,
+      });
+      
+      setReviewedBookings(prev => new Set([...prev, reviewBooking.id]));
+      setShowReviewModal(false);
+      showToast('Dziękujemy za opinię! ⭐', 'success');
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      showToast('Błąd podczas wysyłania opinii', 'error');
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
+  // Pobierz nadchodzące wizyty (od dziś)
+  const getUpcomingBookings = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return bookings
+      .filter(b => {
+        const bookingDate = new Date(b.date);
+        return bookingDate >= today && b.status !== 'cancelled';
+      })
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  };
+
+  // Pobierz daty z rezerwacjami w danym miesiącu
+  const getBookingDatesInMonth = () => {
+    const dates = new Set<number>();
+    bookings.forEach(b => {
+      const bookingDate = new Date(b.date);
+      if (
+        bookingDate.getMonth() === currentMonth.getMonth() &&
+        bookingDate.getFullYear() === currentMonth.getFullYear() &&
+        b.status !== 'cancelled'
+      ) {
+        dates.add(bookingDate.getDate());
+      }
+    });
+    return dates;
+  };
+
+  // Anuluj rezerwację
+  const cancelBooking = async (bookingId: string) => {
+    if (!confirm('Czy na pewno chcesz anulować tę wizytę?')) return;
+    
+    try {
+      await bookingService.updateStatus(bookingId, 'cancelled');
+      setBookings(prev => prev.map(b => 
+        b.id === bookingId ? { ...b, status: 'cancelled' as const } : b
+      ));
+      showToast('Wizyta została anulowana', 'success');
+    } catch (error) {
+      showToast('Błąd podczas anulowania', 'error');
+    }
+  };
+
+  // Usuń z ulubionych
+  const removeFavorite = async (providerId: string) => {
+    if (!user?.id) return;
+    
+    try {
+      await favoriteService.remove(String(user.id), providerId);
+      setFavorites(prev => prev.filter(f => f.providerId !== providerId));
+      showToast('Usunięto z ulubionych', 'success');
+    } catch (error) {
+      showToast('Błąd podczas usuwania', 'error');
+    }
+  };
+
   const menuItems = [
     { id: 'dashboard', label: 'Panel Główny', icon: Home },
     { id: 'referral', label: 'Poleć znajomym', icon: Gift },
     { id: 'favorites', label: 'Ulubione', icon: Heart },
-    { id: 'wallet', label: 'Portfel', icon: Wallet },
     { id: 'visits', label: 'Moje wizyty', icon: Calendar },
     { id: 'settings', label: 'Ustawienia', icon: Settings },
     { id: 'help', label: 'Pomoc', icon: HelpCircle },
@@ -93,6 +263,7 @@ const ProfilePage = () => {
     const firstDay = getFirstDayOfMonth(currentMonth);
     const today = new Date();
     const dayNames = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb', 'Nd'];
+    const bookingDates = getBookingDatesInMonth();
 
     return (
       <div className="bg-white rounded-xl border-2 border-gray-100 p-6">
@@ -133,20 +304,38 @@ const ProfilePage = () => {
               day === today.getDate() &&
               currentMonth.getMonth() === today.getMonth() &&
               currentMonth.getFullYear() === today.getFullYear();
+            const hasBooking = bookingDates.has(day);
 
             return (
               <div
                 key={day}
-                className={`py-3 rounded-lg cursor-pointer transition-all hover:scale-110 ${
+                className={`py-3 rounded-lg cursor-pointer transition-all hover:scale-110 relative ${
                   isToday
                     ? 'bg-primary text-white font-bold'
+                    : hasBooking
+                    ? 'bg-emerald-100 text-emerald-700 font-semibold'
                     : 'bg-gray-50 hover:bg-gray-100'
                 }`}
               >
                 {day}
+                {hasBooking && !isToday && (
+                  <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                )}
               </div>
             );
           })}
+        </div>
+        
+        {/* Legenda */}
+        <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-4 text-xs text-gray-500">
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 bg-primary rounded" />
+            <span>Dziś</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 bg-emerald-100 rounded" />
+            <span>Masz wizytę</span>
+          </div>
         </div>
       </div>
     );
@@ -155,6 +344,9 @@ const ProfilePage = () => {
   const renderContent = () => {
     switch (activeSection) {
       case 'dashboard':
+        const upcomingCount = getUpcomingBookings().length;
+        const favoritesCount = favorites.length;
+        
         return (
           <div>
             <div className="bg-gradient-to-r from-primary to-secondary text-white rounded-2xl p-8 mb-8">
@@ -165,18 +357,20 @@ const ProfilePage = () => {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="card p-6 text-center">
-                <div className="text-4xl font-bold text-gray-900 mb-2">0</div>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div 
+                className="card p-6 text-center cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => setActiveSection('visits')}
+              >
+                <div className="text-4xl font-bold text-gray-900 mb-2">{upcomingCount}</div>
                 <div className="text-gray-500">Nadchodzących wizyt</div>
               </div>
-              <div className="card p-6 text-center">
-                <div className="text-4xl font-bold text-gray-900 mb-2">0</div>
+              <div 
+                className="card p-6 text-center cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => setActiveSection('favorites')}
+              >
+                <div className="text-4xl font-bold text-gray-900 mb-2">{favoritesCount}</div>
                 <div className="text-gray-500">Ulubionych miejsc</div>
-              </div>
-              <div className="card p-6 text-center">
-                <div className="text-4xl font-bold text-gray-900 mb-2">0 zł</div>
-                <div className="text-gray-500">W portfelu</div>
               </div>
             </div>
           </div>
@@ -219,36 +413,244 @@ const ProfilePage = () => {
 
       case 'favorites':
         return (
-          <div className="text-center py-16">
-            <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">Nie masz jeszcze ulubionych miejsc.</p>
-          </div>
-        );
-
-      case 'wallet':
-        return (
-          <div className="bg-gradient-to-r from-emerald-500 to-green-400 text-white rounded-2xl p-8">
-            <h2 className="text-xl mb-2">Dostępne środki</h2>
-            <div className="text-5xl font-bold mb-6">0.00 zł</div>
-            <button
-              onClick={() => showToast('Funkcja w budowie', 'info')}
-              className="btn bg-white text-emerald-600 font-bold"
-            >
-              Doładuj
-            </button>
+          <div>
+            {favoritesLoading ? (
+              <div className="text-center py-16">
+                <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
+                <p className="text-gray-500">Ładowanie ulubionych...</p>
+              </div>
+            ) : favorites.length === 0 ? (
+              <div className="text-center py-16">
+                <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 mb-4">Nie masz jeszcze ulubionych miejsc.</p>
+                <Link 
+                  to="/uslugodawcy" 
+                  className="inline-block px-6 py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 transition-colors"
+                >
+                  Przeglądaj usługodawców
+                </Link>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {favorites.map((fav) => (
+                  <div key={fav.id} className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 hover:shadow-md transition-shadow">
+                    <Link to={`/uslugodawcy/profil/${fav.providerId}`}>
+                      <div className="relative h-40">
+                        <img 
+                          src={fav.providerImage || 'https://via.placeholder.com/300x200'} 
+                          alt={fav.providerName}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                        <div className="absolute bottom-3 left-3 text-white">
+                          <h3 className="font-bold">{fav.providerName}</h3>
+                          <p className="text-sm text-white/80">{fav.providerProfession}</p>
+                        </div>
+                      </div>
+                    </Link>
+                    <div className="p-3 flex items-center justify-between">
+                      <Link 
+                        to={`/uslugodawcy/profil/${fav.providerId}`}
+                        className="text-sm text-primary font-medium hover:underline"
+                      >
+                        Zobacz profil
+                      </Link>
+                      <button
+                        onClick={() => removeFavorite(fav.providerId)}
+                        className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                        title="Usuń z ulubionych"
+                      >
+                        <Heart className="w-5 h-5 fill-current" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         );
 
       case 'visits':
+        const upcomingBookings = getUpcomingBookings();
+        const pastBookings = bookings
+          .filter(b => {
+            const bookingDate = new Date(b.date);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            return bookingDate < today || b.status === 'cancelled';
+          })
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+          .slice(0, 20);
+
         return (
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
               <h3 className="font-bold text-lg mb-4">Kalendarz wizyt</h3>
               {renderCalendar()}
+              
+              {/* Historia wizyt */}
+              {pastBookings.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="font-bold text-lg mb-4">Historia wizyt</h3>
+                  <div className="space-y-3">
+                    {pastBookings.map(booking => {
+                      const canReview = booking.status !== 'cancelled' && !reviewedBookings.has(booking.id);
+                      const hasReviewed = reviewedBookings.has(booking.id);
+                      
+                      return (
+                      <div 
+                        key={booking.id} 
+                        className={`bg-white rounded-xl border p-4 ${
+                          booking.status === 'cancelled' ? 'opacity-60' : ''
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <img 
+                            src={booking.providerImage || 'https://via.placeholder.com/50'} 
+                            alt={booking.providerName}
+                            className="w-12 h-12 rounded-full object-cover"
+                          />
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-900">{booking.serviceName}</p>
+                            <p className="text-sm text-gray-500">{booking.providerName}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-medium text-gray-700">
+                              {new Date(booking.date).toLocaleDateString('pl-PL')}
+                            </p>
+                            <p className={`text-xs ${
+                              booking.status === 'cancelled' ? 'text-red-500' : 
+                              booking.status === 'completed' ? 'text-green-500' : 'text-gray-400'
+                            }`}>
+                              {booking.status === 'cancelled' ? 'Anulowana' : 
+                               booking.status === 'completed' ? 'Zakończona' : 'Minęła'}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {/* Przycisk opinii */}
+                        {canReview && (
+                          <div className="mt-3 pt-3 border-t border-gray-100">
+                            <button
+                              onClick={() => openReviewModal(booking)}
+                              className="flex items-center gap-2 text-sm text-amber-600 hover:text-amber-700 font-medium"
+                            >
+                              <Star className="w-4 h-4" />
+                              Wystaw opinię
+                            </button>
+                          </div>
+                        )}
+                        {hasReviewed && (
+                          <div className="mt-3 pt-3 border-t border-gray-100">
+                            <span className="flex items-center gap-2 text-sm text-green-600">
+                              <Star className="w-4 h-4 fill-current" />
+                              Opinia wystawiona
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
+            
             <div>
               <h3 className="font-bold text-lg mb-4">Nadchodzące wizyty</h3>
-              <p className="text-gray-500">Brak nadchodzących wizyt.</p>
+              {bookingsLoading ? (
+                <div className="text-center py-8">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+                </div>
+              ) : upcomingBookings.length === 0 ? (
+                <div className="bg-gray-50 rounded-xl p-6 text-center">
+                  <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500 mb-4">Brak nadchodzących wizyt</p>
+                  <Link 
+                    to="/uslugodawcy"
+                    className="inline-block px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90"
+                  >
+                    Znajdź usługodawcę
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {upcomingBookings.map(booking => {
+                    const bookingDate = new Date(booking.date);
+                    const isToday = bookingDate.toDateString() === new Date().toDateString();
+                    const isTomorrow = bookingDate.toDateString() === new Date(Date.now() + 86400000).toDateString();
+                    
+                    return (
+                      <div 
+                        key={booking.id} 
+                        className={`bg-white rounded-xl border-2 p-4 ${
+                          isToday ? 'border-primary bg-primary/5' : 
+                          isTomorrow ? 'border-yellow-400 bg-yellow-50' : 'border-gray-100'
+                        }`}
+                      >
+                        {isToday && (
+                          <div className="text-xs font-bold text-primary mb-2">📅 DZISIAJ</div>
+                        )}
+                        {isTomorrow && (
+                          <div className="text-xs font-bold text-yellow-600 mb-2">⏰ JUTRO</div>
+                        )}
+                        
+                        <div className="flex items-start gap-3">
+                          <img 
+                            src={booking.providerImage || 'https://via.placeholder.com/50'} 
+                            alt={booking.providerName}
+                            className="w-14 h-14 rounded-xl object-cover"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-gray-900 truncate">{booking.serviceName}</p>
+                            <p className="text-sm text-gray-600">{booking.providerName}</p>
+                            
+                            <div className="flex items-center gap-3 mt-2 text-sm text-gray-500">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="w-4 h-4" />
+                                <span>{bookingDate.toLocaleDateString('pl-PL', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-4 h-4" />
+                                <span>{booking.time}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                          <span className="font-bold text-primary">{booking.servicePrice} zł</span>
+                          <div className="flex gap-2">
+                            <Link
+                              to={`/uslugodawcy/profil/${booking.providerId}`}
+                              className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                            >
+                              Zobacz profil
+                            </Link>
+                            <button
+                              onClick={() => cancelBooking(booking.id)}
+                              className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        
+                        {booking.status === 'pending' && (
+                          <div className="mt-2 text-xs text-yellow-600 bg-yellow-50 px-2 py-1 rounded">
+                            ⏳ Oczekuje na potwierdzenie
+                          </div>
+                        )}
+                        {booking.status === 'confirmed' && (
+                          <div className="mt-2 text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
+                            ✅ Potwierdzona
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         );
@@ -766,7 +1168,6 @@ const ProfilePage = () => {
               {activeSection === 'dashboard' && 'Przegląd Twojej aktywności'}
               {activeSection === 'referral' && 'Zapraszaj znajomych i zarabiaj'}
               {activeSection === 'favorites' && 'Twoje ulubione miejsca i usługi'}
-              {activeSection === 'wallet' && 'Zarządzaj swoimi środkami'}
               {activeSection === 'visits' && 'Kalendarz i historia rezerwacji'}
               {activeSection === 'settings' && 'Personalizuj swoje konto'}
               {activeSection === 'help' && 'FAQ i Kontakt'}
@@ -776,6 +1177,118 @@ const ProfilePage = () => {
           {renderContent()}
         </main>
       </div>
+
+      {/* Modal wystawiania opinii */}
+      {showReviewModal && reviewBooking && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-start justify-between mb-4">
+                <h3 className="text-xl font-bold">Wystaw opinię</h3>
+                <button
+                  onClick={() => setShowReviewModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Info o wizycie */}
+              <div className="p-4 bg-gray-50 rounded-xl mb-6">
+                <div className="flex items-center gap-3">
+                  <img 
+                    src={reviewBooking.providerImage || 'https://via.placeholder.com/50'} 
+                    alt={reviewBooking.providerName}
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
+                  <div>
+                    <p className="font-semibold">{reviewBooking.providerName}</p>
+                    <p className="text-sm text-gray-500">{reviewBooking.serviceName}</p>
+                    <p className="text-xs text-gray-400">
+                      {new Date(reviewBooking.date).toLocaleDateString('pl-PL')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Ocena gwiazdkowa */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Twoja ocena
+                </label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      onClick={() => setReviewRating(star)}
+                      className="p-1 transition-transform hover:scale-110"
+                    >
+                      <Star 
+                        className={`w-10 h-10 ${
+                          star <= reviewRating 
+                            ? 'text-amber-400 fill-amber-400' 
+                            : 'text-gray-300'
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+                <p className="text-sm text-gray-500 mt-1">
+                  {reviewRating === 1 && 'Bardzo słabo'}
+                  {reviewRating === 2 && 'Słabo'}
+                  {reviewRating === 3 && 'Średnio'}
+                  {reviewRating === 4 && 'Dobrze'}
+                  {reviewRating === 5 && 'Świetnie!'}
+                </p>
+              </div>
+
+              {/* Komentarz */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Twoja opinia
+                </label>
+                <textarea
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  placeholder="Opisz swoje doświadczenie z usługą..."
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-primary focus:ring-0 resize-none"
+                  rows={4}
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Minimum 10 znaków ({reviewComment.length}/10)
+                </p>
+              </div>
+
+              {/* Przyciski */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowReviewModal(false)}
+                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl font-medium hover:bg-gray-50"
+                >
+                  Anuluj
+                </button>
+                <button
+                  onClick={submitReview}
+                  disabled={reviewSubmitting || reviewComment.length < 10}
+                  className="flex-1 px-4 py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {reviewSubmitting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Wysyłanie...
+                    </>
+                  ) : (
+                    <>
+                      <Star className="w-5 h-5" />
+                      Wyślij opinię
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

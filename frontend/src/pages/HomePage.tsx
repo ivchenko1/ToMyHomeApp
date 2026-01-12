@@ -18,6 +18,7 @@ const HomePage = () => {
     { id: 'masaz', name: 'Masaż', icon: '💆', price: 120, slug: 'masaz' },
     { id: 'makijaz', name: 'Makijaż', icon: '💄', price: 100, slug: 'makijaz' },
     { id: 'twarz', name: 'Twarz', icon: '💧', price: 120, slug: 'twarz' },
+    { id: 'inne', name: 'Inne usługi', icon: '✨', price: 0, slug: 'inne' },
   ];
 
   const reviews = [
@@ -208,7 +209,8 @@ const HomePage = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+          {/* Grid usług */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
             {services.map((service) => (
               <ServiceCard key={service.id} service={service} />
             ))}
