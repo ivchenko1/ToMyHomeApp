@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
-  Store,
   Plus,
   Edit2,
   Trash2,
@@ -51,11 +50,11 @@ interface ShopData {
 
 const MyShopPage = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth(); // Usunięto 'user'
   const { showToast } = useToast();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'services' | 'settings'>('overview');
-  const [isEditing, setIsEditing] = useState(false);
+  // Usunięto nieużywany stan isEditing
   const [editingService, setEditingService] = useState<string | null>(null);
 
   // Przykładowe dane sklepu (normalnie z API)
@@ -157,8 +156,8 @@ const MyShopPage = () => {
     }));
   };
 
-  // Zapisz zmiany usługi
-  const saveServiceEdit = (id: string) => {
+  // Zapisz zmiany usługi (usunięto nieużywany parametr id)
+  const saveServiceEdit = () => {
     setEditingService(null);
     showToast('Zmiany zapisane!', 'success');
   };
@@ -454,7 +453,7 @@ const MyShopPage = () => {
                         />
                         <div className="flex gap-2">
                           <button
-                            onClick={() => saveServiceEdit(service.id)}
+                            onClick={() => saveServiceEdit()}
                             className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200"
                           >
                             <Save className="w-5 h-5" />
