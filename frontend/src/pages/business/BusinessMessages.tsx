@@ -4,49 +4,6 @@ import {
   Send,
   MoreVertical,
   Phone,
-<<<<<<< HEAD
-  ChevronLeft,
-  Check,
-  CheckCheck,
-  Calendar,
-  Clock,
-  DollarSign,
-} from 'lucide-react';
-import { useAuth, useToast } from '../../App';
-
-interface Message {
-  id: string;
-  senderId: string;
-  text: string;
-  timestamp: Date;
-  read: boolean;
-  type: 'text' | 'image' | 'booking';
-  bookingData?: {
-    service: string;
-    date: string;
-    time: string;
-    price: number;
-    status: 'pending' | 'confirmed' | 'cancelled';
-  };
-}
-
-interface Conversation {
-  id: string;
-  client: {
-    id: string;
-    name: string;
-    avatar: string;
-    phone?: string;
-    email?: string;
-    isOnline: boolean;
-    totalBookings?: number;
-  };
-  lastMessage: string;
-  lastMessageTime: Date;
-  unreadCount: number;
-  messages: Message[];
-}
-=======
   Video,
   Loader2,
   MessageSquare,
@@ -54,7 +11,6 @@ interface Conversation {
 import { useAuth } from '../../App';
 import messageService, { Conversation, Message } from '../../services/messageService';
 import providerService from '../../services/providerService';
->>>>>>> origin/papi
 
 const BusinessMessages = () => {
   const { user } = useAuth();
@@ -70,128 +26,10 @@ const BusinessMessages = () => {
 
   // Pobierz providerId i subskrybuj konwersacje
   useEffect(() => {
-<<<<<<< HEAD
-    // Load demo conversations for business
-    const demoConversations: Conversation[] = [
-      {
-        id: '1',
-        client: {
-          id: '101',
-          name: 'Magdalena Kowalczyk',
-          avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop',
-          phone: '+48 123 456 789',
-          email: 'magda@example.com',
-          isOnline: true,
-          totalBookings: 3,
-        },
-        lastMessage: 'Czy mogę się umówić na piątek?',
-        lastMessageTime: new Date(Date.now() - 1000 * 60 * 2),
-        unreadCount: 1,
-        messages: [
-          {
-            id: '1',
-            senderId: '101',
-            text: 'Dzień dobry! Interesuje mnie strzyżenie.',
-            timestamp: new Date(Date.now() - 1000 * 60 * 30),
-            read: true,
-            type: 'text',
-          },
-          {
-            id: '2',
-            senderId: user?.id || '',
-            text: 'Dzień dobry! Oczywiście, kiedy chciałaby Pani się umówić?',
-            timestamp: new Date(Date.now() - 1000 * 60 * 20),
-            read: true,
-            type: 'text',
-          },
-          {
-            id: '3',
-            senderId: '101',
-            text: 'Czy mogę się umówić na piątek?',
-            timestamp: new Date(Date.now() - 1000 * 60 * 2),
-            read: false,
-            type: 'text',
-          },
-        ],
-      },
-      {
-        id: '2',
-        client: {
-          id: '102',
-          name: 'Tomasz Nowicki',
-          avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop',
-          phone: '+48 987 654 321',
-          isOnline: false,
-          totalBookings: 1,
-        },
-        lastMessage: 'Świetnie, dziękuję!',
-        lastMessageTime: new Date(Date.now() - 1000 * 60 * 60),
-        unreadCount: 0,
-        messages: [
-          {
-            id: '1',
-            senderId: '102',
-            text: 'Chciałbym zarezerwować masaż na sobotę.',
-            timestamp: new Date(Date.now() - 1000 * 60 * 120),
-            read: true,
-            type: 'text',
-          },
-          {
-            id: '2',
-            senderId: user?.id || '',
-            text: '',
-            timestamp: new Date(Date.now() - 1000 * 60 * 90),
-            read: true,
-            type: 'booking',
-            bookingData: {
-              service: 'Masaż relaksacyjny',
-              date: '2025-12-07',
-              time: '11:00',
-              price: 150,
-              status: 'confirmed',
-            },
-          },
-          {
-            id: '3',
-            senderId: '102',
-            text: 'Świetnie, dziękuję!',
-            timestamp: new Date(Date.now() - 1000 * 60 * 60),
-            read: true,
-            type: 'text',
-          },
-        ],
-      },
-      {
-        id: '3',
-        client: {
-          id: '103',
-          name: 'Anna Wiśniewska',
-          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop',
-          email: 'anna.w@example.com',
-          isOnline: true,
-          totalBookings: 7,
-        },
-        lastMessage: 'Czy można przełożyć rezerwację?',
-        lastMessageTime: new Date(Date.now() - 1000 * 60 * 60 * 3),
-        unreadCount: 1,
-        messages: [
-          {
-            id: '1',
-            senderId: '103',
-            text: 'Czy można przełożyć rezerwację?',
-            timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3),
-            read: false,
-            type: 'text',
-          },
-        ],
-      },
-    ];
-=======
     if (!user?.id) {
       setIsLoading(false);
       return;
     }
->>>>>>> origin/papi
 
     const initMessages = async () => {
       try {
@@ -278,74 +116,17 @@ const BusinessMessages = () => {
     }
   };
 
-<<<<<<< HEAD
-  const sendMessage = (text?: string) => {
-    const messageText = text || newMessage;
-    if (!messageText.trim() || !selectedConversation) return;
-
-    const message: Message = {
-      id: Date.now().toString(),
-      senderId: user?.id || '',
-      text: messageText,
-      timestamp: new Date(),
-      read: false,
-      type: 'text',
-=======
   const getOtherParticipant = (conversation: Conversation) => {
     if (!user?.id) return { name: 'Nieznany', avatar: '' };
     const otherId = conversation.participants.find(p => p !== user.id) || '';
     return {
       name: conversation.participantNames[otherId] || 'Nieznany',
       avatar: conversation.participantAvatars[otherId] || '',
->>>>>>> origin/papi
     };
   };
 
-<<<<<<< HEAD
-  const sendBookingConfirmation = () => {
-    if (!selectedConversation) return;
-
-    const message: Message = {
-      id: Date.now().toString(),
-      senderId: user?.id || '',
-      text: '',
-      timestamp: new Date(),
-      read: false,
-      type: 'booking',
-      bookingData: {
-        service: 'Strzyżenie',
-        date: new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0],
-        time: '14:00',
-        price: 80,
-        status: 'pending',
-      },
-    };
-
-    const updatedConversations = conversations.map((conv) => {
-      if (conv.id === selectedConversation.id) {
-        return {
-          ...conv,
-          messages: [...conv.messages, message],
-          lastMessage: 'Wysłano propozycję rezerwacji',
-          lastMessageTime: new Date(),
-        };
-      }
-      return conv;
-    });
-
-    setConversations(updatedConversations);
-    setSelectedConversation({
-      ...selectedConversation,
-      messages: [...selectedConversation.messages, message],
-    });
-    showToast('Propozycja rezerwacji wysłana!', 'success');
-  };
-
-  const formatTime = (date: Date) => {
-=======
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
->>>>>>> origin/papi
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / 60000);
