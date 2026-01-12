@@ -6,7 +6,7 @@ import {
   Trash2,
   Eye,
   Clock,
-  DollarSign,
+  // DollarSign, - znak dolara
   ToggleLeft,
   ToggleRight,
   Search,
@@ -286,7 +286,7 @@ const BusinessServices = () => {
                 <div className="flex items-center gap-4">
                   <div className="text-right mr-4">
                     <div className="flex items-center gap-1 text-gray-900 font-semibold">
-                      <DollarSign className="w-4 h-4" />
+                      {/* <DollarSign className="w-4 h-4" /> */} 
                       {service.price} zł
                     </div>
                     <div className="flex items-center gap-1 text-sm text-gray-500">
