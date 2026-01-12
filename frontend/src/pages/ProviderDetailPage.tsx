@@ -480,9 +480,9 @@ const ProviderDetailPage = () => {
       setShowBookingModal(true);
       
       // Reset selekcji
-      setSelectedServices([]);
-      setSelectedDate(null);
-      setSelectedTime(null);
+      // setSelectedServices([]);
+      // setSelectedDate(null);
+      // setSelectedTime(null);
       
       showToast('🎉 Rezerwacja opłacona i potwierdzona!', 'success');
     } catch (error: any) {
