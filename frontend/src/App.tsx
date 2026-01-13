@@ -36,6 +36,7 @@ import BusinessStatistics from './pages/business/BusinessStatistics';
 import BusinessMessages from './pages/business/BusinessMessages';
 import BusinessSettings from './pages/business/BusinessSettings';
 import BusinessWorkingHours from './pages/business/BusinessWorkingHours';
+import BusinessReviews from './pages/business/BusinessReviews';
 
 // Admin Pages
 import AdminLayout from './components/admin/AdminLayout';
@@ -44,6 +45,7 @@ import AdminUsers from './pages/admin/AdminUsers';
 import AdminProviders from './pages/admin/AdminProviders';
 import AdminBookings from './pages/admin/AdminBookings';
 import AdminSettings from './pages/admin/AdminSettings';
+import AdminReports from './pages/admin/AdminReports';
 
 // Shared Components
 import Header from './components/Header';
@@ -65,12 +67,15 @@ const ScrollToTop = () => {
 };
 
 // ==================== TYPES ====================
+export type UserRole = 'user' | 'admin' | 'superadmin';
+
 interface UserData {
   uid: string;
   username: string;
   email: string;
   phone: string;
   accountType: 'client' | 'provider';
+  role?: UserRole;
   businessName?: string;
   avatar?: string;
   createdAt: string;
@@ -89,6 +94,8 @@ interface AuthContextType {
   login: (user: User) => void;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
+  isAdmin: boolean;
+  isSuperAdmin: boolean;
 }
 
 export const AuthContext = createContext<AuthContextType>({
@@ -99,6 +106,8 @@ export const AuthContext = createContext<AuthContextType>({
   login: () => {},
   logout: async () => {},
   isAuthenticated: false,
+  isAdmin: false,
+  isSuperAdmin: false,
 });
 
 // ==================== TOAST CONTEXT ====================
@@ -165,7 +174,7 @@ function App() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Legacy user state (для совместимости с существующим кодом)
+  // Legacy user state (dla kompatybilności)
   const [user, setUser] = useState<User | null>(null);
 
   // Toast state
@@ -173,80 +182,66 @@ function App() {
 
   // 🔥 Firebase Auth State Listener
   useEffect(() => {
-    console.log('🔥 Setting up auth listener...');
-    
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      console.log('🔥 Auth state changed:', currentUser?.email || 'no user');
-      setFirebaseUser(currentUser);
-
-      if (currentUser) {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log('Auth state changed:', firebaseUser?.email);
+      
+      if (firebaseUser) {
+        setFirebaseUser(firebaseUser);
+        
+        // Pobierz dane użytkownika z Firestore
         try {
-          // Pobierz dane użytkownika z Firestore
-          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-          console.log('🔥 User doc exists:', userDoc.exists());
-          
+          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
           if (userDoc.exists()) {
-            const firestoreData = userDoc.data() as UserData;
-            console.log('🔥 Firestore data:', firestoreData);
-            setUserData(firestoreData);
-
-            // Konwertuj na format User (dla kompatybilności)
-            const legacyUser: User = {
-              id: currentUser.uid,
-              email: currentUser.email || firestoreData.email || '',
-              username: firestoreData.username || currentUser.displayName || 'Użytkownik',
-              phone: firestoreData.phone || '',
-              accountType: firestoreData.accountType || 'client',
-              businessName: firestoreData.businessName,
-              avatar: firestoreData.avatar || currentUser.photoURL || undefined,
-            };
-            console.log('🔥 Legacy user:', legacyUser);
-            setUser(legacyUser);
+            const data = userDoc.data() as UserData;
+            setUserData(data);
+            
+            // Ustaw legacy user dla kompatybilności
+            setUser({
+              id: firebaseUser.uid,
+              username: data.username || firebaseUser.displayName || 'Użytkownik',
+              email: data.email || firebaseUser.email || '',
+              phone: data.phone || '',
+              accountType: data.accountType || 'client',
+              avatar: data.avatar,
+            });
           } else {
-            // Użytkownik w Auth ale bez dokumentu Firestore
-            console.log('🔥 No Firestore doc, creating basic user');
-            const basicUser: User = {
-              id: currentUser.uid,
-              email: currentUser.email || '',
-              username: currentUser.displayName || 'Użytkownik',
+            // Brak dokumentu w Firestore - utwórz podstawowy user
+            setUser({
+              id: firebaseUser.uid,
+              username: firebaseUser.displayName || 'Użytkownik',
+              email: firebaseUser.email || '',
               phone: '',
               accountType: 'client',
-            };
-            setUser(basicUser);
-            setUserData(null);
+            });
           }
         } catch (error) {
-          console.error('🔥 Error fetching user data:', error);
-          // Mimo błędu, ustaw podstawowe dane użytkownika
-          const fallbackUser: User = {
-            id: currentUser.uid,
-            email: currentUser.email || '',
-            username: currentUser.displayName || 'Użytkownik',
+          console.error('Error fetching user data:', error);
+          setUser({
+            id: firebaseUser.uid,
+            username: firebaseUser.displayName || 'Użytkownik',
+            email: firebaseUser.email || '',
             phone: '',
             accountType: 'client',
-          };
-          setUser(fallbackUser);
-          setUserData(null);
+          });
         }
       } else {
-        // Użytkownik wylogowany
-        console.log('🔥 User logged out');
-        setUser(null);
+        setFirebaseUser(null);
         setUserData(null);
+        setUser(null);
       }
-
+      
       setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
-  // Legacy login function (для совместимости)
+  // Login function (legacy)
   const login = (userData: User) => {
     setUser(userData);
   };
 
-  // 🔥 Firebase logout
+  // Logout function
   const logout = async () => {
     try {
       await signOut(auth);
@@ -255,7 +250,6 @@ function App() {
       setFirebaseUser(null);
     } catch (error) {
       console.error('Logout error:', error);
-      throw error;
     }
   };
 
@@ -277,6 +271,10 @@ function App() {
     return <LoadingScreen />;
   }
 
+  // Oblicz role
+  const isAdmin = userData?.role === 'admin' || userData?.role === 'superadmin';
+  const isSuperAdmin = userData?.role === 'superadmin';
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -285,27 +283,31 @@ function App() {
       loading,
       login, 
       logout, 
-      isAuthenticated: !!firebaseUser 
+      isAuthenticated: !!firebaseUser,
+      isAdmin,
+      isSuperAdmin
     }}>
       <ToastContext.Provider value={{ showToast }}>
         <Routes>
           {/* Admin Panel Routes */}
-          <Route path="/admin" element={<AdminLayout />}>
+          <Route path="/admin/*" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="uzytkownicy" element={<AdminUsers />} />
             <Route path="uslugodawcy" element={<AdminProviders />} />
             <Route path="rezerwacje" element={<AdminBookings />} />
+            <Route path="zgloszenia" element={<AdminReports />} />
             <Route path="ustawienia" element={<AdminSettings />} />
           </Route>
 
           {/* Business Panel Routes */}
-          <Route path="/biznes" element={<BusinessLayout />}>
+          <Route path="/biznes/*" element={<BusinessLayout />}>
             <Route index element={<BusinessDashboard />} />
             <Route path="uslugi" element={<BusinessServices />} />
             <Route path="dodaj-usluge" element={<BusinessAddService />} />
             <Route path="godziny-pracy" element={<BusinessWorkingHours />} />
             <Route path="kalendarz" element={<BusinessCalendar />} />
             <Route path="wiadomosci" element={<BusinessMessages />} />
+            <Route path="opinie" element={<BusinessReviews />} />
             <Route path="statystyki" element={<BusinessStatistics />} />
             <Route path="profil" element={<BusinessSettings />} />
             <Route path="ustawienia" element={<BusinessSettings />} />

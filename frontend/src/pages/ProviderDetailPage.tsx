@@ -21,6 +21,8 @@ import {
   Shield,
   Share2,
   Loader2,
+  Flag,
+  X,
 } from 'lucide-react';
 import { useToast, useAuth } from '../App';
 import providerService, { Provider, ServiceItem } from '../services/providerService';
@@ -133,6 +135,20 @@ const ProviderDetailPage = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
+  
+  // State dla danych potwierdzenia rezerwacji (zapisane przed resetem)
+  const [confirmedBooking, setConfirmedBooking] = useState<{
+    date: string;
+    time: string;
+    services: string;
+    price: number;
+  } | null>(null);
+  
+  // State dla zgłaszania opinii
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportingReview, setReportingReview] = useState<Review | null>(null);
+  const [reportReason, setReportReason] = useState('');
+  const [reportSubmitting, setReportSubmitting] = useState(false);
 
   // Sprawdź czy jest w ulubionych
   useEffect(() => {
@@ -189,6 +205,49 @@ const ProviderDetailPage = () => {
       showToast('Błąd podczas zapisywania', 'error');
     } finally {
       setIsFavoriteLoading(false);
+    }
+  };
+
+  // Otwórz modal zgłaszania opinii
+  const openReportModal = (review: Review) => {
+    if (!user) {
+      showToast('Zaloguj się, aby zgłosić opinię', 'info');
+      return;
+    }
+    setReportingReview(review);
+    setReportReason('');
+    setShowReportModal(true);
+  };
+
+  // Zgłoś opinię
+  const submitReport = async () => {
+    if (!reportingReview || !user || !provider) return;
+    
+    if (reportReason.trim().length < 10) {
+      showToast('Opisz powód zgłoszenia (min. 10 znaków)', 'error');
+      return;
+    }
+    
+    setReportSubmitting(true);
+    try {
+      await reviewService.reportReview({
+        reviewId: reportingReview.id,
+        reporterId: user.id,
+        reporterName: user.username || 'Użytkownik',
+        reason: reportReason.trim(),
+        reviewContent: reportingReview.comment,
+        reviewAuthor: reportingReview.clientName,
+        providerId: provider.id,
+        providerName: provider.name,
+      });
+      
+      setShowReportModal(false);
+      showToast('Zgłoszenie wysłane. Dziękujemy! 🙏', 'success');
+    } catch (error) {
+      console.error('Error reporting review:', error);
+      showToast('Błąd podczas wysyłania zgłoszenia', 'error');
+    } finally {
+      setReportSubmitting(false);
     }
   };
 
@@ -360,6 +419,7 @@ const ProviderDetailPage = () => {
   };
 
   // Dostępne godziny - generowane dynamicznie z godzin pracy providera
+  // Uwzględnia czas trwania wybranych usług
   const generateTimeSlots = () => {
     if (!provider || !selectedDate) {
       return [];
@@ -385,20 +445,34 @@ const ProviderDetailPage = () => {
     const [fromHour, fromMin] = dayHours.from.split(':').map(Number);
     const [toHour, toMin] = dayHours.to.split(':').map(Number);
     
+    // Godzina zamknięcia w minutach
+    const closingTimeMinutes = toHour * 60 + toMin;
+    
     // Generuj sloty co 30 minut
     let currentHour = fromHour;
     let currentMin = fromMin;
     
     while (currentHour < toHour || (currentHour === toHour && currentMin < toMin)) {
       const time = `${String(currentHour).padStart(2, '0')}:${String(currentMin).padStart(2, '0')}`;
+      const slotStartMinutes = currentHour * 60 + currentMin;
       
       // Sprawdź czy slot nie jest w przeszłości (dla dzisiejszego dnia)
       const isToday = selectedFullDate.toDateString() === now.toDateString();
       const slotInPast = isToday && (currentHour < now.getHours() || (currentHour === now.getHours() && currentMin <= now.getMinutes()));
       
+      // Sprawdź czy usługa zmieści się przed zamknięciem
+      const serviceEndMinutes = slotStartMinutes + totalDuration;
+      const fitsBeforeClosing = serviceEndMinutes <= closingTimeMinutes;
+      
+      // Slot jest zablokowany jeśli:
+      // 1. Jest w przeszłości
+      // 2. Jest na liście zajętych slotów (bookedSlots uwzględnia już czas trwania rezerwacji)
+      // 3. Wybrana usługa nie zmieści się przed zamknięciem
+      const isDisabled = slotInPast || bookedSlots.includes(time) || (selectedServices.length > 0 && !fitsBeforeClosing);
+      
       slots.push({
         time,
-        disabled: bookedSlots.includes(time) || slotInPast,
+        disabled: isDisabled,
       });
       
       // Następny slot (+30 min)
@@ -449,8 +523,8 @@ const ProviderDetailPage = () => {
       // Użyj wybranego miesiąca/roku z kalendarza
       const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`;
       
-      // Sprawdź czy termin jest wolny
-      const isAvailable = await bookingService.isTimeSlotAvailable(provider.id, dateStr, selectedTime);
+      // Sprawdź czy termin jest wolny (z uwzględnieniem czasu trwania wybranej usługi)
+      const isAvailable = await bookingService.isTimeSlotAvailable(provider.id, dateStr, selectedTime, totalDuration);
       if (!isAvailable) {
         showToast('Ten termin jest już zajęty. Wybierz inny.', 'error');
         setIsSubmitting(false);
@@ -477,9 +551,18 @@ const ProviderDetailPage = () => {
       });
 
       console.log('Booking created successfully');
+      
+      // Zapisz dane rezerwacji PRZED resetem do wyświetlenia w modalu
+      setConfirmedBooking({
+        date: `${selectedDate} ${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`,
+        time: selectedTime,
+        services: selectedServices.map(s => s.name).join(', '),
+        price: totalPrice,
+      });
+      
       setShowBookingModal(true);
       
-      // Reset selekcji
+      // Reset selekcji (PO zapisaniu danych!)
       setSelectedServices([]);
       setSelectedDate(null);
       setSelectedTime(null);
@@ -747,12 +830,25 @@ const ProviderDetailPage = () => {
                         </div>
                       </div>
                       <p className="text-gray-600 text-sm">{review.comment}</p>
+                      
+                      {/* Odpowiedź usługodawcy */}
                       {review.providerResponse && (
-                        <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                          <p className="text-xs font-medium text-gray-500 mb-1">Odpowiedź usługodawcy:</p>
-                          <p className="text-sm text-gray-600">{review.providerResponse}</p>
+                        <div className="mt-3 p-3 bg-emerald-50 border-l-4 border-emerald-500 rounded-r-lg">
+                          <p className="text-xs font-semibold text-emerald-700 mb-1">💬 Odpowiedź usługodawcy:</p>
+                          <p className="text-sm text-gray-700">{review.providerResponse}</p>
                         </div>
                       )}
+                      
+                      <div className="flex items-center justify-end mt-2">
+                        <button
+                          onClick={() => openReportModal(review)}
+                          className="text-xs text-gray-400 hover:text-red-500 flex items-center gap-1 transition-colors"
+                          title="Zgłoś opinię"
+                        >
+                          <Flag className="w-3 h-3" />
+                          Zgłoś
+                        </button>
+                      </div>
                     </div>
                   ))}
                   {reviews.length > 5 && (
@@ -919,7 +1015,7 @@ const ProviderDetailPage = () => {
       </main>
 
       {/* Booking Modal */}
-      {showBookingModal && (
+      {showBookingModal && confirmedBooking && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full">
             <div className="text-center">
@@ -939,17 +1035,15 @@ const ProviderDetailPage = () => {
                 </p>
               </div>
               <div className="bg-gray-50 rounded-xl p-4 text-left mb-4">
-                <p className="text-sm mb-1"><strong>Data:</strong> {selectedDate} {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</p>
-                <p className="text-sm mb-1"><strong>Godzina:</strong> {selectedTime}</p>
-                <p className="text-sm mb-1"><strong>Usługi:</strong> {selectedServices.map(s => s.name).join(', ')}</p>
-                <p className="text-sm"><strong>Łącznie:</strong> {totalPrice} zł</p>
+                <p className="text-sm mb-1"><strong>Data:</strong> {confirmedBooking.date}</p>
+                <p className="text-sm mb-1"><strong>Godzina:</strong> {confirmedBooking.time}</p>
+                <p className="text-sm mb-1"><strong>Usługi:</strong> {confirmedBooking.services}</p>
+                <p className="text-sm"><strong>Łącznie:</strong> {confirmedBooking.price} zł</p>
               </div>
               <button 
                 onClick={() => { 
-                  setShowBookingModal(false); 
-                  setSelectedServices([]); 
-                  setSelectedDate(null); 
-                  setSelectedTime(null); 
+                  setShowBookingModal(false);
+                  setConfirmedBooking(null);
                   showToast('Rezerwacja wysłana! Czekaj na potwierdzenie.', 'success'); 
                 }} 
                 className="w-full py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90"
@@ -969,7 +1063,117 @@ const ProviderDetailPage = () => {
         amount={totalPrice}
         serviceName={selectedServices.map(s => s.name).join(', ') || 'Usługa'}
         providerName={provider?.name || ''}
+        bookingDate={selectedDate ? `${selectedDate} ${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}` : undefined}
+        bookingTime={selectedTime || undefined}
       />
+
+      {/* Report Review Modal */}
+      {showReportModal && reportingReview && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-start justify-between mb-4">
+                <h3 className="text-xl font-bold flex items-center gap-2">
+                  <Flag className="w-5 h-5 text-red-500" />
+                  Zgłoś opinię
+                </h3>
+                <button
+                  onClick={() => setShowReportModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Info o opinii */}
+              <div className="p-4 bg-gray-50 rounded-xl mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center text-white text-sm font-bold">
+                    {reportingReview.clientName.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">{reportingReview.clientName}</p>
+                    <div className="flex items-center gap-0.5">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star 
+                          key={star}
+                          className={`w-3 h-3 ${star <= reportingReview.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-200'}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600 italic">"{reportingReview.comment}"</p>
+              </div>
+
+              {/* Powód zgłoszenia */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Dlaczego zgłaszasz tę opinię?
+                </label>
+                <div className="space-y-2 mb-4">
+                  {[
+                    'Fałszywa opinia (osoba nie korzystała z usługi)',
+                    'Obraźliwa lub wulgarna treść',
+                    'Spam lub reklama',
+                    'Narusza prywatność',
+                    'Inny powód',
+                  ].map((reason) => (
+                    <button
+                      key={reason}
+                      onClick={() => setReportReason(reason)}
+                      className={`w-full text-left px-4 py-2 rounded-lg border-2 transition-colors ${
+                        reportReason === reason 
+                          ? 'border-red-500 bg-red-50' 
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <span className="text-sm">{reason}</span>
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  placeholder="Opisz szczegóły zgłoszenia..."
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:ring-0 resize-none"
+                  rows={3}
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Minimum 10 znaków ({reportReason.length}/10)
+                </p>
+              </div>
+
+              {/* Przyciski */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowReportModal(false)}
+                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl font-medium hover:bg-gray-50"
+                >
+                  Anuluj
+                </button>
+                <button
+                  onClick={submitReport}
+                  disabled={reportSubmitting || reportReason.length < 10}
+                  className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl font-semibold hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {reportSubmitting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Wysyłanie...
+                    </>
+                  ) : (
+                    <>
+                      <Flag className="w-5 h-5" />
+                      Wyślij zgłoszenie
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

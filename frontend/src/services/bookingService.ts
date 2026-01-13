@@ -310,15 +310,55 @@ export const bookingService = {
   },
 
   /**
-   * Sprawdź czy termin jest wolny
+   * Pomocnicza funkcja - konwertuje czas "HH:MM" na minuty od północy
    */
-  async isTimeSlotAvailable(providerId: string, date: string, time: string): Promise<boolean> {
+  timeToMinutes(time: string): number {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  },
+
+  /**
+   * Pomocnicza funkcja - konwertuje minuty od północy na czas "HH:MM"
+   */
+  minutesToTime(minutes: number): string {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+  },
+
+  /**
+   * Pobierz czas trwania usługi w minutach z stringa (np. "60 min" -> 60)
+   */
+  parseDuration(duration: string): number {
+    const match = duration.match(/(\d+)/);
+    return match ? parseInt(match[1]) : 30; // domyślnie 30 min
+  },
+
+  /**
+   * Sprawdź czy termin jest wolny (uwzględnia czas trwania usługi)
+   */
+  async isTimeSlotAvailable(providerId: string, date: string, time: string, duration?: number): Promise<boolean> {
     try {
       const bookings = await this.getByProviderAndDate(providerId, date);
-      const conflicting = bookings.find(
-        b => b.time === time && (b.status === 'pending' || b.status === 'confirmed')
-      );
-      return !conflicting;
+      const activeBookings = bookings.filter(b => b.status === 'pending' || b.status === 'confirmed');
+      
+      const newStartMinutes = this.timeToMinutes(time);
+      const newDuration = duration || 30;
+      const newEndMinutes = newStartMinutes + newDuration;
+      
+      // Sprawdź kolizje z istniejącymi rezerwacjami
+      for (const booking of activeBookings) {
+        const bookingStartMinutes = this.timeToMinutes(booking.time);
+        const bookingDuration = this.parseDuration(booking.serviceDuration);
+        const bookingEndMinutes = bookingStartMinutes + bookingDuration;
+        
+        // Kolizja jeśli przedziały się nakładają
+        if (newStartMinutes < bookingEndMinutes && newEndMinutes > bookingStartMinutes) {
+          return false;
+        }
+      }
+      
+      return true;
     } catch (error) {
       console.error('isTimeSlotAvailable error:', error);
       return false;
@@ -327,13 +367,27 @@ export const bookingService = {
 
   /**
    * Pobierz zajęte sloty dla usługodawcy na dany dzień
+   * Uwzględnia czas trwania każdej rezerwacji
    */
   async getBookedSlots(providerId: string, date: string): Promise<string[]> {
     try {
       const bookings = await this.getByProviderAndDate(providerId, date);
-      return bookings
-        .filter(b => b.status === 'pending' || b.status === 'confirmed')
-        .map(b => b.time);
+      const activeBookings = bookings.filter(b => b.status === 'pending' || b.status === 'confirmed');
+      
+      const bookedSlots = new Set<string>();
+      
+      for (const booking of activeBookings) {
+        const startMinutes = this.timeToMinutes(booking.time);
+        const duration = this.parseDuration(booking.serviceDuration);
+        const endMinutes = startMinutes + duration;
+        
+        // Dodaj wszystkie sloty 30-minutowe które są zajęte przez tę rezerwację
+        for (let mins = startMinutes; mins < endMinutes; mins += 30) {
+          bookedSlots.add(this.minutesToTime(mins));
+        }
+      }
+      
+      return Array.from(bookedSlots);
     } catch (error) {
       console.error('getBookedSlots error:', error);
       return [];

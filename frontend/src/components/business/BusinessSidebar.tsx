@@ -10,6 +10,7 @@ import {
   Settings,
   HelpCircle,
   Clock,
+  Star,
 } from 'lucide-react';
 import { useAuth } from '../../App';
 import messageService from '../../services/messageService';
@@ -73,6 +74,11 @@ const BusinessSidebar = ({ isOpen = true, onClose }: BusinessSidebarProps) => {
       label: 'Wiadomości', 
       to: '/biznes/wiadomosci',
       hasBadge: true
+    },
+    { 
+      icon: Star, 
+      label: 'Opinie', 
+      to: '/biznes/opinie' 
     },
     { 
       icon: BarChart3, 
