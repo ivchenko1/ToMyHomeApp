@@ -15,9 +15,25 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../App';
 
+// --- FIREBASE IMPORTS ---
+import { db } from '../firebase'; 
+import { 
+  collection, 
+  query, 
+  where, 
+  onSnapshot, 
+  addDoc, 
+  orderBy, 
+  serverTimestamp, 
+  doc, 
+  updateDoc
+  // Timestamp удален, так как он не использовался
+} from 'firebase/firestore';
+
+// --- TYPES ---
 interface Message {
   id: string;
-  senderId: number;
+  senderId: number | string;
   text: string;
   timestamp: Date;
   read: boolean;
@@ -34,7 +50,7 @@ interface Message {
 interface Conversation {
   id: string;
   participant: {
-    id: number;
+    id: number | string;
     name: string;
     avatar: string;
     profession?: string;
@@ -44,219 +60,138 @@ interface Conversation {
   lastMessage: string;
   lastMessageTime: Date;
   unreadCount: number;
-  messages: Message[];
+  messages: Message[]; 
 }
 
 const MessagesPage = () => {
   const { user } = useAuth();
+
+  console.log("=== DIAGNOSTIC ===");
+  console.log("User Object:", user);
+  console.log("User ID Value:", user?.id);
+  console.log("User ID Type:", typeof user?.id); // Это самое важное!
+  console.log("==================");
+  
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [activeMessages, setActiveMessages] = useState<Message[]>([]);
+  
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showMobileChat, setShowMobileChat] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // 1. ЗАГРУЗКА СПИСКА ЧАТОВ
   useEffect(() => {
-    // Load demo conversations
-    const demoConversations: Conversation[] = [
-      {
-        id: '1',
-        participant: {
-          id: 1,
-          name: 'Anna Kowalska',
-          avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
-          profession: 'Fryzjerka',
-          isOnline: true,
-          rating: 4.9,
-        },
-        lastMessage: 'Dziękuję za rezerwację! Do zobaczenia w piątek 😊',
-        lastMessageTime: new Date(Date.now() - 1000 * 60 * 5),
-        unreadCount: 2,
-        messages: [
-          {
-            id: '1',
-            senderId: 1,
-            text: 'Dzień dobry! Dziękuję za zainteresowanie moimi usługami.',
-            timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
-            read: true,
-            type: 'text',
-          },
-          {
-            id: '2',
-            senderId: user?.id || 0,
-            text: 'Dzień dobry! Chciałabym umówić się na strzyżenie w piątek.',
-            timestamp: new Date(Date.now() - 1000 * 60 * 60),
-            read: true,
-            type: 'text',
-          },
-          {
-            id: '3',
-            senderId: 1,
-            text: 'Oczywiście! Mam wolny termin o 14:00. Pasuje Pani?',
-            timestamp: new Date(Date.now() - 1000 * 60 * 30),
-            read: true,
-            type: 'text',
-          },
-          {
-            id: '4',
-            senderId: user?.id || 0,
-            text: 'Tak, idealnie! Rezerwuję.',
-            timestamp: new Date(Date.now() - 1000 * 60 * 20),
-            read: true,
-            type: 'text',
-          },
-          {
-            id: '5',
-            senderId: 1,
-            text: '',
-            timestamp: new Date(Date.now() - 1000 * 60 * 10),
-            read: false,
-            type: 'booking',
-            bookingData: {
-              service: 'Strzyżenie damskie',
-              date: '2025-12-06',
-              time: '14:00',
-              price: 80,
-              status: 'confirmed',
-            },
-          },
-          {
-            id: '6',
-            senderId: 1,
-            text: 'Dziękuję za rezerwację! Do zobaczenia w piątek 😊',
-            timestamp: new Date(Date.now() - 1000 * 60 * 5),
-            read: false,
-            type: 'text',
-          },
-        ],
-      },
-      {
-        id: '2',
-        participant: {
-          id: 2,
-          name: 'Piotr Nowak',
-          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
-          profession: 'Masażysta',
-          isOnline: false,
-          rating: 4.7,
-        },
-        lastMessage: 'Proszę potwierdzić rezerwację na poniedziałek',
-        lastMessageTime: new Date(Date.now() - 1000 * 60 * 60 * 3),
-        unreadCount: 0,
-        messages: [
-          {
-            id: '1',
-            senderId: 2,
-            text: 'Witam! Czy jest Pan zainteresowany masażem relaksacyjnym?',
-            timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5),
-            read: true,
-            type: 'text',
-          },
-          {
-            id: '2',
-            senderId: user?.id || 0,
-            text: 'Tak, szukam czegoś na napięte mięśnie.',
-            timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4),
-            read: true,
-            type: 'text',
-          },
-          {
-            id: '3',
-            senderId: 2,
-            text: 'Proszę potwierdzić rezerwację na poniedziałek',
-            timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3),
-            read: true,
-            type: 'text',
-          },
-        ],
-      },
-      {
-        id: '3',
-        participant: {
-          id: 3,
-          name: 'Katarzyna Wiśniewska',
-          avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop',
-          profession: 'Kosmetyczka',
-          isOnline: true,
-          rating: 5.0,
-        },
-        lastMessage: 'Zapraszam na zabieg w środę!',
-        lastMessageTime: new Date(Date.now() - 1000 * 60 * 60 * 24),
-        unreadCount: 1,
-        messages: [
-          {
-            id: '1',
-            senderId: 3,
-            text: 'Zapraszam na zabieg w środę!',
-            timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24),
-            read: false,
-            type: 'text',
-          },
-        ],
-      },
-    ];
+    if (!user?.id) return;
 
-    setConversations(demoConversations);
-    
-    // Load from localStorage if exists
-    const saved = localStorage.getItem('userConversations');
-    if (saved) {
-      // Merge with demo data
-    }
+    const q = query(
+      collection(db, 'conversations'), 
+      where('participantIds', 'array-contains', user.id)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const loadedConversations = snapshot.docs.map(doc => {
+        const data = doc.data();
+        
+        const otherUserId = data.participantIds.find((id: string | number) => String(id) !== String(user.id));
+        const otherUserData = data.participantsData?.[otherUserId] || { 
+          name: 'Неизвестный', 
+          avatar: '', 
+          profession: 'Услуги' 
+        };
+
+        return {
+          id: doc.id,
+          participant: {
+            id: otherUserId,
+            name: otherUserData.name,
+            avatar: otherUserData.avatar || 'https://via.placeholder.com/150',
+            profession: otherUserData.profession,
+            isOnline: false,
+            rating: otherUserData.rating || 5.0,
+          },
+          lastMessage: data.lastMessage || '',
+          lastMessageTime: data.lastMessageTime?.toDate() || new Date(),
+          unreadCount: data.unreadCount?.[user.id] || 0,
+          messages: [] 
+        } as Conversation;
+      });
+
+      loadedConversations.sort((a, b) => b.lastMessageTime.getTime() - a.lastMessageTime.getTime());
+      
+      setConversations(loadedConversations);
+    });
+
+    return () => unsubscribe();
   }, [user]);
+
+  // 2. ЗАГРУЗКА СООБЩЕНИЙ
+  useEffect(() => {
+    if (!selectedConversation) return;
+
+    const messagesRef = collection(db, 'conversations', selectedConversation.id, 'messages');
+    const q = query(messagesRef, orderBy('createdAt', 'asc'));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const liveMessages = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          senderId: data.senderId,
+          text: data.text,
+          timestamp: data.createdAt?.toDate() || new Date(),
+          read: data.read || false,
+          type: data.type || 'text',
+          bookingData: data.bookingData || undefined
+        } as Message;
+      });
+
+      setActiveMessages(liveMessages);
+    });
+
+    return () => unsubscribe();
+  }, [selectedConversation?.id]);
 
   useEffect(() => {
     scrollToBottom();
-  }, [selectedConversation?.messages]);
+  }, [activeMessages]);
 
   const scrollToBottom = () => {
-    // Scroll tylko wewnątrz kontenera wiadomości, nie całej strony
-    if (messagesEndRef.current) {
-      const container = messagesEndRef.current.parentElement;
-      if (container) {
-        container.scrollTop = container.scrollHeight;
-      }
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const sendMessage = () => {
-    if (!newMessage.trim() || !selectedConversation) return;
+  // 3. ОТПРАВКА СООБЩЕНИЯ
+  const sendMessage = async () => {
+    if (!newMessage.trim() || !selectedConversation || !user) return;
+    const textToSend = newMessage;
+    setNewMessage(''); 
 
-    const message: Message = {
-      id: Date.now().toString(),
-      senderId: user?.id || 0,
-      text: newMessage,
-      timestamp: new Date(),
-      read: false,
-      type: 'text',
-    };
+    try {
+      const chatId = selectedConversation.id;
 
-    const updatedConversations = conversations.map((conv) => {
-      if (conv.id === selectedConversation.id) {
-        return {
-          ...conv,
-          messages: [...conv.messages, message],
-          lastMessage: newMessage,
-          lastMessageTime: new Date(),
-        };
-      }
-      return conv;
-    });
+      await addDoc(collection(db, 'conversations', chatId, 'messages'), {
+        text: textToSend,
+        senderId: user.id,
+        createdAt: serverTimestamp(),
+        read: false,
+        type: 'text'
+      });
 
-    setConversations(updatedConversations);
-    setSelectedConversation({
-      ...selectedConversation,
-      messages: [...selectedConversation.messages, message],
-    });
-    setNewMessage('');
+      await updateDoc(doc(db, 'conversations', chatId), {
+        lastMessage: textToSend,
+        lastMessageTime: serverTimestamp(),
+      });
 
-    // Save to localStorage
-    localStorage.setItem('userConversations', JSON.stringify(updatedConversations));
+    } catch (error) {
+      console.error("Ошибка отправки:", error);
+      alert("Не удалось отправить сообщение");
+    }
   };
 
   const formatTime = (date: Date) => {
     const now = new Date();
-    const diff = now.getTime() - new Date(date).getTime();
+    const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
@@ -265,7 +200,7 @@ const MessagesPage = () => {
     if (minutes < 60) return `${minutes} min`;
     if (hours < 24) return `${hours}h`;
     if (days === 1) return 'Wczoraj';
-    return new Date(date).toLocaleDateString('pl-PL');
+    return date.toLocaleDateString('pl-PL');
   };
 
   const filteredConversations = conversations.filter((conv) =>
@@ -387,11 +322,7 @@ const MessagesPage = () => {
                           )}
                         </div>
                         <p className="text-sm text-gray-500">
-                          {selectedConversation.participant.isOnline ? (
-                            <span className="text-green-500">Online</span>
-                          ) : (
-                            selectedConversation.participant.profession
-                          )}
+                          {selectedConversation.participant.profession}
                         </p>
                       </div>
                     </div>
@@ -416,8 +347,8 @@ const MessagesPage = () => {
 
                   {/* Messages */}
                   <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                    {selectedConversation.messages.map((message) => {
-                      const isMe = message.senderId === user?.id;
+                    {activeMessages.map((message) => {
+                      const isMe = String(message.senderId) === String(user?.id);
 
                       if (message.type === 'booking' && message.bookingData) {
                         return (
@@ -459,7 +390,7 @@ const MessagesPage = () => {
                               }`}
                             >
                               <span>
-                                {new Date(message.timestamp).toLocaleTimeString('pl-PL', {
+                                {message.timestamp.toLocaleTimeString('pl-PL', {
                                   hour: '2-digit',
                                   minute: '2-digit',
                                 })}

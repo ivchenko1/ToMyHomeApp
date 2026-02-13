@@ -13,13 +13,7 @@ import {
   EmailAuthProvider,
   reauthenticateWithCredential
 } from 'firebase/auth';
-import { 
-  ref, 
-  uploadBytes, 
-  getDownloadURL,
-  deleteObject
-} from 'firebase/storage';
-import { db, auth, storage } from '../firebase';
+import { db, auth } from '../firebase';
 
 // ==================== TYPES ====================
 export interface UserProfile {
@@ -110,7 +104,8 @@ export const updateUserProfile = async (
 };
 
 /**
- * Prześlij avatar do Firebase Storage
+ * Prześlij avatar jako base64 do Firestore (bez Storage)
+ * Zapisuje obraz jako base64 string bezpośrednio w Firestore
  */
 export const uploadAvatar = async (
   userId: string, 
@@ -122,26 +117,32 @@ export const uploadAvatar = async (
       throw new Error('Plik musi być obrazem');
     }
     
-    // Walidacja rozmiaru (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      throw new Error('Plik jest za duży (max 5MB)');
+    // Walidacja rozmiaru (max 400KB dla base64 w Firestore)
+    // Base64 zajmuje ~33% więcej miejsca niż oryginalny plik
+    if (file.size > 400 * 1024) {
+      throw new Error('Plik jest za duży (max 400KB). Użyj mniejszego zdjęcia.');
     }
     
-    // Utwórz unikalną nazwę pliku
-    const fileExtension = file.name.split('.').pop();
-    const fileName = `avatars/${userId}_${Date.now()}.${fileExtension}`;
+    // Konwertuj na base64
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        resolve(result);
+      };
+      reader.onerror = () => reject(new Error('Błąd odczytu pliku'));
+      reader.readAsDataURL(file);
+    });
     
-    // Prześlij do Firebase Storage
-    const storageRef = ref(storage, fileName);
-    const snapshot = await uploadBytes(storageRef, file);
+    // Sprawdź czy base64 nie jest za duży (Firestore limit: 1MB na dokument)
+    if (base64.length > 800000) {
+      throw new Error('Obraz jest za duży po konwersji. Użyj mniejszego pliku.');
+    }
     
-    // Pobierz URL
-    const downloadURL = await getDownloadURL(snapshot.ref);
+    // Zaktualizuj profil z base64
+    await updateUserProfile(userId, { avatar: base64 });
     
-    // Zaktualizuj profil z nowym URL avatara
-    await updateUserProfile(userId, { avatar: downloadURL });
-    
-    return downloadURL;
+    return base64;
   } catch (error) {
     console.error('Error uploading avatar:', error);
     throw error;
@@ -211,17 +212,6 @@ export const deleteUserAccount = async (password: string): Promise<void> => {
     // Reautoryzacja
     const credential = EmailAuthProvider.credential(user.email, password);
     await reauthenticateWithCredential(user, credential);
-    
-    // Usuń avatar z Storage (jeśli istnieje)
-    try {
-      const userProfile = await getUserProfile(user.uid);
-      if (userProfile?.avatar && userProfile.avatar.includes('firebase')) {
-        const avatarRef = ref(storage, userProfile.avatar);
-        await deleteObject(avatarRef);
-      }
-    } catch (e) {
-      console.log('Avatar deletion skipped');
-    }
     
     // Usuń dokument użytkownika z Firestore
     await deleteDoc(doc(db, 'users', user.uid));

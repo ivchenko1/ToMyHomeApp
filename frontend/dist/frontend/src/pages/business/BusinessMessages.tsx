@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
 import {
   Search,
   Send,
@@ -7,7 +6,6 @@ import {
   Paperclip,
   MoreVertical,
   Phone,
-  Video,
   ChevronLeft,
   Check,
   CheckCheck,
@@ -19,7 +17,7 @@ import { useAuth, useToast } from '../../App';
 
 interface Message {
   id: string;
-  senderId: number;
+  senderId: number | string; 
   text: string;
   timestamp: Date;
   read: boolean;
@@ -36,7 +34,7 @@ interface Message {
 interface Conversation {
   id: string;
   client: {
-    id: number;
+    id: number | string; // <--- ИСПРАВЛЕНО: разрешаем и число, и строку
     name: string;
     avatar: string;
     phone?: string;
@@ -455,7 +453,7 @@ const BusinessMessages = () => {
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
                   {selectedConversation.messages.map((message) => {
-                    const isMe = message.senderId === user?.id;
+                    const isMe = String(message.senderId) === String(user?.id);
 
                     if (message.type === 'booking' && message.bookingData) {
                       return (
