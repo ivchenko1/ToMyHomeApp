@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Shield, CheckCircle, Loader2, Smartphone, CreditCard, Building2 } from 'lucide-react';
+import { X, Shield, CheckCircle, Loader2, Smartphone, CreditCard, Building2, Calendar, Clock } from 'lucide-react';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -8,12 +8,23 @@ interface PaymentModalProps {
   amount: number;
   serviceName: string;
   providerName: string;
+  bookingDate?: string;
+  bookingTime?: string;
 }
 
 type PaymentMethod = 'blik' | 'card' | 'transfer' | null;
 type PaymentStep = 'select' | 'blik' | 'processing' | 'success';
 
-const PaymentModal = ({ isOpen, onClose, onSuccess, amount, serviceName, providerName }: PaymentModalProps) => {
+const PaymentModal = ({ 
+  isOpen, 
+  onClose, 
+  onSuccess, 
+  amount, 
+  serviceName, 
+  providerName,
+  bookingDate,
+  bookingTime 
+}: PaymentModalProps) => {
   const [step, setStep] = useState<PaymentStep>('select');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(null);
   const [blikCode, setBlikCode] = useState('');
@@ -98,8 +109,29 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, amount, serviceName, provide
               <div className="bg-gray-50 rounded-xl p-4 mb-6">
                 <p className="text-sm text-gray-500 mb-1">Płacisz za:</p>
                 <p className="font-semibold text-gray-900">{serviceName}</p>
-                <p className="text-sm text-gray-600">{providerName}</p>
-                <div className="mt-3 pt-3 border-t border-gray-200">
+                <p className="text-sm text-gray-600 mb-3">{providerName}</p>
+                
+                {/* Szczegóły rezerwacji */}
+                {(bookingDate || bookingTime) && (
+                  <div className="border-t border-gray-200 pt-3 mb-3 space-y-2">
+                    {bookingDate && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Calendar className="w-4 h-4 text-gray-400" />
+                        <span className="text-gray-600">Data:</span>
+                        <span className="font-medium text-gray-900">{bookingDate}</span>
+                      </div>
+                    )}
+                    {bookingTime && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Clock className="w-4 h-4 text-gray-400" />
+                        <span className="text-gray-600">Godzina:</span>
+                        <span className="font-medium text-gray-900">{bookingTime}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                <div className="pt-3 border-t border-gray-200">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Do zapłaty:</span>
                     <span className="text-2xl font-bold text-gray-900">{formatAmount(amount)}</span>

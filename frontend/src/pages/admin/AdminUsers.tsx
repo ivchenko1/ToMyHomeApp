@@ -95,6 +95,10 @@ const AdminUsers = () => {
     if (targetUser.id === currentUser?.id) {
       return false;
     }
+    // Jeśli nie ma roli, nie można wykonać akcji
+    if (!currentUserRole) {
+      return false;
+    }
     return adminService.canPerformActionOnUser(currentUserRole, targetUser.role, action);
   };
 

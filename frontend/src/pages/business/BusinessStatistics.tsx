@@ -3,7 +3,7 @@ import {
   TrendingUp,
   Users,
   Calendar,
-  DollarSign,
+  Coins,
   Star,
   Clock,
   ArrowUpRight,
@@ -210,7 +210,7 @@ const BusinessStatistics = () => {
   const peakHour = stats.peakHours.reduce((max, h) => h.bookings > max.bookings ? h : max, { hour: '-', bookings: 0 });
 
   const statCards = [
-    { title: 'Przychód', value: `${stats.revenue.total.toLocaleString()} zł`, change: stats.revenue.change, icon: DollarSign, bgColor: 'bg-emerald-100', textColor: 'text-emerald-600' },
+    { title: 'Przychód', value: `${stats.revenue.total.toLocaleString()} zł`, change: stats.revenue.change, icon: Coins, bgColor: 'bg-emerald-100', textColor: 'text-emerald-600' },
     { title: 'Rezerwacje', value: stats.bookings.total, change: stats.bookings.change, icon: Calendar, bgColor: 'bg-blue-100', textColor: 'text-blue-600' },
     { title: 'Klienci', value: stats.clients.total, subtitle: `${stats.clients.new} nowych`, icon: Users, bgColor: 'bg-purple-100', textColor: 'text-purple-600' },
     { title: 'Ocena', value: stats.rating.average.toFixed(1), subtitle: `${stats.rating.count} opinii`, icon: Star, bgColor: 'bg-amber-100', textColor: 'text-amber-600' },

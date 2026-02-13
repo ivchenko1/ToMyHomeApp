@@ -3,24 +3,21 @@ import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../App';
 import AdminHeader from './AdminHeader';
 import AdminSidebar from './AdminSidebar';
-import adminService, { UserRole } from '../../services/adminService';
 import { Shield, Loader2 } from 'lucide-react';
 
 // Context dla roli admina
 interface AdminContextType {
-  role: UserRole;
   isSuperAdmin: boolean;
+  role: 'admin' | 'superadmin' | null;
 }
 
-const AdminContext = createContext<AdminContextType>({ role: 'user', isSuperAdmin: false });
+const AdminContext = createContext<AdminContextType>({ isSuperAdmin: false, role: null });
 
 export const useAdminRole = () => useContext(AdminContext);
 
 const AdminLayout = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, isAdmin, isSuperAdmin, loading } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [userRole, setUserRole] = useState<UserRole>('user');
-  const [isChecking, setIsChecking] = useState(true);
   const { pathname } = useLocation();
 
   // Scroll to top on route change
@@ -28,43 +25,8 @@ const AdminLayout = () => {
     window.scrollTo(0, 0);
   }, [pathname]);
 
-  // Sprawdź rolę użytkownika
-  useEffect(() => {
-    const checkUserRole = async () => {
-      if (!user?.id) {
-        setUserRole('user');
-        setIsChecking(false);
-        return;
-      }
-
-      try {
-        const role = await adminService.getUserRole(user.id);
-        setUserRole(role);
-      } catch (error) {
-        console.error('Error checking user role:', error);
-        setUserRole('user');
-      } finally {
-        setIsChecking(false);
-      }
-    };
-
-    if (isAuthenticated && user) {
-      checkUserRole();
-    } else {
-      setIsChecking(false);
-    }
-  }, [isAuthenticated, user]);
-
-  const isAdmin = userRole === 'admin' || userRole === 'superadmin';
-  const isSuperAdmin = userRole === 'superadmin';
-
-  // Redirect to login if not authenticated
-  if (!isAuthenticated) {
-    return <Navigate to="/auth?redirect=/admin" replace />;
-  }
-
-  // Loading state while checking admin status
-  if (isChecking) {
+  // Loading state
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -73,6 +35,11 @@ const AdminLayout = () => {
         </div>
       </div>
     );
+  }
+
+  // Redirect to login if not authenticated
+  if (!isAuthenticated) {
+    return <Navigate to="/auth?redirect=/admin" replace />;
   }
 
   // Access denied if not admin
@@ -90,7 +57,7 @@ const AdminLayout = () => {
           </p>
           <div className="space-y-3">
             <a
-              href="/#/"
+              href="#/"
               className="block w-full py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors"
             >
               Wróć do strony głównej
@@ -105,7 +72,7 @@ const AdminLayout = () => {
   }
 
   return (
-    <AdminContext.Provider value={{ role: userRole, isSuperAdmin }}>
+    <AdminContext.Provider value={{ isSuperAdmin, role: isSuperAdmin ? 'superadmin' : 'admin' }}>
       <div className="min-h-screen bg-gray-100 flex">
         <AdminSidebar
           isOpen={isSidebarOpen}

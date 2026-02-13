@@ -84,7 +84,7 @@ const reviewService = {
       providerId: data.providerId,
       clientId: data.clientId,
       clientName: data.clientName,
-      clientAvatar: data.clientAvatar,
+      clientAvatar: data.clientAvatar || '', // Firebase nie akceptuje undefined
       rating: data.rating,
       comment: data.comment,
       serviceName: data.serviceName,
@@ -234,6 +234,86 @@ const reviewService = {
       count: reviews.length,
       distribution,
     };
+  },
+
+  /**
+   * Zgłoś opinię do moderacji
+   */
+  async reportReview(data: {
+    reviewId: string;
+    reporterId: string;
+    reporterName: string;
+    reason: string;
+    reviewContent: string;
+    reviewAuthor: string;
+    providerId: string;
+    providerName: string;
+  }): Promise<void> {
+    const reportId = `report_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const now = new Date().toISOString();
+    
+    const report = {
+      id: reportId,
+      type: 'review',
+      reviewId: data.reviewId,
+      reporterId: data.reporterId,
+      reporterName: data.reporterName,
+      reason: data.reason,
+      reviewContent: data.reviewContent,
+      reviewAuthor: data.reviewAuthor,
+      providerId: data.providerId,
+      providerName: data.providerName,
+      status: 'pending', // pending, reviewed, dismissed, action_taken
+      createdAt: now,
+    };
+    
+    await setDoc(doc(db, 'reports', reportId), report);
+    console.log('Review reported:', reportId);
+  },
+
+  /**
+   * Pobierz wszystkie zgłoszenia (dla admina)
+   */
+  async getReports(): Promise<any[]> {
+    try {
+      const snapshot = await getDocs(collection(db, 'reports'));
+      const reports = snapshot.docs.map(doc => doc.data());
+      return reports.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    } catch (error) {
+      console.error('getReports error:', error);
+      return [];
+    }
+  },
+
+  /**
+   * Zaktualizuj status zgłoszenia
+   */
+  async updateReportStatus(reportId: string, status: string, adminNote?: string): Promise<void> {
+    const reportRef = doc(db, 'reports', reportId);
+    await updateDoc(reportRef, {
+      status,
+      adminNote: adminNote || '',
+      reviewedAt: new Date().toISOString(),
+    });
+  },
+
+  /**
+   * Usuń opinię (przez admina)
+   */
+  async deleteReview(reviewId: string): Promise<void> {
+    const reviewDoc = await getDoc(doc(db, REVIEWS_COLLECTION, reviewId));
+    if (reviewDoc.exists()) {
+      const review = reviewDoc.data() as Review;
+      
+      // Usuń opinię
+      await updateDoc(doc(db, REVIEWS_COLLECTION, reviewId), {
+        deleted: true,
+        deletedAt: new Date().toISOString(),
+      });
+      
+      // Aktualizuj średnią ocenę providera
+      await this.updateProviderRating(review.providerId);
+    }
   },
 };
 

@@ -1,15 +1,98 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast, useAuth } from '../App';
 import ServiceCard from '../components/ServiceCard';
-import ReviewCard from '../components/ReviewCard';
 import StatsSection from '../components/StatsSection';
+import { Star } from 'lucide-react';
+import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { db } from '../firebase';
+
+// Interfejs dla opinii z Firebase
+interface FirebaseReview {
+  id: string;
+  clientName: string;
+  clientAvatar?: string;
+  serviceName: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  providerName?: string;
+}
+
+// Komponent karty opinii dla karuzeli
+const ReviewCarouselCard = ({ review }: { review: FirebaseReview }) => {
+  const gradientClasses = [
+    'bg-gradient-to-r from-primary to-secondary',
+    'bg-gradient-to-r from-pink-500 to-rose-500',
+    'bg-gradient-to-r from-purple-500 to-indigo-500',
+    'bg-gradient-to-r from-emerald-500 to-teal-500',
+    'bg-gradient-to-r from-orange-500 to-amber-500',
+  ];
+  
+  // Użyj hash z ID do konsystentnego wyboru gradientu
+  const gradientIndex = review.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % gradientClasses.length;
+  
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Dzisiaj';
+    if (diffDays === 1) return 'Wczoraj';
+    if (diffDays < 7) return `${diffDays} dni temu`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} tyg. temu`;
+    return `${Math.floor(diffDays / 30)} mies. temu`;
+  };
+
+  return (
+    <div className="bg-white rounded-2xl shadow-lg p-6 min-w-[320px] max-w-[380px] flex-shrink-0 mx-3">
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-4">
+        <div className={`w-12 h-12 rounded-full ${gradientClasses[gradientIndex]} flex items-center justify-center text-white font-bold text-lg`}>
+          {review.clientName.charAt(0).toUpperCase()}
+        </div>
+        <div>
+          <h4 className="font-semibold text-gray-900">{review.clientName}</h4>
+          <p className="text-sm text-gray-500">
+            {review.serviceName} • {formatDate(review.createdAt)}
+          </p>
+        </div>
+      </div>
+
+      {/* Stars */}
+      <div className="flex items-center gap-1 mb-4">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Star
+            key={star}
+            className={`w-4 h-4 ${
+              star <= review.rating
+                ? 'fill-yellow-400 text-yellow-400'
+                : 'text-gray-300'
+            }`}
+          />
+        ))}
+      </div>
+
+      {/* Content */}
+      <p className="text-gray-600 leading-relaxed line-clamp-4">{review.comment}</p>
+    </div>
+  );
+};
 
 const HomePage = () => {
   const { showToast } = useToast();
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const servicesRef = useRef<HTMLDivElement>(null);
+  const carouselRef = useRef<HTMLDivElement>(null);
+  
+  // State dla opinii z Firebase
+  const [reviews, setReviews] = useState<FirebaseReview[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [carouselPosition, setCarouselPosition] = useState(0);
+  
+  // State dla mini statystyk w Hero
+  const [heroStats, setHeroStats] = useState({ clients: '0+', providers: '0+' });
 
   const services = [
     { id: 'fryzjer', name: 'Fryzjer', icon: '✂️', price: 80, slug: 'fryzjer' },
@@ -19,42 +102,6 @@ const HomePage = () => {
     { id: 'makijaz', name: 'Makijaż', icon: '💄', price: 100, slug: 'makijaz' },
     { id: 'twarz', name: 'Twarz', icon: '💧', price: 120, slug: 'twarz' },
     { id: 'inne', name: 'Inne usługi', icon: '✨', price: 0, slug: 'inne' },
-  ];
-
-  const reviews = [
-    {
-      id: 1,
-      author: 'Anna Kowalska',
-      avatar: 'A',
-      service: 'Fryzjer',
-      date: '2 dni temu',
-      rating: 5,
-      content: 'Świetna usługa! Fryzjer przyjechał punktualnie, był bardzo profesjonalny. Efekt przekroczył moje oczekiwania. Na pewno skorzystam ponownie!',
-      helpful: 23,
-      gradientClass: 'bg-gradient-to-r from-primary to-secondary',
-    },
-    {
-      id: 2,
-      author: 'Krzysztof Chójan',
-      avatar: 'K',
-      service: 'Masaż',
-      date: 'Tydzień temu',
-      rating: 5,
-      content: 'Bardzo wygodne rozwiązanie. Masażysta przywiózł profesjonalny stół, wszystko przebiegło sprawnie. Polecam każdemu!',
-      helpful: 18,
-      gradientClass: 'bg-gradient-to-r from-pink-500 to-rose-500',
-    },
-    {
-      id: 3,
-      author: 'Magdalena Wiśniewska',
-      avatar: 'M',
-      service: 'Manicure',
-      date: '3 dni temu',
-      rating: 5,
-      content: 'Profesjonalny manicure w domu - świetny efekt, przystępna cena. Oszczędność czasu nieoceniona!',
-      helpful: 31,
-      gradientClass: 'bg-gradient-to-r from-purple-500 to-indigo-500',
-    },
   ];
 
   const howItWorks = [
@@ -81,6 +128,90 @@ const HomePage = () => {
   const scrollToServices = () => {
     servicesRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  // Funkcja formatująca liczby dla Hero (podobna jak w StatsSection)
+  const formatHeroStat = (num: number): string => {
+    if (num === 0) return '0+';
+    if (num < 10) return `${num}+`;
+    if (num < 100) return `${Math.floor(num / 5) * 5}+`;
+    if (num < 1000) return `${Math.floor(num / 50) * 50}+`;
+    const rounded = Math.floor(num / 500) * 500;
+    if (rounded >= 1000) {
+      return `${(rounded / 1000).toFixed(rounded % 1000 === 0 ? 0 : 1)}K+`;
+    }
+    return `${rounded}+`;
+  };
+
+  // Pobierz opinie i mini statystyki z Firebase
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Pobierz opinie
+        const reviewsQuery = query(
+          collection(db, 'reviews'),
+          orderBy('createdAt', 'desc'),
+          limit(20)
+        );
+        const reviewsSnapshot = await getDocs(reviewsQuery);
+        const fetchedReviews = reviewsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as FirebaseReview[];
+        
+        // Filtruj tylko opinie z ratingiem >= 4
+        const positiveReviews = fetchedReviews.filter(r => r.rating >= 4);
+        setReviews(positiveReviews);
+
+        // Pobierz statystyki dla Hero
+        const [usersSnapshot, providersSnapshot] = await Promise.all([
+          getDocs(collection(db, 'users')),
+          getDocs(collection(db, 'providers'))
+        ]);
+        
+        const clientsCount = usersSnapshot.docs.filter(
+          doc => doc.data().accountType === 'client'
+        ).length;
+        const providersCount = providersSnapshot.size;
+
+        setHeroStats({
+          clients: formatHeroStat(clientsCount),
+          providers: formatHeroStat(providersCount)
+        });
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setReviews([]);
+      } finally {
+        setReviewsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Automatyczne przewijanie karuzeli
+  useEffect(() => {
+    if (reviews.length <= 1) return;
+    
+    const interval = setInterval(() => {
+      setCarouselPosition(prev => {
+        const maxPosition = reviews.length - 1;
+        return prev >= maxPosition ? 0 : prev + 1;
+      });
+    }, 4000); // Przewiń co 4 sekundy
+
+    return () => clearInterval(interval);
+  }, [reviews.length]);
+
+  // Scroll karuzeli gdy zmienia się pozycja
+  useEffect(() => {
+    if (carouselRef.current && reviews.length > 0) {
+      const cardWidth = 356; // 320px + 36px margin
+      carouselRef.current.scrollTo({
+        left: carouselPosition * cardWidth,
+        behavior: 'smooth'
+      });
+    }
+  }, [carouselPosition, reviews.length]);
 
   // Intersection Observer for scroll animations
   useEffect(() => {
@@ -177,11 +308,11 @@ const HomePage = () => {
                   />
                   <div className="p-6 flex gap-8">
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-gray-900">10K+</div>
+                      <div className="text-2xl font-bold text-gray-900">{heroStats.clients}</div>
                       <div className="text-sm text-gray-500">Zadowolonych klientów</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-gray-900">500+</div>
+                      <div className="text-2xl font-bold text-gray-900">{heroStats.providers}</div>
                       <div className="text-sm text-gray-500">Specjalistów</div>
                     </div>
                   </div>
@@ -255,10 +386,10 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Reviews Section */}
+      {/* Reviews Section - Automatic Carousel */}
       <section
         id="reviews"
-        className="py-20 fade-in-scroll opacity-0 translate-y-10 transition-all duration-700"
+        className="py-20 fade-in-scroll opacity-0 translate-y-10 transition-all duration-700 overflow-hidden"
       >
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-12">
@@ -268,14 +399,68 @@ const HomePage = () => {
             <h2 className="text-3xl lg:text-4xl font-bold mb-4">
               Co mówią nasi klienci
             </h2>
-            <p className="text-gray-600">Ponad 10 000 zadowolonych użytkowników</p>
+            <p className="text-gray-600">
+              {reviews.length > 0 
+                ? `Ponad ${Math.max(reviews.length, 10)} zadowolonych użytkowników`
+                : 'Opinie naszych zadowolonych klientów'
+              }
+            </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            {reviews.map((review) => (
-              <ReviewCard key={review.id} review={review} />
-            ))}
-          </div>
+          {reviewsLoading ? (
+            <div className="flex justify-center py-12">
+              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : reviews.length === 0 ? (
+            <div className="text-center py-12 bg-gray-50 rounded-2xl">
+              <Star className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 text-lg">Bądź pierwszym, który wystawi opinię!</p>
+              <p className="text-gray-400">Skorzystaj z usługi i podziel się swoją opinią</p>
+            </div>
+          ) : reviews.length === 1 ? (
+            // Tylko jedna opinia - wyśrodkuj bez karuzeli
+            <div className="flex justify-center">
+              <ReviewCarouselCard review={reviews[0]} />
+            </div>
+          ) : (
+            <div className="relative">
+              {/* Carousel Container */}
+              <div 
+                ref={carouselRef}
+                className="flex overflow-x-hidden scroll-smooth pb-4 justify-center"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {reviews.map((review) => (
+                  <ReviewCarouselCard key={review.id} review={review} />
+                ))}
+              </div>
+
+              {/* Gradient overlays - tylko gdy więcej niż 2 opinie */}
+              {reviews.length > 2 && (
+                <>
+                  <div className="absolute left-0 top-0 bottom-4 w-20 bg-gradient-to-r from-white to-transparent pointer-events-none z-10" />
+                  <div className="absolute right-0 top-0 bottom-4 w-20 bg-gradient-to-l from-white to-transparent pointer-events-none z-10" />
+                </>
+              )}
+
+              {/* Dots indicator */}
+              {reviews.length > 1 && (
+                <div className="flex justify-center gap-2 mt-6">
+                  {reviews.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCarouselPosition(index)}
+                      className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                        carouselPosition % reviews.length === index
+                          ? 'bg-primary w-6'
+                          : 'bg-gray-300 hover:bg-gray-400'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </section>
 
