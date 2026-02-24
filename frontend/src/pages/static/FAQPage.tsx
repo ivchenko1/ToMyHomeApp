@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ChevronDown, Search, HelpCircle, User, Briefcase, CreditCard, Shield } from 'lucide-react';
 
 const FAQPage = () => {
@@ -191,12 +192,12 @@ const FAQPage = () => {
               Nasz zespół wsparcia chętnie odpowie na Twoje pytania. 
               Skontaktuj się z nami!
             </p>
-            <a
-              href="/kontakt"
+            <Link
+              to="/kontakt"
               className="inline-flex items-center gap-2 px-8 py-3 bg-white text-primary font-semibold rounded-xl hover:shadow-lg transition-all"
             >
               Skontaktuj się z nami
-            </a>
+            </Link>
           </div>
         </div>
       </section>

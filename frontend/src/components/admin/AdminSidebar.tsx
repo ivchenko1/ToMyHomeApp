@@ -10,6 +10,7 @@ import {
   LogOut,
   Crown,
   Flag,
+  Mail,
 } from 'lucide-react';
 import { useAuth } from '../../App';
 
@@ -27,6 +28,7 @@ const AdminSidebar = ({ isOpen, onClose, isSuperAdmin = false }: AdminSidebarPro
     { icon: Users, label: 'Użytkownicy', to: '/admin/uzytkownicy' },
     { icon: Briefcase, label: 'Usługodawcy', to: '/admin/uslugodawcy' },
     { icon: Calendar, label: 'Rezerwacje', to: '/admin/rezerwacje' },
+    { icon: Mail, label: 'Wiadomości', to: '/admin/wiadomosci' },
     { icon: Flag, label: 'Zgłoszenia', to: '/admin/zgloszenia' },
     { icon: Settings, label: 'Ustawienia', to: '/admin/ustawienia' },
   ];

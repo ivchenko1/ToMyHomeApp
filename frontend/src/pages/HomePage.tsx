@@ -19,66 +19,6 @@ interface FirebaseReview {
   providerName?: string;
 }
 
-// Komponent karty opinii dla karuzeli
-const ReviewCarouselCard = ({ review }: { review: FirebaseReview }) => {
-  const gradientClasses = [
-    'bg-gradient-to-r from-primary to-secondary',
-    'bg-gradient-to-r from-pink-500 to-rose-500',
-    'bg-gradient-to-r from-purple-500 to-indigo-500',
-    'bg-gradient-to-r from-emerald-500 to-teal-500',
-    'bg-gradient-to-r from-orange-500 to-amber-500',
-  ];
-  
-  // Użyj hash z ID do konsystentnego wyboru gradientu
-  const gradientIndex = review.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % gradientClasses.length;
-  
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) return 'Dzisiaj';
-    if (diffDays === 1) return 'Wczoraj';
-    if (diffDays < 7) return `${diffDays} dni temu`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} tyg. temu`;
-    return `${Math.floor(diffDays / 30)} mies. temu`;
-  };
-
-  return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 min-w-[320px] max-w-[380px] flex-shrink-0 mx-3">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-4">
-        <div className={`w-12 h-12 rounded-full ${gradientClasses[gradientIndex]} flex items-center justify-center text-white font-bold text-lg`}>
-          {review.clientName.charAt(0).toUpperCase()}
-        </div>
-        <div>
-          <h4 className="font-semibold text-gray-900">{review.clientName}</h4>
-          <p className="text-sm text-gray-500">
-            {review.serviceName} • {formatDate(review.createdAt)}
-          </p>
-        </div>
-      </div>
-
-      {/* Stars */}
-      <div className="flex items-center gap-1 mb-4">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            className={`w-4 h-4 ${
-              star <= review.rating
-                ? 'fill-yellow-400 text-yellow-400'
-                : 'text-gray-300'
-            }`}
-          />
-        ))}
-      </div>
-
-      {/* Content */}
-      <p className="text-gray-600 leading-relaxed line-clamp-4">{review.comment}</p>
-    </div>
-  );
-};
-
 const HomePage = () => {
   const { showToast } = useToast();
   const { isAuthenticated, user } = useAuth();
@@ -190,28 +130,17 @@ const HomePage = () => {
 
   // Automatyczne przewijanie karuzeli
   useEffect(() => {
-    if (reviews.length <= 1) return;
+    if (reviews.length <= 3) return;
     
     const interval = setInterval(() => {
       setCarouselPosition(prev => {
-        const maxPosition = reviews.length - 1;
+        const maxPosition = reviews.length - 3;
         return prev >= maxPosition ? 0 : prev + 1;
       });
     }, 4000); // Przewiń co 4 sekundy
 
     return () => clearInterval(interval);
   }, [reviews.length]);
-
-  // Scroll karuzeli gdy zmienia się pozycja
-  useEffect(() => {
-    if (carouselRef.current && reviews.length > 0) {
-      const cardWidth = 356; // 320px + 36px margin
-      carouselRef.current.scrollTo({
-        left: carouselPosition * cardWidth,
-        behavior: 'smooth'
-      });
-    }
-  }, [carouselPosition, reviews.length]);
 
   // Intersection Observer for scroll animations
   useEffect(() => {
@@ -420,38 +349,96 @@ const HomePage = () => {
           ) : reviews.length === 1 ? (
             // Tylko jedna opinia - wyśrodkuj bez karuzeli
             <div className="flex justify-center">
-              <ReviewCarouselCard review={reviews[0]} />
+              <div className="bg-white rounded-2xl shadow-lg p-6 max-w-md">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className={`w-12 h-12 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-white font-bold text-lg`}>
+                    {reviews[0].clientName.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">{reviews[0].clientName}</h4>
+                    <p className="text-sm text-gray-500">{reviews[0].serviceName}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 mb-4">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star key={star} className={`w-4 h-4 ${star <= reviews[0].rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                  ))}
+                </div>
+                <p className="text-gray-600 leading-relaxed">{reviews[0].comment}</p>
+              </div>
             </div>
           ) : (
             <div className="relative">
               {/* Carousel Container */}
-              <div 
-                ref={carouselRef}
-                className="flex overflow-x-hidden scroll-smooth pb-4 justify-center"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-              >
-                {reviews.map((review) => (
-                  <ReviewCarouselCard key={review.id} review={review} />
-                ))}
+              <div className="overflow-hidden">
+                <div 
+                  ref={carouselRef}
+                  className="flex transition-transform duration-500 ease-in-out gap-6"
+                  style={{ 
+                    transform: `translateX(-${carouselPosition * (100 / Math.min(reviews.length, 3))}%)`
+                  }}
+                >
+                  {reviews.map((review) => (
+                    <div 
+                      key={review.id} 
+                      className="flex-shrink-0 w-full sm:w-1/2 lg:w-1/3"
+                    >
+                      <div className="bg-white rounded-2xl shadow-lg p-6 h-full mx-2">
+                        {/* Header */}
+                        <div className="flex items-center gap-4 mb-4">
+                          <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${
+                            ['from-primary to-secondary', 'from-pink-500 to-rose-500', 'from-purple-500 to-indigo-500', 'from-emerald-500 to-teal-500', 'from-orange-500 to-amber-500'][review.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 5]
+                          } flex items-center justify-center text-white font-bold text-lg`}>
+                            {review.clientName.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-semibold text-gray-900 truncate">{review.clientName}</h4>
+                            <p className="text-sm text-gray-500 truncate">
+                              {review.serviceName} • {(() => {
+                                const date = new Date(review.createdAt);
+                                const now = new Date();
+                                const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+                                if (diffDays === 0) return 'Dzisiaj';
+                                if (diffDays === 1) return 'Wczoraj';
+                                if (diffDays < 7) return `${diffDays} dni temu`;
+                                if (diffDays < 30) return `${Math.floor(diffDays / 7)} tyg. temu`;
+                                return `${Math.floor(diffDays / 30)} mies. temu`;
+                              })()}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Stars */}
+                        <div className="flex items-center gap-1 mb-4">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              className={`w-4 h-4 ${
+                                star <= review.rating
+                                  ? 'fill-yellow-400 text-yellow-400'
+                                  : 'text-gray-300'
+                              }`}
+                            />
+                          ))}
+                        </div>
+
+                        {/* Content */}
+                        <p className="text-gray-600 leading-relaxed line-clamp-4">{review.comment}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              {/* Gradient overlays - tylko gdy więcej niż 2 opinie */}
-              {reviews.length > 2 && (
-                <>
-                  <div className="absolute left-0 top-0 bottom-4 w-20 bg-gradient-to-r from-white to-transparent pointer-events-none z-10" />
-                  <div className="absolute right-0 top-0 bottom-4 w-20 bg-gradient-to-l from-white to-transparent pointer-events-none z-10" />
-                </>
-              )}
-
               {/* Dots indicator */}
-              {reviews.length > 1 && (
+              {reviews.length > 3 && (
                 <div className="flex justify-center gap-2 mt-6">
-                  {reviews.map((_, index) => (
+                  {Array.from({ length: Math.ceil(reviews.length / 3) }).map((_, index) => (
                     <button
                       key={index}
-                      onClick={() => setCarouselPosition(index)}
+                      onClick={() => setCarouselPosition(index * 3)}
                       className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                        carouselPosition % reviews.length === index
+                        Math.floor(carouselPosition / 3) === index
                           ? 'bg-primary w-6'
                           : 'bg-gray-300 hover:bg-gray-400'
                       }`}
@@ -483,7 +470,7 @@ const HomePage = () => {
               </h2>
               
               <p className="text-lg opacity-95 max-w-xl mx-auto mb-8">
-                Dołącz do tysięcy zadowolonych klientów. Pierwsze zamówienie z rabatem 20%!
+                Dołącz do tysięcy zadowolonych klientów.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">

@@ -1,11 +1,16 @@
 import { useState } from 'react';
 import { Mail, Phone, MapPin, Clock, Send, MessageSquare, Headphones, Building } from 'lucide-react';
+import ticketService, { TicketSubject } from '../../services/ticketService';
+import { useAuth, useToast } from '../../App';
 
 const ContactPage = () => {
+  const { user } = useAuth();
+  const { showToast } = useToast();
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    subject: '',
+    subject: '' as TicketSubject | '',
     message: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -13,14 +18,32 @@ const ContactPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.subject) {
+      showToast('Wybierz temat wiadomości', 'error');
+      return;
+    }
+    
     setIsSubmitting(true);
     
-    // Symulacja wysyłania
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-    setFormData({ name: '', email: '', subject: '', message: '' });
+    try {
+      await ticketService.create({
+        name: formData.name,
+        email: formData.email,
+        subject: formData.subject as TicketSubject,
+        message: formData.message,
+        userId: user?.id,
+      });
+      
+      setIsSubmitted(true);
+      setFormData({ name: '', email: '', subject: '', message: '' });
+      showToast('Wiadomość wysłana! Odpowiemy najszybciej jak to możliwe.', 'success');
+    } catch (error) {
+      console.error('Error sending message:', error);
+      showToast('Błąd wysyłania wiadomości. Spróbuj ponownie.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const contactInfo = [
@@ -168,7 +191,7 @@ const ContactPage = () => {
                     <select
                       required
                       value={formData.subject}
-                      onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, subject: e.target.value as TicketSubject })}
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-primary focus:ring-0"
                     >
                       <option value="">Wybierz temat</option>
@@ -177,6 +200,7 @@ const ContactPage = () => {
                       <option value="account">Problem z kontem</option>
                       <option value="specialist">Chcę zostać specjalistą</option>
                       <option value="partnership">Współpraca biznesowa</option>
+                      <option value="complaint">Reklamacja</option>
                       <option value="other">Inne</option>
                     </select>
                   </div>

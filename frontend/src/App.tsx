@@ -47,6 +47,7 @@ import AdminProviders from './pages/admin/AdminProviders';
 import AdminBookings from './pages/admin/AdminBookings';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminReports from './pages/admin/AdminReports';
+import AdminTickets from './pages/admin/AdminTickets';
 
 // Shared Components
 import Header from './components/Header';
@@ -296,6 +297,7 @@ function App() {
             <Route path="uzytkownicy" element={<AdminUsers />} />
             <Route path="uslugodawcy" element={<AdminProviders />} />
             <Route path="rezerwacje" element={<AdminBookings />} />
+            <Route path="wiadomosci" element={<AdminTickets />} />
             <Route path="zgloszenia" element={<AdminReports />} />
             <Route path="ustawienia" element={<AdminSettings />} />
           </Route>

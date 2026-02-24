@@ -392,8 +392,9 @@ const ProfilePage = () => {
                 <input
                   type="text"
                   readOnly
+                  disabled
                   value={`https://tomyhomeapp.pl/ref/${user?.id || 'user'}`}
-                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl bg-white"
+                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-100 text-gray-600 cursor-not-allowed select-all"
                 />
                 <button
                   onClick={() => {
