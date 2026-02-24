@@ -16,6 +16,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { notificationService } from './notificationService';
+import { walletService } from './walletService';
 
 // ============================================
 // TYPY
@@ -292,6 +293,19 @@ export const bookingService = {
       };
       
       await updateDoc(doc(db, BOOKINGS_COLLECTION, bookingId), updates);
+      
+      // 💰 Dodaj zarobek do portfela usługodawcy
+      try {
+        await walletService.addEarning(
+          booking.providerId, 
+          booking.servicePrice, 
+          bookingId
+        );
+        console.log(`Added ${booking.servicePrice} PLN to provider ${booking.providerId} wallet`);
+      } catch (walletError) {
+        console.error('Error adding earning to wallet:', walletError);
+        // Nie przerywamy - rezerwacja została zakończona
+      }
       
       // Wyślij powiadomienie do klienta o zakończeniu i prośbę o opinię
       await notificationService.create({

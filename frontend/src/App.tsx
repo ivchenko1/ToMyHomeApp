@@ -37,6 +37,7 @@ import BusinessMessages from './pages/business/BusinessMessages';
 import BusinessSettings from './pages/business/BusinessSettings';
 import BusinessWorkingHours from './pages/business/BusinessWorkingHours';
 import BusinessReviews from './pages/business/BusinessReviews';
+import BusinessWallet from './pages/business/BusinessWallet';
 
 // Admin Pages
 import AdminLayout from './components/admin/AdminLayout';
@@ -309,6 +310,7 @@ function App() {
             <Route path="wiadomosci" element={<BusinessMessages />} />
             <Route path="opinie" element={<BusinessReviews />} />
             <Route path="statystyki" element={<BusinessStatistics />} />
+            <Route path="portfel" element={<BusinessWallet />} />
             <Route path="profil" element={<BusinessSettings />} />
             <Route path="ustawienia" element={<BusinessSettings />} />
             <Route path="pomoc" element={<BusinessDashboard />} />

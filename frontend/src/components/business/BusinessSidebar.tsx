@@ -11,6 +11,7 @@ import {
   HelpCircle,
   Clock,
   Star,
+  Wallet,
 } from 'lucide-react';
 import { useAuth } from '../../App';
 import messageService from '../../services/messageService';
@@ -84,6 +85,11 @@ const BusinessSidebar = ({ isOpen = true, onClose }: BusinessSidebarProps) => {
       icon: BarChart3, 
       label: 'Statystyki', 
       to: '/biznes/statystyki' 
+    },
+    { 
+      icon: Wallet, 
+      label: 'Portfel', 
+      to: '/biznes/portfel' 
     },
   ];
 
