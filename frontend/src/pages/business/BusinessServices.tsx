@@ -10,7 +10,9 @@ import {
   ToggleRight,
   Search,
   Filter,
-
+  X,
+  Loader2,
+  Save,
 } from 'lucide-react';
 import { useAuth, useToast } from '../../App';
 import providerService, { ServiceItem } from '../../services/providerService';
@@ -42,6 +44,22 @@ const BusinessServices = () => {
   const [providerId, setProviderId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Modal edycji
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    description: '',
+    price: 0,
+    duration: '30 min',
+    category: '',
+  });
+  const [isSaving, setIsSaving] = useState(false);
+
+  const durationOptions = [
+    '15 min', '30 min', '45 min', '1 godz', '1.5 godz', '2 godz', '2.5 godz', '3 godz', '4 godz'
+  ];
 
   useEffect(() => {
     loadProfile();
@@ -69,7 +87,7 @@ const BusinessServices = () => {
           description: s.description || '',
           price: s.price || 0,
           duration: s.duration || '30 min',
-          isActive: true, // Firebase nie ma tego pola, domyślnie aktywne
+          isActive: s.isActive !== false, // domyślnie aktywne, chyba że explicit false
           category: s.category || 'Inne',
         }));
         
@@ -111,9 +129,12 @@ const BusinessServices = () => {
           price: s.price,
           duration: s.duration,
           category: s.category,
+          isActive: s.isActive, // ← Zapisujemy status aktywności
         })),
       });
-      showToast('Status usługi zmieniony', 'success');
+      showToast(updatedServices.find(s => s.id === serviceId)?.isActive 
+        ? 'Usługa włączona' 
+        : 'Usługa wyłączona', 'success');
     } catch (error) {
       console.error('Błąd aktualizacji:', error);
       showToast('Błąd aktualizacji', 'error');
@@ -137,6 +158,74 @@ const BusinessServices = () => {
       showToast('Błąd usuwania usługi', 'error');
       // Przywróć poprzedni stan
       loadProfile();
+    }
+  };
+
+  // Otwórz modal edycji
+  const openEditModal = (service: Service) => {
+    setEditingService(service);
+    setEditForm({
+      name: service.name,
+      description: service.description,
+      price: service.price,
+      duration: service.duration,
+      category: service.category,
+    });
+    setShowEditModal(true);
+  };
+
+  // Zapisz edytowaną usługę
+  const handleSaveEdit = async () => {
+    if (!profile || !providerId || !editingService) return;
+    
+    if (!editForm.name.trim()) {
+      showToast('Nazwa usługi jest wymagana', 'error');
+      return;
+    }
+    
+    if (editForm.price <= 0) {
+      showToast('Cena musi być większa od 0', 'error');
+      return;
+    }
+    
+    setIsSaving(true);
+    
+    try {
+      const updatedServices = profile.services.map(s => 
+        s.id === editingService.id 
+          ? { 
+              ...s, 
+              name: editForm.name.trim(),
+              description: editForm.description.trim(),
+              price: editForm.price,
+              duration: editForm.duration,
+              category: editForm.category,
+            } 
+          : s
+      );
+      
+      // Aktualizuj w Firebase
+      await providerService.update(providerId, {
+        services: updatedServices.map(s => ({
+          id: s.id,
+          name: s.name,
+          description: s.description,
+          price: s.price,
+          duration: s.duration,
+          category: s.category,
+          isActive: s.isActive,
+        })),
+      });
+      
+      setProfile({ ...profile, services: updatedServices });
+      showToast('Usługa zaktualizowana! ✅', 'success');
+      setShowEditModal(false);
+      setEditingService(null);
+    } catch (error) {
+      console.error('Błąd aktualizacji:', error);
+      showToast('Błąd zapisywania zmian', 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -293,12 +382,10 @@ const BusinessServices = () => {
                     </div>
                   </div>
 
-                  {/* Przyciski akcji - zawsze widoczne */}
+                  {/* Przyciski akcji */}
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => {
-                        showToast('Funkcja edycji w przygotowaniu', 'info');
-                      }}
+                      onClick={() => openEditModal(service)}
                       className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
                       title="Edytuj"
                     >
@@ -322,6 +409,126 @@ const BusinessServices = () => {
           </div>
         )}
       </div>
+
+      {/* Modal edycji usługi */}
+      {showEditModal && editingService && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-900">Edytuj usługę</h3>
+                <button 
+                  onClick={() => setShowEditModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6 space-y-5">
+              {/* Nazwa */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nazwa usługi *
+                </label>
+                <input
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  placeholder="np. Strzyżenie damskie"
+                />
+              </div>
+
+              {/* Opis */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Opis
+                </label>
+                <textarea
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"
+                  placeholder="Krótki opis usługi..."
+                />
+              </div>
+
+              {/* Cena i czas */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Cena (zł) *
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={editForm.price}
+                    onChange={(e) => setEditForm({ ...editForm, price: parseInt(e.target.value) || 0 })}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Czas trwania
+                  </label>
+                  <select
+                    value={editForm.duration}
+                    onChange={(e) => setEditForm({ ...editForm, duration: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  >
+                    {durationOptions.map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Kategoria */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Kategoria
+                </label>
+                <input
+                  type="text"
+                  value={editForm.category}
+                  onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  placeholder="np. Fryzjer, Manicure"
+                />
+              </div>
+            </div>
+
+            {/* Przyciski */}
+            <div className="p-6 border-t border-gray-100 flex gap-3">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+              >
+                Anuluj
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={isSaving}
+                className="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Zapisywanie...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-5 h-5" />
+                    Zapisz zmiany
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

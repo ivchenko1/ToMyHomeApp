@@ -1080,20 +1080,26 @@ const ProfilePage = () => {
       {/* Mobile Navigation */}
       <div className="lg:hidden mb-6 overflow-x-auto">
         <div className="flex gap-2 pb-2 min-w-max">
-          {menuItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveSection(item.id as SectionType)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl whitespace-nowrap transition-all ${
-                activeSection === item.id
-                  ? 'bg-primary text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              <item.icon className="w-4 h-4" />
-              <span className="text-sm font-medium">{item.label}</span>
-            </button>
-          ))}
+          {menuItems.map((item) => {
+            const isDisabled = item.id === 'referral';
+            return (
+              <button
+                key={item.id}
+                onClick={() => !isDisabled && setActiveSection(item.id as SectionType)}
+                disabled={isDisabled}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl whitespace-nowrap transition-all ${
+                  isDisabled
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-60'
+                    : activeSection === item.id
+                      ? 'bg-primary text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                <item.icon className="w-4 h-4" />
+                <span className="text-sm font-medium">{item.label}</span>
+              </button>
+            );
+          })}
           <button
             onClick={handleLogout}
             className="flex items-center gap-2 px-4 py-2 rounded-xl whitespace-nowrap bg-red-50 text-red-600 hover:bg-red-100 transition-all"
@@ -1134,20 +1140,26 @@ const ProfilePage = () => {
 
             {/* Menu */}
             <nav className="space-y-1">
-              {menuItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveSection(item.id as SectionType)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                    activeSection === item.id
-                      ? 'bg-primary text-white'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  <item.icon className="w-5 h-5" />
-                  <span className="font-medium">{item.label}</span>
-                </button>
-              ))}
+              {menuItems.map((item) => {
+                const isDisabled = item.id === 'referral';
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => !isDisabled && setActiveSection(item.id as SectionType)}
+                    disabled={isDisabled}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                      isDisabled
+                        ? 'text-gray-400 cursor-not-allowed opacity-60'
+                        : activeSection === item.id
+                          ? 'bg-primary text-white'
+                          : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <item.icon className="w-5 h-5" />
+                    <span className="font-medium">{item.label}</span>
+                  </button>
+                );
+              })}
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-all"

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Clock, Save, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth, useToast } from '../../App';
 import providerService, { Provider, WorkingHours } from '../../services/providerService';
@@ -178,12 +179,12 @@ const BusinessWorkingHours = () => {
               <p className="text-yellow-700 mt-1">
                 Aby ustawić godziny pracy, najpierw utwórz swój profil usługodawcy.
               </p>
-              <a
-                href="/biznes/dodaj-usluge"
+              <Link
+                to="/biznes/dodaj-usluge"
                 className="inline-block mt-4 px-6 py-2 bg-yellow-600 text-white rounded-xl font-medium hover:bg-yellow-700 transition-colors"
               >
                 Utwórz profil
-              </a>
+              </Link>
             </div>
           </div>
         </div>

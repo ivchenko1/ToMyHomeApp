@@ -649,13 +649,27 @@ const BusinessCalendar = () => {
                   )}
                   {selectedBooking.status === 'confirmed' && (
                     <div className="flex gap-3 w-full">
-                      <button
-                        onClick={() => updateBookingStatus(selectedBooking.id, 'completed')}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500 text-white rounded-xl font-semibold hover:bg-emerald-600"
-                      >
-                        <Check className="w-5 h-5" />
-                        Oznacz jako zakończone
-                      </button>
+                      {/* Przycisk Zakończ - tylko jeśli termin już minął lub trwa */}
+                      {(() => {
+                        const bookingDateTime = new Date(`${selectedBooking.date}T${selectedBooking.time}`);
+                        const now = new Date();
+                        const canComplete = bookingDateTime <= now;
+                        
+                        return canComplete ? (
+                          <button
+                            onClick={() => updateBookingStatus(selectedBooking.id, 'completed')}
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500 text-white rounded-xl font-semibold hover:bg-emerald-600"
+                          >
+                            <Check className="w-5 h-5" />
+                            Oznacz jako zakończone
+                          </button>
+                        ) : (
+                          <div className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-gray-400 rounded-xl font-semibold cursor-not-allowed">
+                            <Clock className="w-5 h-5" />
+                            Wizyta jeszcze się nie odbyła
+                          </div>
+                        );
+                      })()}
                       <button
                         onClick={() => {
                           if (confirm('Czy na pewno chcesz anulować tę rezerwację?')) {

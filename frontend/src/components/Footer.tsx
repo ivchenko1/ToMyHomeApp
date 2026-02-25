@@ -149,21 +149,25 @@ const Footer = () => {
         </div>
       </div>
 
-      {/* Newsletter Section */}
+      {/* Newsletter Section - Wkrótce dostępne */}
       <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 opacity-50">
             <div>
-              <h5 className="text-lg font-bold mb-1">Zapisz się do newslettera</h5>
-              <p className="text-gray-400 text-sm">Otrzymuj informacje o promocjach i nowościach</p>
+              <h5 className="text-lg font-bold mb-1 text-gray-400">Zapisz się do newslettera</h5>
+              <p className="text-gray-500 text-sm">Otrzymuj informacje o promocjach i nowościach</p>
             </div>
             <div className="flex w-full md:w-auto gap-2">
               <input
                 type="email"
                 placeholder="Twój email..."
-                className="flex-1 md:w-64 px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-primary"
+                disabled
+                className="flex-1 md:w-64 px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-gray-500 placeholder-gray-600 cursor-not-allowed"
               />
-              <button className="px-6 py-2.5 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-primary/25 transition-all">
+              <button 
+                disabled
+                className="px-6 py-2.5 bg-gray-700 text-gray-400 font-semibold rounded-xl cursor-not-allowed"
+              >
                 Zapisz się
               </button>
             </div>

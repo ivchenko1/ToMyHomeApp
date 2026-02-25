@@ -9,6 +9,7 @@ import { auth, db } from './firebase';
 // Client Pages
 import HomePage from './pages/HomePage';
 import AuthPage from './pages/AuthPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import ProfilePage from './pages/ProfilePage';
 import ProvidersPage from './pages/ProvidersPage';
@@ -135,6 +136,7 @@ const ClientLayout = () => {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/reset-hasla" element={<ResetPasswordPage />} />
           <Route path="/weryfikacja-email" element={<VerifyEmailPage />} />
           <Route path="/profil" element={<ProfilePage />} />
           <Route path="/uslugodawcy/profil/:id" element={<ProviderDetailPage />} />

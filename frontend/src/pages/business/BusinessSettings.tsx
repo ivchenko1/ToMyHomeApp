@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
   User,
   Mail,
@@ -441,9 +442,9 @@ const BusinessSettings = () => {
                   <Clock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Brak profilu usługodawcy</h3>
                   <p className="text-gray-500 mb-4">Najpierw utwórz profil usługodawcy, aby ustawić godziny pracy.</p>
-                  <a href="/biznes/uslugi/dodaj" className="text-emerald-600 font-medium hover:underline">
+                  <Link to="/biznes/dodaj-usluge" className="text-emerald-600 font-medium hover:underline">
                     Utwórz profil →
-                  </a>
+                  </Link>
                 </div>
               ) : (
                 <>

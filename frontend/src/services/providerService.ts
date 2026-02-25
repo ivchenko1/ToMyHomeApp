@@ -31,6 +31,7 @@ export interface ServiceItem {
     discount?: number;
     badge?: string;
     category: string;
+    isActive?: boolean;
 }
 
 export interface WorkingHours {

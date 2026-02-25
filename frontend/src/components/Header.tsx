@@ -200,8 +200,8 @@ const Header = () => {
                   >
                     <Bell className="w-5 h-5" />
                     {unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                        {unreadCount}
+                      <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                        {unreadCount > 99 ? '99+' : unreadCount}
                       </span>
                     )}
                   </button>
@@ -266,8 +266,8 @@ const Header = () => {
                 >
                   <MessageSquare className="w-5 h-5" />
                   {unreadMessagesCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-white text-xs font-bold rounded-full flex items-center justify-center">
-                      {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
+                    <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-primary text-white text-xs font-bold rounded-full flex items-center justify-center">
+                      {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
                     </span>
                   )}
                 </Link>

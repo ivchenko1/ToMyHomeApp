@@ -15,6 +15,7 @@ import {
   orderBy,
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { notificationService } from './notificationService';
 
 // ============================================
 // TYPY
@@ -95,6 +96,27 @@ const reviewService = {
     
     // Aktualizuj średnią ocenę providera
     await this.updateProviderRating(data.providerId);
+    
+    // Wyślij powiadomienie do usługodawcy o nowej opinii
+    try {
+      // Pobierz ownerId z providera
+      let ownerUserId = data.providerId;
+      const providerDoc = await getDoc(doc(db, 'providers', data.providerId));
+      if (providerDoc.exists()) {
+        ownerUserId = providerDoc.data().ownerId || data.providerId;
+      }
+      
+      const starEmoji = data.rating >= 4 ? '⭐' : data.rating >= 3 ? '✨' : '';
+      await notificationService.create({
+        userId: ownerUserId,
+        type: 'new_review',
+        title: `Nowa opinia ${starEmoji}`,
+        message: `${data.clientName} wystawił(a) ocenę ${data.rating}/5 za ${data.serviceName}`,
+        data: { reviewId: id, providerId: data.providerId, rating: data.rating },
+      });
+    } catch (notifError) {
+      console.warn('Could not send review notification:', notifError);
+    }
     
     console.log('Review created:', id);
     return review;

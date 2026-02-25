@@ -119,13 +119,24 @@ export const bookingService = {
       await setDoc(doc(db, BOOKINGS_COLLECTION, id), booking);
       console.log('Booking created:', booking);
       
-      // Wyślij powiadomienie do usługodawcy
+      // Pobierz ownerId z providera, żeby wysłać powiadomienie do właściciela
+      let ownerUserId = data.providerId; // fallback
+      try {
+        const providerDoc = await getDoc(doc(db, 'providers', data.providerId));
+        if (providerDoc.exists()) {
+          ownerUserId = providerDoc.data().ownerId || data.providerId;
+        }
+      } catch (e) {
+        console.warn('Could not get provider owner, using providerId');
+      }
+      
+      // Wyślij powiadomienie do usługodawcy (właściciela profilu)
       await notificationService.create({
-        userId: data.providerId,
+        userId: ownerUserId,
         type: 'booking_request',
-        title: 'Nowa prośba o rezerwację',
+        title: 'Nowa prośba o rezerwację! 📅',
         message: `${data.clientName} chce zarezerwować ${data.serviceName} na ${data.date} o ${data.time}`,
-        data: { bookingId: id },
+        data: { bookingId: id, providerId: data.providerId },
       });
       
       return booking;
@@ -259,15 +270,30 @@ export const bookingService = {
       await updateDoc(doc(db, BOOKINGS_COLLECTION, bookingId), updates);
       
       // Wyślij powiadomienie
-      const targetUserId = cancelledBy === 'client' ? booking.providerId : booking.clientId;
+      let targetUserId: string;
       const cancellerName = cancelledBy === 'client' ? booking.clientName : booking.providerName;
+      
+      if (cancelledBy === 'client') {
+        // Klient anulował - powiadom usługodawcę (ownerId)
+        try {
+          const providerDoc = await getDoc(doc(db, 'providers', booking.providerId));
+          targetUserId = providerDoc.exists() 
+            ? (providerDoc.data().ownerId || booking.providerId)
+            : booking.providerId;
+        } catch {
+          targetUserId = booking.providerId;
+        }
+      } else {
+        // Usługodawca anulował - powiadom klienta
+        targetUserId = booking.clientId;
+      }
       
       await notificationService.create({
         userId: targetUserId,
         type: 'booking_cancelled',
         title: 'Rezerwacja anulowana ❌',
-        message: `${cancellerName} anulował rezerwację na ${booking.date} o ${booking.time}`,
-        data: { bookingId },
+        message: `${cancellerName} anulował(a) rezerwację ${booking.serviceName} na ${booking.date} o ${booking.time}`,
+        data: { bookingId, providerId: booking.providerId },
       });
       
       return { ...booking, ...updates };

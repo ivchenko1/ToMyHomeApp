@@ -126,17 +126,24 @@ export const walletService = {
 
   /**
    * Dodaj zarobek do portfela (po zakończeniu rezerwacji)
+   * Automatycznie tworzy portfel jeśli nie istnieje
+   * Środki trafiają do pendingBalance (oczekujące na rozliczenie)
    */
   async addEarning(providerId: string, amount: number, bookingId: string): Promise<void> {
     try {
       const docRef = doc(db, WALLETS_COLLECTION, providerId);
-      const wallet = await this.get(providerId);
+      let wallet = await this.get(providerId);
       
+      // Jeśli portfel nie istnieje, utwórz go
       if (!wallet) {
-        throw new Error('Wallet not found');
+        // Pobierz nazwę providera
+        const providerDoc = await getDoc(doc(db, 'providers', providerId));
+        const providerName = providerDoc.exists() ? providerDoc.data()?.name || 'Usługodawca' : 'Usługodawca';
+        
+        wallet = await this.getOrCreate(providerId, providerName);
       }
       
-      // Najpierw dodaj do pendingBalance (oczekujące na rozliczenie)
+      // Dodaj do pendingBalance (oczekujące na rozliczenie)
       await updateDoc(docRef, {
         pendingBalance: increment(amount),
         totalEarned: increment(amount),
