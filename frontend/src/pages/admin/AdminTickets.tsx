@@ -6,12 +6,9 @@ import {
   Clock,
   AlertCircle,
   Loader2,
-  MessageSquare,
   User,
   Calendar,
-  Tag,
   X,
-  Send,
   Filter,
 } from 'lucide-react';
 import ticketService, { ContactTicket, TicketStatus } from '../../services/ticketService';

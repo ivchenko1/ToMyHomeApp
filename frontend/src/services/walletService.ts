@@ -10,7 +10,6 @@ import {
   updateDoc,
   increment,
   onSnapshot,
-  Timestamp,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -129,7 +128,7 @@ export const walletService = {
    * Automatycznie tworzy portfel jeśli nie istnieje
    * Środki trafiają do pendingBalance (oczekujące na rozliczenie)
    */
-  async addEarning(providerId: string, amount: number, bookingId: string): Promise<void> {
+  async addEarning(providerId: string, amount: number, _bookingId: string): Promise<void> {
     try {
       const docRef = doc(db, WALLETS_COLLECTION, providerId);
       let wallet = await this.get(providerId);

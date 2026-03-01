@@ -12,7 +12,6 @@ import {
   updateDoc,
   query, 
   where,
-  orderBy,
   onSnapshot,
 } from 'firebase/firestore';
 import { db } from '../firebase';

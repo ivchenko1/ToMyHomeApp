@@ -29,7 +29,9 @@ export type NotificationType =
   | 'booking_reminder'     // Przypomnienie o wizycie
   | 'new_message'          // Nowa wiadomość
   | 'new_review'           // Nowa opinia
-  | 'system';              // Powiadomienie systemowe
+  | 'system'               // Powiadomienie systemowe
+  | 'withdrawal_completed' // Wypłata zrealizowana pomyślnie
+  | 'withdrawal_failed';   // Wypłata nieudana 
 
 export interface Notification {
   id: string;
@@ -250,6 +252,8 @@ export const notificationService = {
       new_message: '💬',
       new_review: '⭐',
       system: '🔔',
+      withdrawal_completed: '✅',
+      withdrawal_failed: '❌'
     };
     return icons[type] || '🔔';
   },
@@ -267,6 +271,8 @@ export const notificationService = {
       new_message: 'bg-indigo-100 text-indigo-600',
       new_review: 'bg-orange-100 text-orange-600',
       system: 'bg-gray-100 text-gray-600',
+      withdrawal_completed: 'bg-green-100 text-green-600',
+      withdrawal_failed: 'bg-red-100 text-red-600'
     };
     return colors[type] || 'bg-gray-100 text-gray-600';
   },
