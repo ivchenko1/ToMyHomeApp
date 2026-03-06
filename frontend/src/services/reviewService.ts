@@ -1,8 +1,3 @@
-/**
- * Review Service - zarządzanie opiniami
- * Używa Firebase Firestore
- */
-
 import { 
   collection, 
   doc, 
@@ -17,40 +12,26 @@ import {
 import { db } from '../firebase';
 import { notificationService } from './notificationService';
 
-// ============================================
-// TYPY
-// ============================================
-
 export interface Review {
   id: string;
   
-  // Powiązania
   bookingId: string;
   providerId: string;
   clientId: string;
   
-  // Dane klienta
   clientName: string;
   clientAvatar?: string;
   
-  // Ocena
-  rating: number; // 1-5
+  rating: number; 
   comment: string;
   
-  // Usługa
   serviceName: string;
   
-  // Daty
   createdAt: string;
   
-  // Odpowiedź usługodawcy
   providerResponse?: string;
   providerResponseAt?: string;
 }
-
-// ============================================
-// HELPERS
-// ============================================
 
 const REVIEWS_COLLECTION = 'reviews';
 
@@ -58,14 +39,7 @@ const generateId = (): string => {
   return `review_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
 
-// ============================================
-// SERVICE
-// ============================================
-
 const reviewService = {
-  /**
-   * Dodaj nową opinię
-   */
   async create(data: {
     bookingId: string;
     providerId: string;
@@ -85,7 +59,7 @@ const reviewService = {
       providerId: data.providerId,
       clientId: data.clientId,
       clientName: data.clientName,
-      clientAvatar: data.clientAvatar || '', // Firebase nie akceptuje undefined
+      clientAvatar: data.clientAvatar || '', 
       rating: data.rating,
       comment: data.comment,
       serviceName: data.serviceName,
@@ -94,12 +68,9 @@ const reviewService = {
     
     await setDoc(doc(db, REVIEWS_COLLECTION, id), review);
     
-    // Aktualizuj średnią ocenę providera
     await this.updateProviderRating(data.providerId);
     
-    // Wyślij powiadomienie do usługodawcy o nowej opinii
     try {
-      // Pobierz ownerId z providera
       let ownerUserId = data.providerId;
       const providerDoc = await getDoc(doc(db, 'providers', data.providerId));
       if (providerDoc.exists()) {
@@ -122,9 +93,6 @@ const reviewService = {
     return review;
   },
 
-  /**
-   * Pobierz opinię po ID
-   */
   async getById(id: string): Promise<Review | null> {
     const docRef = doc(db, REVIEWS_COLLECTION, id);
     const docSnap = await getDoc(docRef);
@@ -135,9 +103,6 @@ const reviewService = {
     return null;
   },
 
-  /**
-   * Pobierz opinie dla providera
-   */
   async getByProvider(providerId: string): Promise<Review[]> {
     try {
       const q = query(
@@ -150,7 +115,6 @@ const reviewService = {
       return snapshot.docs.map(doc => doc.data() as Review);
     } catch (error) {
       console.error('Review getByProvider error:', error);
-      // Fallback bez orderBy jeśli brak indeksu
       const q = query(
         collection(db, REVIEWS_COLLECTION),
         where('providerId', '==', providerId)
@@ -161,9 +125,6 @@ const reviewService = {
     }
   },
 
-  /**
-   * Pobierz opinie klienta
-   */
   async getByClient(clientId: string): Promise<Review[]> {
     const q = query(
       collection(db, REVIEWS_COLLECTION),
@@ -174,9 +135,6 @@ const reviewService = {
     return snapshot.docs.map(doc => doc.data() as Review);
   },
 
-  /**
-   * Sprawdź czy klient już wystawił opinię dla danej rezerwacji
-   */
   async hasReviewForBooking(bookingId: string): Promise<boolean> {
     const q = query(
       collection(db, REVIEWS_COLLECTION),
@@ -187,18 +145,14 @@ const reviewService = {
     return !snapshot.empty;
   },
 
-  /**
-   * Aktualizuj średnią ocenę providera
-   */
   async updateProviderRating(providerId: string): Promise<void> {
     const reviews = await this.getByProvider(providerId);
     
     if (reviews.length === 0) return;
     
     const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
-    const averageRating = Math.round((totalRating / reviews.length) * 10) / 10; // Zaokrąglenie do 1 miejsca po przecinku
+    const averageRating = Math.round((totalRating / reviews.length) * 10) / 10; 
     
-    // Aktualizuj providera
     const providerRef = doc(db, 'providers', providerId);
     await updateDoc(providerRef, {
       rating: averageRating,
@@ -208,9 +162,6 @@ const reviewService = {
     console.log(`Provider ${providerId} rating updated: ${averageRating} (${reviews.length} reviews)`);
   },
 
-  /**
-   * Dodaj odpowiedź usługodawcy
-   */
   async addProviderResponse(reviewId: string, response: string): Promise<void> {
     const reviewRef = doc(db, REVIEWS_COLLECTION, reviewId);
     await updateDoc(reviewRef, {
@@ -219,9 +170,6 @@ const reviewService = {
     });
   },
 
-  /**
-   * Pobierz statystyki ocen dla providera
-   */
   async getProviderStats(providerId: string): Promise<{
     average: number;
     count: number;
@@ -258,9 +206,6 @@ const reviewService = {
     };
   },
 
-  /**
-   * Zgłoś opinię do moderacji
-   */
   async reportReview(data: {
     reviewId: string;
     reporterId: string;
@@ -285,7 +230,7 @@ const reviewService = {
       reviewAuthor: data.reviewAuthor,
       providerId: data.providerId,
       providerName: data.providerName,
-      status: 'pending', // pending, reviewed, dismissed, action_taken
+      status: 'pending', 
       createdAt: now,
     };
     
@@ -293,9 +238,6 @@ const reviewService = {
     console.log('Review reported:', reportId);
   },
 
-  /**
-   * Pobierz wszystkie zgłoszenia (dla admina)
-   */
   async getReports(): Promise<any[]> {
     try {
       const snapshot = await getDocs(collection(db, 'reports'));
@@ -307,9 +249,6 @@ const reviewService = {
     }
   },
 
-  /**
-   * Zaktualizuj status zgłoszenia
-   */
   async updateReportStatus(reportId: string, status: string, adminNote?: string): Promise<void> {
     const reportRef = doc(db, 'reports', reportId);
     await updateDoc(reportRef, {
@@ -319,21 +258,16 @@ const reviewService = {
     });
   },
 
-  /**
-   * Usuń opinię (przez admina)
-   */
   async deleteReview(reviewId: string): Promise<void> {
     const reviewDoc = await getDoc(doc(db, REVIEWS_COLLECTION, reviewId));
     if (reviewDoc.exists()) {
       const review = reviewDoc.data() as Review;
       
-      // Usuń opinię
       await updateDoc(doc(db, REVIEWS_COLLECTION, reviewId), {
         deleted: true,
         deletedAt: new Date().toISOString(),
       });
       
-      // Aktualizuj średnią ocenę providera
       await this.updateProviderRating(review.providerId);
     }
   },

@@ -1,8 +1,3 @@
-/**
- * Message Service - prawdziwy system wiadomości
- * Używa Firebase Firestore
- */
-
 import { 
   collection, 
   doc, 
@@ -15,10 +10,6 @@ import {
   onSnapshot,
 } from 'firebase/firestore';
 import { db } from '../firebase';
-
-// ============================================
-// TYPY
-// ============================================
 
 export interface Message {
   id: string;
@@ -33,24 +24,18 @@ export interface Message {
 
 export interface Conversation {
   id: string;
-  participants: string[]; // [clientUserId, providerOwnerId]
+  participants: string[]; 
   participantNames: { [userId: string]: string };
   participantAvatars: { [userId: string]: string };
-  // Powiązanie z providerem
-  providerId: string; // ID profilu usługodawcy
-  providerOwnerId: string; // ID właściciela (użytkownik Firebase)
-  clientId: string; // ID klienta (użytkownik Firebase)
-  // Wiadomości
+  providerId: string; 
+  providerOwnerId: string; 
+  clientId: string; 
   lastMessage: string;
   lastMessageAt: string;
   lastMessageSenderId: string;
   unreadCount: { [userId: string]: number };
   createdAt: string;
 }
-
-// ============================================
-// HELPERS
-// ============================================
 
 const CONVERSATIONS_COLLECTION = 'conversations';
 const MESSAGES_COLLECTION = 'messages';
@@ -59,14 +44,7 @@ const generateId = (): string => {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 };
 
-// ============================================
-// PUBLIC API
-// ============================================
-
 export const messageService = {
-  /**
-   * Pobierz lub utwórz konwersację między klientem a usługodawcą
-   */
   async getOrCreateConversation(
     clientId: string,
     clientName: string,
@@ -77,17 +55,14 @@ export const messageService = {
     providerAvatar: string
   ): Promise<Conversation> {
     try {
-      // Stałe ID konwersacji oparte na kliencie i providerze - zapobiega duplikatom
       const conversationId = `conv_${clientId}_${providerId}`;
       
-      // Sprawdź czy konwersacja już istnieje
       const existingDoc = await getDoc(doc(db, CONVERSATIONS_COLLECTION, conversationId));
       
       if (existingDoc.exists()) {
         return existingDoc.data() as Conversation;
       }
       
-      // Utwórz nową konwersację
       const now = new Date().toISOString();
       
       const conversation: Conversation = {
@@ -101,11 +76,9 @@ export const messageService = {
           [clientId]: clientAvatar || '',
           [providerOwnerId]: providerAvatar || '',
         },
-        // Powiązanie
         providerId,
         providerOwnerId,
         clientId,
-        // Wiadomości
         lastMessage: '',
         lastMessageAt: now,
         lastMessageSenderId: '',
@@ -124,9 +97,6 @@ export const messageService = {
     }
   },
 
-  /**
-   * Pobierz konwersacje użytkownika
-   */
   async getConversations(userId: string): Promise<Conversation[]> {
     try {
       const q = query(
@@ -144,9 +114,6 @@ export const messageService = {
     }
   },
 
-  /**
-   * Pobierz konwersacje dla konkretnego providera (dla panelu biznes)
-   */
   async getConversationsByProvider(providerId: string): Promise<Conversation[]> {
     try {
       const q = query(
@@ -164,9 +131,6 @@ export const messageService = {
     }
   },
 
-  /**
-   * Subskrybuj konwersacje użytkownika (real-time)
-   */
   subscribeToConversations(
     userId: string,
     callback: (conversations: Conversation[]) => void
@@ -179,7 +143,6 @@ export const messageService = {
     return onSnapshot(q, (snapshot) => {
       const conversationsMap = new Map<string, Conversation>();
       
-      // Deduplikacja po ID konwersacji
       snapshot.docs.forEach(doc => {
         const conv = doc.data() as Conversation;
         if (!conversationsMap.has(conv.id)) {
@@ -195,9 +158,6 @@ export const messageService = {
     });
   },
 
-  /**
-   * Subskrybuj konwersacje dla providera (real-time, dla panelu biznes)
-   */
   subscribeToProviderConversations(
     providerId: string,
     callback: (conversations: Conversation[]) => void
@@ -216,9 +176,6 @@ export const messageService = {
     });
   },
 
-  /**
-   * Pobierz wiadomości z konwersacji
-   */
   async getMessages(conversationId: string): Promise<Message[]> {
     try {
       const q = query(
@@ -236,9 +193,6 @@ export const messageService = {
     }
   },
 
-  /**
-   * Subskrybuj wiadomości z konwersacji (real-time)
-   */
   subscribeToMessages(
     conversationId: string,
     callback: (messages: Message[]) => void
@@ -257,9 +211,6 @@ export const messageService = {
     });
   },
 
-  /**
-   * Wyślij wiadomość
-   */
   async sendMessage(
     conversationId: string,
     senderId: string,
@@ -285,7 +236,6 @@ export const messageService = {
       
       await setDoc(doc(db, MESSAGES_COLLECTION, id), message);
       
-      // Zaktualizuj konwersację
       const conversationRef = doc(db, CONVERSATIONS_COLLECTION, conversationId);
       const conversationDoc = await getDoc(conversationRef);
       
@@ -309,12 +259,8 @@ export const messageService = {
     }
   },
 
-  /**
-   * Oznacz wiadomości jako przeczytane
-   */
   async markAsRead(conversationId: string, userId: string): Promise<void> {
     try {
-      // Oznacz wiadomości jako przeczytane
       const q = query(
         collection(db, MESSAGES_COLLECTION),
         where('conversationId', '==', conversationId)
@@ -330,7 +276,6 @@ export const messageService = {
       
       await Promise.all(updates);
       
-      // Wyzeruj unread count
       const conversationRef = doc(db, CONVERSATIONS_COLLECTION, conversationId);
       const conversationDoc = await getDoc(conversationRef);
       
@@ -348,9 +293,6 @@ export const messageService = {
     }
   },
 
-  /**
-   * Policz nieprzeczytane wiadomości użytkownika
-   */
   async countUnread(userId: string): Promise<number> {
     try {
       const conversations = await this.getConversations(userId);
@@ -361,9 +303,6 @@ export const messageService = {
     }
   },
 
-  /**
-   * Subskrybuj liczbę nieprzeczytanych (real-time)
-   */
   subscribeToUnreadCount(
     userId: string,
     callback: (count: number) => void

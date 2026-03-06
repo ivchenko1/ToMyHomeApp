@@ -1,8 +1,3 @@
-/**
- * Notification Service - zarządzanie powiadomieniami
- * Używa Firebase Firestore z real-time updates
- */
-
 import { 
   collection, 
   doc, 
@@ -17,21 +12,18 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 
-// ============================================
-// TYPY
-// ============================================
 
 export type NotificationType = 
-  | 'booking_request'      // Nowa prośba o rezerwację
-  | 'booking_confirmed'    // Rezerwacja potwierdzona
-  | 'booking_cancelled'    // Rezerwacja anulowana
-  | 'booking_completed'    // Usługa zakończona
-  | 'booking_reminder'     // Przypomnienie o wizycie
-  | 'new_message'          // Nowa wiadomość
-  | 'new_review'           // Nowa opinia
-  | 'system'               // Powiadomienie systemowe
-  | 'withdrawal_completed' // Wypłata zrealizowana pomyślnie
-  | 'withdrawal_failed';   // Wypłata nieudana 
+  | 'booking_request'      
+  | 'booking_confirmed'    
+  | 'booking_cancelled'    
+  | 'booking_completed'    
+  | 'booking_reminder'     
+  | 'new_message'          
+  | 'new_review'           
+  | 'system'               
+  | 'withdrawal_completed' 
+  | 'withdrawal_failed';
 
 export interface Notification {
   id: string;
@@ -44,24 +36,14 @@ export interface Notification {
   createdAt: string;
 }
 
-// ============================================
-// HELPERS
-// ============================================
-
 const NOTIFICATIONS_COLLECTION = 'notifications';
 
 const generateId = (): string => {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 };
 
-// ============================================
-// PUBLIC API
-// ============================================
-
 export const notificationService = {
-  /**
-   * Utwórz nowe powiadomienie
-   */
+
   async create(data: {
     userId: string;
     type: NotificationType;
@@ -86,8 +68,7 @@ export const notificationService = {
     try {
       await setDoc(doc(db, NOTIFICATIONS_COLLECTION, id), notification);
       console.log('Notification created:', notification);
-      
-      // Dispatch event dla real-time UI updates
+
       window.dispatchEvent(new CustomEvent('newNotification', { detail: notification }));
       
       return notification;
@@ -97,9 +78,6 @@ export const notificationService = {
     }
   },
 
-  /**
-   * Pobierz powiadomienia użytkownika
-   */
   async getByUser(userId: string): Promise<Notification[]> {
     try {
       const q = query(
@@ -108,7 +86,6 @@ export const notificationService = {
       );
       const snapshot = await getDocs(q);
       const notifications = snapshot.docs.map(doc => doc.data() as Notification);
-      // Sort in JS to avoid index requirement
       return notifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     } catch (error) {
       console.error('Notification getByUser error:', error);
@@ -116,9 +93,6 @@ export const notificationService = {
     }
   },
 
-  /**
-   * Pobierz nieprzeczytane powiadomienia
-   */
   async getUnreadByUser(userId: string): Promise<Notification[]> {
     try {
       const q = query(
@@ -129,7 +103,6 @@ export const notificationService = {
       const notifications = snapshot.docs
         .map(doc => doc.data() as Notification)
         .filter(n => !n.read);
-      // Sort in JS to avoid index requirement
       return notifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     } catch (error) {
       console.error('Notification getUnreadByUser error:', error);
@@ -137,9 +110,6 @@ export const notificationService = {
     }
   },
 
-  /**
-   * Policz nieprzeczytane powiadomienia
-   */
   async countUnread(userId: string): Promise<number> {
     try {
       const unread = await this.getUnreadByUser(userId);
@@ -150,9 +120,6 @@ export const notificationService = {
     }
   },
 
-  /**
-   * Oznacz powiadomienie jako przeczytane
-   */
   async markAsRead(notificationId: string): Promise<void> {
     try {
       await updateDoc(doc(db, NOTIFICATIONS_COLLECTION, notificationId), {
@@ -164,9 +131,6 @@ export const notificationService = {
     }
   },
 
-  /**
-   * Oznacz wszystkie powiadomienia użytkownika jako przeczytane
-   */
   async markAllAsRead(userId: string): Promise<void> {
     try {
       const unread = await this.getUnreadByUser(userId);
@@ -186,9 +150,6 @@ export const notificationService = {
     }
   },
 
-  /**
-   * Usuń powiadomienie
-   */
   async delete(notificationId: string): Promise<void> {
     try {
       await deleteDoc(doc(db, NOTIFICATIONS_COLLECTION, notificationId));
@@ -198,9 +159,6 @@ export const notificationService = {
     }
   },
 
-  /**
-   * Usuń wszystkie powiadomienia użytkownika
-   */
   async deleteAllByUser(userId: string): Promise<void> {
     try {
       const notifications = await this.getByUser(userId);
@@ -220,9 +178,6 @@ export const notificationService = {
     }
   },
 
-  /**
-   * Nasłuchuj na powiadomienia użytkownika (real-time)
-   */
   subscribe(
     userId: string, 
     callback: (notifications: Notification[]) => void
@@ -239,9 +194,6 @@ export const notificationService = {
     });
   },
 
-  /**
-   * Pobierz ikonę dla typu powiadomienia
-   */
   getIcon(type: NotificationType): string {
     const icons: Record<NotificationType, string> = {
       booking_request: '📅',
@@ -258,9 +210,6 @@ export const notificationService = {
     return icons[type] || '🔔';
   },
 
-  /**
-   * Pobierz kolor dla typu powiadomienia
-   */
   getColor(type: NotificationType): string {
     const colors: Record<NotificationType, string> = {
       booking_request: 'bg-blue-100 text-blue-600',

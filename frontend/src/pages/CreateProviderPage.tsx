@@ -85,7 +85,6 @@ const CreateProviderPage = () => {
     category: '',
   });
 
-  // Nowa usługa - formularz
   const [newService, setNewService] = useState<Omit<ServiceItem, 'id'>>({
     name: '',
     price: 0,
@@ -93,7 +92,6 @@ const CreateProviderPage = () => {
     description: '',
   });
 
-  // Nowa cecha
   const [newFeature, setNewFeature] = useState('');
 
   const categories = [
@@ -121,17 +119,14 @@ const CreateProviderPage = () => {
     'Rezerwacja online',
   ];
 
-  // Obsługa wyboru zdjęcia z urządzenia
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Sprawdź typ pliku
       if (!file.type.startsWith('image/')) {
         showToast('Wybierz plik graficzny (jpg, png, gif...)', 'error');
         return;
       }
       
-      // Sprawdź rozmiar (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         showToast('Plik jest za duży (max 5MB)', 'error');
         return;
@@ -139,7 +134,6 @@ const CreateProviderPage = () => {
 
       setImageFile(file);
       
-      // Stwórz podgląd
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -148,13 +142,11 @@ const CreateProviderPage = () => {
     }
   };
 
-  // Usuń wybrane zdjęcie
   const removeImage = () => {
     setImageFile(null);
     setImagePreview(null);
   };
 
-  // Dodaj usługę
   const addService = () => {
     if (!newService.name || newService.price <= 0) {
       showToast('Podaj nazwę i cenę usługi', 'error');
@@ -175,7 +167,6 @@ const CreateProviderPage = () => {
     showToast('Usługa dodana!', 'success');
   };
 
-  // Usuń usługę
   const removeService = (id: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -184,7 +175,6 @@ const CreateProviderPage = () => {
     showToast('Usługa usunięta', 'info');
   };
 
-  // Edytuj usługę
   const updateService = (id: string, field: keyof ServiceItem, value: string | number) => {
     setFormData((prev) => ({
       ...prev,
@@ -194,7 +184,6 @@ const CreateProviderPage = () => {
     }));
   };
 
-  // Dodaj cechę
   const addFeature = (feature: string) => {
     if (!feature.trim()) return;
     if (formData.features.includes(feature)) {
@@ -209,7 +198,6 @@ const CreateProviderPage = () => {
     setNewFeature('');
   };
 
-  // Usuń cechę
   const removeFeature = (feature: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -217,7 +205,6 @@ const CreateProviderPage = () => {
     }));
   };
 
-  // Toggle dzień pracy
   const toggleWorkingDay = (day: keyof typeof formData.workingHours) => {
     setFormData((prev) => ({
       ...prev,
@@ -231,7 +218,6 @@ const CreateProviderPage = () => {
     }));
   };
 
-  // Zapisz formularz
   const handleSubmit = async () => {
     if (!isAuthenticated) {
       showToast('Musisz być zalogowany', 'error');
@@ -239,7 +225,6 @@ const CreateProviderPage = () => {
       return;
     }
 
-    // Walidacja
     if (!formData.businessName) {
       showToast('Podaj nazwę firmy/salonu', 'error');
       setCurrentStep(1);
@@ -270,7 +255,6 @@ const CreateProviderPage = () => {
       const API_URL = '';
       const token = localStorage.getItem('token');
 
-      // Przygotuj dane do wysłania
       const requestData = {
         businessName: formData.businessName,
         profession: formData.profession,
@@ -292,7 +276,7 @@ const CreateProviderPage = () => {
           isActive: true,
         })),
         features: formData.features,
-        image: imagePreview || formData.image, // Base64 image lub URL
+        image: imagePreview || formData.image, 
         workingHours: formData.workingHours,
       };
 
@@ -318,7 +302,6 @@ const CreateProviderPage = () => {
     } catch (error) {
       console.error('Błąd:', error);
       
-      // Jeśli API nie działa, zapisz lokalnie (demo mode)
       const existingProviders = JSON.parse(localStorage.getItem('localProviders') || '[]');
       const newProvider = {
         id: Date.now(),
@@ -369,7 +352,6 @@ const CreateProviderPage = () => {
   return (
     <div className="min-h-screen py-8 px-6">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
         <div className="mb-8">
           <button
             onClick={() => navigate(-1)}
@@ -384,7 +366,6 @@ const CreateProviderPage = () => {
           </p>
         </div>
 
-        {/* Progress Steps */}
         <div className="flex items-center justify-between mb-8 bg-white rounded-2xl p-4 shadow-md">
           {steps.map((step, index) => (
             <div key={step.number} className="flex items-center">
@@ -413,9 +394,7 @@ const CreateProviderPage = () => {
           ))}
         </div>
 
-        {/* Form Content */}
         <div className="card p-8">
-          {/* Step 1: Podstawowe informacje */}
           {currentStep === 1 && (
             <div className="space-y-6">
               <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
@@ -520,7 +499,6 @@ const CreateProviderPage = () => {
             </div>
           )}
 
-          {/* Step 2: Lokalizacja */}
           {currentStep === 2 && (
             <div className="space-y-6">
               <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
@@ -602,7 +580,6 @@ const CreateProviderPage = () => {
                 />
               </div>
 
-              {/* Godziny pracy */}
               <div className="mt-8">
                 <h3 className="font-semibold mb-4">Godziny pracy</h3>
                 <div className="space-y-3">
@@ -664,7 +641,6 @@ const CreateProviderPage = () => {
             </div>
           )}
 
-          {/* Step 3: Usługi i ceny */}
           {currentStep === 3 && (
             <div className="space-y-6">
               <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
@@ -672,7 +648,6 @@ const CreateProviderPage = () => {
                 Usługi i cennik
               </h2>
 
-              {/* Lista dodanych usług */}
               {formData.services.length > 0 && (
                 <div className="space-y-3 mb-6">
                   <h3 className="font-semibold text-gray-700">
@@ -740,7 +715,6 @@ const CreateProviderPage = () => {
                 </div>
               )}
 
-              {/* Formularz nowej usługi */}
               <div className="p-6 border-2 border-dashed border-gray-200 rounded-xl">
                 <h3 className="font-semibold mb-4 flex items-center gap-2">
                   <Plus className="w-5 h-5" />
@@ -814,7 +788,6 @@ const CreateProviderPage = () => {
             </div>
           )}
 
-          {/* Step 4: Szczegóły */}
           {currentStep === 4 && (
             <div className="space-y-6">
               <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
@@ -853,13 +826,11 @@ const CreateProviderPage = () => {
                 />
               </div>
 
-              {/* Cechy / Udogodnienia */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Udogodnienia i cechy
                 </label>
 
-                {/* Wybrane cechy */}
                 <div className="flex flex-wrap gap-2 mb-4">
                   {formData.features.map((feature) => (
                     <span
@@ -877,7 +848,6 @@ const CreateProviderPage = () => {
                   ))}
                 </div>
 
-                {/* Sugerowane cechy */}
                 <div className="flex flex-wrap gap-2 mb-4">
                   {suggestedFeatures
                     .filter((f) => !formData.features.includes(f))
@@ -893,7 +863,6 @@ const CreateProviderPage = () => {
                     ))}
                 </div>
 
-                {/* Własna cecha */}
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -918,7 +887,6 @@ const CreateProviderPage = () => {
                 </div>
               </div>
 
-              {/* Podsumowanie */}
               <div className="mt-8 p-6 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl">
                 <h3 className="font-bold text-lg mb-4">📋 Podsumowanie</h3>
                 <div className="grid md:grid-cols-2 gap-4 text-sm">
@@ -948,7 +916,6 @@ const CreateProviderPage = () => {
             </div>
           )}
 
-          {/* Navigation Buttons */}
           <div className="flex justify-between mt-8 pt-6 border-t border-gray-100">
             <button
               type="button"

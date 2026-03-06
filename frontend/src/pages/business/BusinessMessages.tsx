@@ -24,7 +24,6 @@ const BusinessMessages = () => {
   const [, setProviderId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Pobierz providerId i subskrybuj konwersacje
   useEffect(() => {
     if (!user?.id) {
       setIsLoading(false);
@@ -33,7 +32,6 @@ const BusinessMessages = () => {
 
     const initMessages = async () => {
       try {
-        // Znajdź providerId dla tego użytkownika
         const providers = await providerService.getByOwner(user.id);
         
         if (providers.length === 0) {
@@ -44,7 +42,6 @@ const BusinessMessages = () => {
         const provider = providers[0];
         setProviderId(provider.id);
 
-        // Subskrybuj konwersacje dla tego providera
         const unsubscribe = messageService.subscribeToProviderConversations(
           provider.id,
           (newConversations) => {
@@ -70,11 +67,9 @@ const BusinessMessages = () => {
     };
   }, [user?.id]);
 
-  // Subskrybuj wiadomości z wybranej konwersacji
   useEffect(() => {
     if (!selectedConversation || !user?.id) return;
 
-    // Oznacz jako przeczytane
     messageService.markAsRead(selectedConversation.id, user.id);
 
     const unsubscribe = messageService.subscribeToMessages(
@@ -87,7 +82,6 @@ const BusinessMessages = () => {
     return () => unsubscribe();
   }, [selectedConversation, user?.id]);
 
-  // Auto-scroll do dołu
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -155,7 +149,6 @@ const BusinessMessages = () => {
 
   return (
     <div className="h-[calc(100vh-180px)] flex bg-white rounded-xl shadow-sm overflow-hidden">
-      {/* Lista konwersacji */}
       <div className={`w-full md:w-80 lg:w-96 border-r border-gray-100 flex flex-col ${selectedConversation ? 'hidden md:flex' : ''}`}>
         <div className="p-4 border-b border-gray-100">
           <h2 className="text-lg font-bold text-gray-900 mb-3">Wiadomości</h2>
@@ -227,10 +220,8 @@ const BusinessMessages = () => {
         </div>
       </div>
 
-      {/* Panel czatu */}
       {selectedConversation ? (
         <div className="flex-1 flex flex-col">
-          {/* Header czatu */}
           <div className="p-4 border-b border-gray-100 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button
@@ -271,7 +262,6 @@ const BusinessMessages = () => {
             </div>
           </div>
 
-          {/* Wiadomości */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
             {messages.length === 0 ? (
               <div className="text-center text-gray-500 py-8">
@@ -308,7 +298,6 @@ const BusinessMessages = () => {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
           <div className="p-4 border-t border-gray-100">
             <div className="flex items-center gap-3">
               <input

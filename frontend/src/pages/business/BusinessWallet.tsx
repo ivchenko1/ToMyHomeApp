@@ -26,19 +26,16 @@ const BusinessWallet = () => {
   const { user } = useAuth();
   const { showToast } = useToast();
   
-  // Stan
   const [wallet, setWallet] = useState<ProviderWallet | null>(null);
   const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);
   const [providerId, setProviderId] = useState<string | null>(null);
   const [providerName, setProviderName] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   
-  // Modal wypłaty
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Modal danych bankowych
   const [showBankModal, setShowBankModal] = useState(false);
   const [bankData, setBankData] = useState({
     bankName: '',
@@ -47,7 +44,6 @@ const BusinessWallet = () => {
   });
   const [showAccountNumber, setShowAccountNumber] = useState(false);
 
-  // Ładowanie danych
   useEffect(() => {
     const loadData = async () => {
       if (!user?.id) {
@@ -56,7 +52,6 @@ const BusinessWallet = () => {
       }
       
       try {
-        // Pobierz profil usługodawcy
         const providers = await providerService.getByOwner(user.id);
         if (providers.length === 0) {
           setIsLoading(false);
@@ -67,21 +62,17 @@ const BusinessWallet = () => {
         setProviderId(provider.id);
         setProviderName(provider.name);
         
-        // Pobierz lub utwórz portfel
         const walletData = await walletService.getOrCreate(provider.id, provider.name);
         setWallet(walletData);
         
-        // Inicjalizuj dane bankowe z portfela
         if (walletData.bankAccount) {
           setBankData(walletData.bankAccount);
         }
         
-        // Subskrybuj portfel
         const unsubWallet = walletService.subscribeToWallet(provider.id, (w) => {
           if (w) setWallet(w);
         });
         
-        // Subskrybuj wypłaty
         const unsubWithdrawals = withdrawalService.subscribeToProviderWithdrawals(
           provider.id,
           (w) => setWithdrawals(w)
@@ -102,7 +93,6 @@ const BusinessWallet = () => {
     loadData();
   }, [user]);
 
-  // Złóż wniosek o wypłatę
   const handleWithdrawSubmit = async () => {
     if (!providerId || !wallet) return;
     
@@ -157,7 +147,6 @@ const BusinessWallet = () => {
     }
   };
 
-  // Zapisz dane bankowe
   const handleSaveBankData = async () => {
     if (!providerId) return;
     
@@ -166,7 +155,6 @@ const BusinessWallet = () => {
       return;
     }
     
-    // Walidacja numeru konta (26 cyfr dla Polski)
     const cleanedNumber = bankData.accountNumber.replace(/\s/g, '');
     if (!/^\d{26}$/.test(cleanedNumber)) {
       showToast('Numer konta powinien mieć 26 cyfr', 'error');
@@ -189,7 +177,6 @@ const BusinessWallet = () => {
     }
   };
 
-  // Rozlicz środki (demo - natychmiast przenosi pending do balance)
   const handleSettleFunds = async () => {
     if (!providerId || !wallet || wallet.pendingBalance <= 0) return;
     
@@ -201,7 +188,6 @@ const BusinessWallet = () => {
     }
   };
 
-  // Status badge
   const StatusBadge = ({ status }: { status: WithdrawalStatus }) => {
     const color = withdrawalService.getStatusColor(status);
     const label = withdrawalService.getStatusLabel(status);
@@ -230,7 +216,6 @@ const BusinessWallet = () => {
     );
   };
 
-  // Loading
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -239,7 +224,6 @@ const BusinessWallet = () => {
     );
   }
 
-  // Brak profilu
   if (!providerId) {
     return (
       <div className="max-w-2xl mx-auto text-center py-16">
@@ -260,15 +244,12 @@ const BusinessWallet = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Portfel 💰</h1>
         <p className="text-gray-600">Zarządzaj swoimi środkami i wypłatami</p>
       </div>
 
-      {/* Karty salda */}
       <div className="grid sm:grid-cols-3 gap-4">
-        {/* Dostępne środki */}
         <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-6 text-white">
           <div className="flex items-center justify-between mb-4">
             <span className="text-emerald-100 text-sm font-medium">Dostępne do wypłaty</span>
@@ -287,7 +268,6 @@ const BusinessWallet = () => {
           </button>
         </div>
 
-        {/* Oczekujące */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-4">
             <span className="text-gray-500 text-sm font-medium">Oczekujące</span>
@@ -309,7 +289,6 @@ const BusinessWallet = () => {
           </p>
         </div>
 
-        {/* Statystyki */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-4">
             <span className="text-gray-500 text-sm font-medium">Łącznie zarobione</span>
@@ -325,7 +304,6 @@ const BusinessWallet = () => {
         </div>
       </div>
 
-      {/* Info o danych bankowych */}
       {!wallet?.bankAccount && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
@@ -344,7 +322,6 @@ const BusinessWallet = () => {
         </div>
       )}
 
-      {/* Dane bankowe - jeśli są */}
       {wallet?.bankAccount && (
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-4">
@@ -378,7 +355,6 @@ const BusinessWallet = () => {
         </div>
       )}
 
-      {/* Historia wypłat */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
         <div className="p-5 border-b border-gray-100">
           <h3 className="font-bold text-gray-900">Historia wypłat</h3>
@@ -438,9 +414,6 @@ const BusinessWallet = () => {
         )}
       </div>
 
-      {/* ============================================ */}
-      {/* MODAL: Wypłata środków */}
-      {/* ============================================ */}
       {showWithdrawModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6">
@@ -475,7 +448,6 @@ const BusinessWallet = () => {
               </p>
             </div>
             
-            {/* Szybkie kwoty */}
             <div className="flex gap-2 mb-6">
               {[100, 200, 500].filter(amt => amt <= (wallet?.balance || 0)).map(amount => (
                 <button
@@ -496,7 +468,6 @@ const BusinessWallet = () => {
               )}
             </div>
             
-            {/* Dane do wypłaty */}
             {wallet?.bankAccount && (
               <div className="bg-gray-50 rounded-xl p-4 mb-6">
                 <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
@@ -538,9 +509,6 @@ const BusinessWallet = () => {
         </div>
       )}
 
-      {/* ============================================ */}
-      {/* MODAL: Dane bankowe */}
-      {/* ============================================ */}
       {showBankModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6">

@@ -72,7 +72,6 @@ const BlogPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero */}
       <section className="bg-gradient-to-br from-primary via-secondary to-accent text-white py-20">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <h1 className="text-4xl lg:text-5xl font-bold mb-6">Blog</h1>
@@ -83,7 +82,6 @@ const BlogPage = () => {
         </div>
       </section>
 
-      {/* Categories */}
       <section className="py-8 bg-white border-b">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-wrap gap-2 justify-center">
@@ -103,7 +101,6 @@ const BlogPage = () => {
         </div>
       </section>
 
-      {/* Featured Post */}
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-6">
           <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -143,7 +140,6 @@ const BlogPage = () => {
         </div>
       </section>
 
-      {/* Posts Grid */}
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-6">
           <h2 className="text-2xl font-bold mb-8">Najnowsze artykuły</h2>
@@ -182,7 +178,6 @@ const BlogPage = () => {
         </div>
       </section>
 
-      {/* Newsletter */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-6">
           <div className="bg-gradient-to-r from-primary to-secondary rounded-2xl p-8 lg:p-12 text-white text-center">

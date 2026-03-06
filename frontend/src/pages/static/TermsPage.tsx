@@ -116,7 +116,6 @@ const TermsPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero */}
       <section className="bg-gradient-to-br from-primary via-secondary to-accent text-white py-20">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <h1 className="text-4xl lg:text-5xl font-bold mb-6">Regulamin</h1>
@@ -126,10 +125,8 @@ const TermsPage = () => {
         </div>
       </section>
 
-      {/* Content */}
       <section className="py-12">
         <div className="max-w-4xl mx-auto px-6">
-          {/* Last Updated */}
           <div className="bg-white rounded-2xl shadow-sm p-6 mb-8 flex items-center gap-4">
             <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
               <Calendar className="w-6 h-6 text-primary" />
@@ -140,7 +137,6 @@ const TermsPage = () => {
             </div>
           </div>
 
-          {/* Sections */}
           <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
             {sections.map((section, index) => (
               <div
@@ -159,7 +155,6 @@ const TermsPage = () => {
             ))}
           </div>
 
-          {/* Contact */}
           <div className="mt-8 bg-primary/5 rounded-2xl p-6 text-center">
             <p className="text-gray-600 mb-2">
               Masz pytania dotyczące regulaminu?

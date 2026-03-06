@@ -1,8 +1,3 @@
-/**
- * Provider Service - zarządzanie danymi usługodawców
- * Używa TYLKO Firebase Firestore
- */
-
 import {
     collection,
     doc,
@@ -16,10 +11,6 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
-
-// ============================================
-// TYPY
-// ============================================
 
 export interface ServiceItem {
     id: string;
@@ -86,16 +77,11 @@ export interface Provider {
     isAvailableToday: boolean;
     createdAt: string;
     updatedAt: string;
-    // Dane właściciela/użytkownika
     ownerEmail?: string;
     ownerUsername?: string;
     ownerPhone?: string;
     ownerAvatar?: string;
 }
-
-// ============================================
-// HELPERS
-// ============================================
 
 const FIREBASE_COLLECTION = 'providers';
 
@@ -113,14 +99,10 @@ const getDefaultWorkingHours = (): WorkingHours => ({
     sunday: { from: '00:00', to: '00:00', enabled: false },
 });
 
-/**
- * Normalizuje dane do formatu Provider
- */
 const normalizeProvider = (data: any, id?: string): Provider => {
     const now = new Date().toISOString();
     const providerId = id || data.id?.toString() || generateId();
 
-    // Obsługa usług
     let services: ServiceItem[] = [];
     if (data.services && Array.isArray(data.services)) {
         services = data.services.map((s: any, i: number) => ({
@@ -136,7 +118,6 @@ const normalizeProvider = (data: any, id?: string): Provider => {
         }));
     }
 
-    // Obsługa lokalizacji
     let location: ProviderLocation;
     if (data.location && typeof data.location === 'object') {
         location = {
@@ -193,7 +174,6 @@ const normalizeProvider = (data: any, id?: string): Provider => {
         isAvailableToday: data.isAvailableToday ?? true,
         createdAt: data.createdAt || now,
         updatedAt: data.updatedAt || now,
-        // Dane właściciela/użytkownika
         ownerEmail: data.ownerEmail || '',
         ownerUsername: data.ownerUsername || '',
         ownerPhone: data.ownerPhone || '',
@@ -201,17 +181,9 @@ const normalizeProvider = (data: any, id?: string): Provider => {
     };
 };
 
-// ============================================
-// PUBLIC API - TYLKO FIREBASE
-// ============================================
-
 export const providerService = {
-    /**
-     * Pobierz wszystkich usługodawców z Firebase
-     */
     async getAll(): Promise<Provider[]> {
         try {
-            // Pobierz wszystkich bez filtrowania
             const snapshot = await getDocs(collection(db, FIREBASE_COLLECTION));
             console.log('Firebase getAll - znaleziono:', snapshot.docs.length);
             return snapshot.docs.map(doc => normalizeProvider({ ...doc.data(), id: doc.id }));
@@ -221,9 +193,6 @@ export const providerService = {
         }
     },
 
-    /**
-     * Pobierz usługodawcę po ID z Firebase
-     */
     async getById(id: string): Promise<Provider | null> {
         try {
             const docRef = doc(db, FIREBASE_COLLECTION, id);
@@ -238,9 +207,6 @@ export const providerService = {
         }
     },
 
-    /**
-     * Pobierz usługodawców po kategorii
-     */
     async getByCategory(category: string): Promise<Provider[]> {
         try {
             const q = query(
@@ -255,9 +221,6 @@ export const providerService = {
         }
     },
 
-    /**
-     * Pobierz usługodawców danego użytkownika
-     */
     async getByOwner(ownerId: string): Promise<Provider[]> {
         try {
             const q = query(collection(db, FIREBASE_COLLECTION), where('ownerId', '==', ownerId));
@@ -269,9 +232,7 @@ export const providerService = {
         }
     },
 
-    /**
-     * Sprawdź czy nazwa salonu jest unikalna
-     */
+
     async isNameUnique(name: string, excludeId?: string): Promise<boolean> {
         try {
             const normalizedName = name.trim().toLowerCase();
@@ -280,10 +241,8 @@ export const providerService = {
             
             for (const doc of snapshot.docs) {
                 const provider = doc.data() as Provider;
-                // Pomiń własny profil przy edycji
                 if (excludeId && provider.id === excludeId) continue;
                 
-                // Porównaj znormalizowane nazwy
                 if (provider.name.trim().toLowerCase() === normalizedName) {
                     return false;
                 }
@@ -291,16 +250,12 @@ export const providerService = {
             return true;
         } catch (error) {
             console.error('isNameUnique error:', error);
-            return true; // W razie błędu pozwól kontynuować
+            return true; 
         }
     },
 
-    /**
-     * Sprawdź czy numer telefonu jest unikalny
-     */
     async isPhoneUnique(phone: string, excludeId?: string): Promise<boolean> {
         try {
-            // Wyciągnij tylko cyfry z numeru
             const normalizedPhone = phone.replace(/\D/g, '');
             if (!normalizedPhone || normalizedPhone.length < 9) return true;
             
@@ -309,10 +264,8 @@ export const providerService = {
             
             for (const doc of snapshot.docs) {
                 const provider = doc.data() as Provider;
-                // Pomiń własny profil przy edycji
                 if (excludeId && provider.id === excludeId) continue;
                 
-                // Porównaj znormalizowane numery (tylko cyfry)
                 const providerPhone = (provider.ownerPhone || '').replace(/\D/g, '');
                 if (providerPhone && providerPhone.includes(normalizedPhone.slice(-9))) {
                     return false;
@@ -321,15 +274,11 @@ export const providerService = {
             return true;
         } catch (error) {
             console.error('isPhoneUnique error:', error);
-            return true; // W razie błędu pozwól kontynuować
+            return true; 
         }
     },
 
-    /**
-     * Utwórz nowego usługodawcę w Firebase
-     */
     async create(data: Partial<Provider>, ownerId: string): Promise<Provider> {
-        // Sprawdź unikalność nazwy
         if (data.name) {
             const isUnique = await this.isNameUnique(data.name);
             if (!isUnique) {
@@ -337,7 +286,6 @@ export const providerService = {
             }
         }
 
-        // Sprawdź unikalność telefonu
         if (data.ownerPhone) {
             const isPhoneUnique = await this.isPhoneUnique(data.ownerPhone);
             if (!isPhoneUnique) {
@@ -348,7 +296,6 @@ export const providerService = {
         const id = generateId();
         const provider = normalizeProvider({ ...data, ownerId, isActive: true }, id);
 
-        // Usuń wszystkie pola undefined - Firebase ich nie akceptuje
         const cleanProvider = JSON.parse(JSON.stringify(provider));
 
         try {
@@ -363,15 +310,11 @@ export const providerService = {
         }
     },
 
-    /**
-     * Zaktualizuj usługodawcę w Firebase
-     */
     async update(id: string, data: Partial<Provider>): Promise<Provider | null> {
         try {
             const existing = await this.getById(id);
             if (!existing) return null;
 
-            // Sprawdź unikalność nazwy (jeśli się zmienia)
             if (data.name && data.name !== existing.name) {
                 const isUnique = await this.isNameUnique(data.name, id);
                 if (!isUnique) {
@@ -379,7 +322,6 @@ export const providerService = {
                 }
             }
 
-            // Sprawdź unikalność telefonu (jeśli się zmienia)
             if (data.ownerPhone && data.ownerPhone !== existing.ownerPhone) {
                 const isPhoneUnique = await this.isPhoneUnique(data.ownerPhone, id);
                 if (!isPhoneUnique) {
@@ -390,7 +332,6 @@ export const providerService = {
             const updated = normalizeProvider({ ...existing, ...data }, id);
             updated.updatedAt = new Date().toISOString();
 
-            // Usuń wszystkie pola undefined - Firebase ich nie akceptuje
             const cleanUpdated = JSON.parse(JSON.stringify(updated));
 
             await updateDoc(doc(db, FIREBASE_COLLECTION, id), cleanUpdated);
@@ -402,9 +343,6 @@ export const providerService = {
         }
     },
 
-    /**
-     * Usuń usługodawcę z Firebase
-     */
     async delete(id: string): Promise<boolean> {
         try {
             await deleteDoc(doc(db, FIREBASE_COLLECTION, id));
@@ -416,9 +354,6 @@ export const providerService = {
         }
     },
 
-    /**
-     * Upload zdjęcia do Firebase Storage
-     */
     async uploadImage(file: File, providerId: string): Promise<string> {
         try {
             const fileName = `providers/${providerId}/${Date.now()}_${file.name}`;
@@ -431,9 +366,6 @@ export const providerService = {
         }
     },
 
-    /**
-     * Dodaj usługę do usługodawcy
-     */
     async addService(providerId: string, service: Omit<ServiceItem, 'id'>): Promise<Provider | null> {
         const provider = await this.getById(providerId);
         if (!provider) return null;
@@ -448,9 +380,6 @@ export const providerService = {
         });
     },
 
-    /**
-     * Usuń usługę z usługodawcy
-     */
     async removeService(providerId: string, serviceId: string): Promise<Provider | null> {
         const provider = await this.getById(providerId);
         if (!provider) return null;

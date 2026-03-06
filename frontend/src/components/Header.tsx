@@ -15,18 +15,15 @@ const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Sprawdź czy użytkownik jest usługodawcą
   const isProvider = user?.accountType === 'provider' || !!user?.businessName;
   
   const authDropdownRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
 
-  // Real-time powiadomienia z Firebase
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
 
-  // Subskrybuj powiadomienia
   useEffect(() => {
     if (!user?.id) {
       setNotifications([]);
@@ -36,14 +33,13 @@ const Header = () => {
     const unsubscribe = notificationService.subscribe(
       user.id,
       (newNotifications) => {
-        setNotifications(newNotifications.slice(0, 5)); // Max 5 w dropdown
+        setNotifications(newNotifications.slice(0, 5));
       }
     );
     
     return () => unsubscribe();
   }, [user?.id]);
 
-  // Subskrybuj nieprzeczytane wiadomości
   useEffect(() => {
     if (!user?.id) {
       setUnreadMessagesCount(0);
@@ -62,7 +58,6 @@ const Header = () => {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  // Formatuj czas
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -84,7 +79,6 @@ const Header = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (authDropdownRef.current && !authDropdownRef.current.contains(event.target as Node)) {
@@ -129,7 +123,6 @@ const Header = () => {
     }
   };
 
-  // Hamburger Icon SVG
   const HamburgerIcon = () => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -138,7 +131,6 @@ const Header = () => {
     </svg>
   );
 
-  // Close Icon SVG
   const CloseIcon = () => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -156,7 +148,6 @@ const Header = () => {
     >
       <div className="max-w-7xl mx-auto px-6">
         <div className="h-[72px] flex items-center justify-between gap-8">
-          {/* Logo */}
           <Link
             to="/"
             className="flex items-center gap-3 transition-transform duration-300 hover:scale-105"
@@ -169,7 +160,6 @@ const Header = () => {
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-8">
             {navLinks.map((link) => (
               <Link
@@ -188,11 +178,9 @@ const Header = () => {
             ))}
           </nav>
 
-          {/* Desktop Actions */}
           <div className="hidden lg:flex items-center gap-3">
             {isAuthenticated ? (
               <>
-                {/* Notifications */}
                 <div className="relative" ref={notificationsRef}>
                   <button
                     onClick={() => setShowNotifications(!showNotifications)}
@@ -206,7 +194,6 @@ const Header = () => {
                     )}
                   </button>
 
-                  {/* Notifications Dropdown */}
                   {showNotifications && (
                     <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50">
                       <div className="p-4 border-b border-gray-100 flex items-center justify-between">
@@ -259,7 +246,6 @@ const Header = () => {
                   )}
                 </div>
 
-                {/* Messages */}
                 <Link
                   to="/wiadomosci"
                   className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
@@ -272,7 +258,6 @@ const Header = () => {
                   )}
                 </Link>
 
-                {/* Panel Biznes - tylko dla usługodawców */}
                 {isProvider && (
                   <Link
                     to="/biznes"
@@ -282,7 +267,6 @@ const Header = () => {
                   </Link>
                 )}
 
-                {/* User Dropdown */}
                 <div className="relative" ref={userDropdownRef}>
                   <button
                     onClick={() => setShowUserDropdown(!showUserDropdown)}
@@ -338,7 +322,6 @@ const Header = () => {
                 </div>
               </>
             ) : (
-              /* Auth Dropdown - Allegro style */
               <div 
                 className="relative" 
                 ref={authDropdownRef}
@@ -353,11 +336,9 @@ const Header = () => {
                   <ChevronDown className={`w-4 h-4 transition-transform ${showAuthDropdown ? 'rotate-180' : ''}`} />
                 </button>
 
-                {/* Allegro-style Dropdown */}
                 {showAuthDropdown && (
                   <div className="absolute right-0 mt-0 pt-2 z-50">
                     <div className="w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
-                      {/* Header with illustration */}
                       <div className="p-6 text-center bg-gradient-to-b from-gray-50 to-white">
                         <div className="flex justify-center gap-4 mb-4">
                           <div className="text-5xl">🔍</div>
@@ -371,7 +352,6 @@ const Header = () => {
                         </p>
                       </div>
 
-                      {/* Login Button */}
                       <div className="px-6 pb-4">
                         <Link
                           to="/auth?mode=login"
@@ -382,13 +362,11 @@ const Header = () => {
                         </Link>
                       </div>
 
-                      {/* Divider */}
                       <div className="px-6 pb-4">
                         <p className="text-center text-sm text-gray-500 mb-3">
                           Nie masz jeszcze konta? Załóż teraz.
                         </p>
 
-                        {/* Register options */}
                         <Link
                           to="/auth?mode=register&type=client"
                           className="flex items-center justify-center w-full py-3 mb-2 border-2 border-primary text-primary rounded-xl font-bold hover:bg-primary hover:text-white transition-all"
@@ -411,7 +389,6 @@ const Header = () => {
             )}
           </div>
 
-          {/* Mobile Menu Toggle */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-label="Toggle menu"
@@ -432,16 +409,13 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Mobile Menu */}
       {isMenuOpen && (
         <>
-          {/* Overlay */}
           <div 
             className="lg:hidden fixed inset-0 bg-black/50 z-40"
             onClick={() => setIsMenuOpen(false)}
           />
           
-          {/* Menu Panel */}
           <div
             className="lg:hidden fixed top-[72px] left-0 right-0 bg-white shadow-xl z-50 max-h-[calc(100vh-72px)] overflow-y-auto"
             style={{ backgroundColor: '#ffffff' }}

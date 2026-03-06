@@ -57,7 +57,6 @@ const AdminUsers = () => {
   const filterUsers = () => {
     let filtered = [...users];
 
-    // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -68,7 +67,6 @@ const AdminUsers = () => {
       );
     }
 
-    // Type filter
     switch (filterType) {
       case 'client':
         filtered = filtered.filter((u) => u.accountType === 'client');
@@ -91,11 +89,9 @@ const AdminUsers = () => {
   };
 
   const canPerformAction = (targetUser: AdminUser, action: 'block' | 'delete' | 'changeRole'): boolean => {
-    // Nie można wykonać akcji na sobie
     if (targetUser.id === currentUser?.id) {
       return false;
     }
-    // Jeśli nie ma roli, nie można wykonać akcji
     if (!currentUserRole) {
       return false;
     }
@@ -192,7 +188,6 @@ const AdminUsers = () => {
   const handleChangeRole = async () => {
     if (!selectedUser) return;
 
-    // Sprawdź czy admin próbuje nadać rolę superadmin
     if (!isSuperAdmin && newRole === 'superadmin') {
       showToast('Tylko Super Admin może nadawać rolę Super Admin', 'error');
       return;
@@ -255,16 +250,13 @@ const AdminUsers = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Użytkownicy</h1>
         <p className="text-gray-500">Zarządzaj użytkownikami platformy</p>
       </div>
 
-      {/* Filters & Search */}
       <div className="bg-white rounded-2xl shadow-sm p-4">
         <div className="flex flex-col lg:flex-row gap-4">
-          {/* Search */}
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
@@ -276,7 +268,6 @@ const AdminUsers = () => {
             />
           </div>
 
-          {/* Filter Tabs */}
           <div className="flex flex-wrap gap-2">
             {filters.map((filter) => (
               <button
@@ -295,7 +286,6 @@ const AdminUsers = () => {
         </div>
       </div>
 
-      {/* Users Table */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -394,7 +384,6 @@ const AdminUsers = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        {/* Block/Unblock */}
                         {canPerformAction(user, 'block') && (
                           user.isBlocked ? (
                             <button
@@ -420,7 +409,6 @@ const AdminUsers = () => {
                           )
                         )}
 
-                        {/* Change Role */}
                         {canPerformAction(user, 'changeRole') && (
                           <button
                             onClick={() => openRoleModal(user)}
@@ -442,7 +430,6 @@ const AdminUsers = () => {
                           </button>
                         )}
 
-                        {/* Delete */}
                         {canPerformAction(user, 'delete') && (
                           <button
                             onClick={() => handleDeleteUser(user)}
@@ -454,7 +441,6 @@ const AdminUsers = () => {
                           </button>
                         )}
 
-                        {/* Show dash if no actions available */}
                         {!canPerformAction(user, 'block') && 
                          !canPerformAction(user, 'changeRole') && 
                          !canPerformAction(user, 'delete') && (
@@ -470,7 +456,6 @@ const AdminUsers = () => {
         </div>
       </div>
 
-      {/* Block User Modal */}
       {showBlockModal && selectedUser && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6">
@@ -510,7 +495,6 @@ const AdminUsers = () => {
         </div>
       )}
 
-      {/* Change Role Modal */}
       {showRoleModal && selectedUser && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6">

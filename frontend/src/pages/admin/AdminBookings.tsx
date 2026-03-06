@@ -34,7 +34,6 @@ const AdminBookings = () => {
     setIsLoading(true);
     try {
       const data = await adminService.getAllBookings();
-      // Sort by date descending
       data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setBookings(data);
     } catch (error) {
@@ -48,7 +47,6 @@ const AdminBookings = () => {
   const filterBookings = () => {
     let filtered = [...bookings];
 
-    // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -60,7 +58,6 @@ const AdminBookings = () => {
       );
     }
 
-    // Status filter
     if (filterStatus !== 'all') {
       filtered = filtered.filter((b) => b.status === filterStatus);
     }
@@ -129,7 +126,6 @@ const AdminBookings = () => {
     { value: 'cancelled', label: 'Anulowane', count: bookings.filter((b) => b.status === 'cancelled').length },
   ];
 
-  // Stats
   const totalRevenue = bookings
     .filter((b) => b.status === 'completed')
     .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
@@ -147,13 +143,11 @@ const AdminBookings = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Rezerwacje</h1>
         <p className="text-gray-500">Przegląd wszystkich rezerwacji na platformie</p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl p-4 shadow-sm">
           <div className="flex items-center gap-3">
@@ -201,10 +195,8 @@ const AdminBookings = () => {
         </div>
       </div>
 
-      {/* Filters & Search */}
       <div className="bg-white rounded-2xl shadow-sm p-4">
         <div className="flex flex-col lg:flex-row gap-4">
-          {/* Search */}
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
@@ -216,7 +208,6 @@ const AdminBookings = () => {
             />
           </div>
 
-          {/* Filter Tabs */}
           <div className="flex flex-wrap gap-2">
             {filters.map((filter) => (
               <button
@@ -235,7 +226,6 @@ const AdminBookings = () => {
         </div>
       </div>
 
-      {/* Bookings Table */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">

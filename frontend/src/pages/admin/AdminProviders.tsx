@@ -54,7 +54,6 @@ const AdminProviders = () => {
   const filterProviders = () => {
     let filtered = [...providers];
 
-    // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -65,7 +64,6 @@ const AdminProviders = () => {
       );
     }
 
-    // Status filter
     switch (filterStatus) {
       case 'pending':
         filtered = filtered.filter((p) => !p.isVerified && !p.rejectedAt);
@@ -236,13 +234,11 @@ const AdminProviders = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Usługodawcy</h1>
         <p className="text-gray-500">Weryfikuj i zarządzaj profilami usługodawców</p>
       </div>
 
-      {/* Pending Alert */}
       {filters[1].count > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-4">
           <div className="p-2 bg-amber-100 rounded-lg">
@@ -265,10 +261,8 @@ const AdminProviders = () => {
         </div>
       )}
 
-      {/* Filters & Search */}
       <div className="bg-white rounded-2xl shadow-sm p-4">
         <div className="flex flex-col lg:flex-row gap-4">
-          {/* Search */}
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
@@ -280,7 +274,6 @@ const AdminProviders = () => {
             />
           </div>
 
-          {/* Filter Tabs */}
           <div className="flex flex-wrap gap-2">
             {filters.map((filter) => (
               <button
@@ -299,7 +292,6 @@ const AdminProviders = () => {
         </div>
       </div>
 
-      {/* Providers Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredProviders.length === 0 ? (
           <div className="col-span-full bg-white rounded-2xl p-12 text-center">
@@ -308,7 +300,6 @@ const AdminProviders = () => {
         ) : (
           filteredProviders.map((provider) => (
             <div key={provider.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
-              {/* Provider Image */}
               <div className="relative h-48">
                 <img
                   src={provider.image || 'https://via.placeholder.com/400x200?text=Brak+zdjęcia'}
@@ -320,7 +311,6 @@ const AdminProviders = () => {
                 </div>
               </div>
 
-              {/* Provider Info */}
               <div className="p-4">
                 <h3 className="font-bold text-lg text-gray-900">{provider.name}</h3>
                 <p className="text-gray-600">{provider.profession}</p>
@@ -342,9 +332,7 @@ const AdminProviders = () => {
                   Utworzono: {new Date(provider.createdAt).toLocaleDateString('pl-PL')}
                 </p>
 
-                {/* Actions */}
                 <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
-                  {/* Pending - show verify/reject */}
                   {!provider.isVerified && !provider.rejectedAt && (
                     <>
                       <button
@@ -369,7 +357,6 @@ const AdminProviders = () => {
                     </>
                   )}
 
-                  {/* Verified - show suspend/delete */}
                   {provider.isVerified && provider.isActive !== false && (
                     <>
                       <a
@@ -392,7 +379,6 @@ const AdminProviders = () => {
                     </>
                   )}
 
-                  {/* Suspended - show activate */}
                   {provider.isVerified && provider.isActive === false && (
                     <>
                       <button
@@ -413,7 +399,6 @@ const AdminProviders = () => {
                     </>
                   )}
 
-                  {/* Rejected - show delete */}
                   {provider.rejectedAt && (
                     <button
                       onClick={() => handleDelete(provider)}
@@ -431,7 +416,6 @@ const AdminProviders = () => {
         )}
       </div>
 
-      {/* Reject Modal */}
       {showRejectModal && selectedProvider && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6">

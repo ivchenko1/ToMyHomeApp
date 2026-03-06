@@ -28,11 +28,9 @@ const Footer = () => {
 
   return (
     <footer className="bg-gray-900 text-white" id="contact">
-      {/* Main Footer Content */}
       <div className="max-w-7xl mx-auto px-6 pt-16 pb-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12">
           
-          {/* Brand Column */}
           <div className="md:col-span-2 lg:col-span-1">
             <Link to="/" className="inline-block mb-4">
               <h4 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
@@ -44,7 +42,6 @@ const Footer = () => {
               Znajdź idealnego specjalistę w kilka sekund.
             </p>
             
-            {/* Contact Info */}
             <div className="space-y-3 mb-6">
               <a href="mailto:kontakt@tomyhomeapp.pl" className="flex items-center gap-3 text-gray-400 hover:text-white transition-colors">
                 <Mail className="w-4 h-4" />
@@ -60,7 +57,6 @@ const Footer = () => {
               </div>
             </div>
 
-            {/* Social Links */}
             <div className="flex gap-3">
               <a
                 href="https://facebook.com"
@@ -89,7 +85,6 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Services Column */}
           <div>
             <h5 className="text-sm font-bold uppercase tracking-wider text-white mb-5">
               Usługi
@@ -108,7 +103,6 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Company Column */}
           <div>
             <h5 className="text-sm font-bold uppercase tracking-wider text-white mb-5">
               Firma
@@ -127,7 +121,6 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Help Column */}
           <div>
             <h5 className="text-sm font-bold uppercase tracking-wider text-white mb-5">
               Pomoc
@@ -149,7 +142,6 @@ const Footer = () => {
         </div>
       </div>
 
-      {/* Newsletter Section - Wkrótce dostępne */}
       <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 opacity-50">
@@ -175,7 +167,6 @@ const Footer = () => {
         </div>
       </div>
 
-      {/* Bottom Bar */}
       <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-500">

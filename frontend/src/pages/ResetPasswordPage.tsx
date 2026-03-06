@@ -21,7 +21,6 @@ const ResetPasswordPage = () => {
       return;
     }
 
-    // Prosta walidacja emaila
     if (!/\S+@\S+\.\S+/.test(email)) {
       setError('Podaj prawidłowy adres email');
       return;
@@ -73,7 +72,6 @@ const ResetPasswordPage = () => {
 
         <div className="bg-white rounded-2xl shadow-xl p-8">
           {isSent ? (
-            // Sukces - email wysłany
             <div className="text-center">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle className="w-8 h-8 text-green-600" />
@@ -109,7 +107,6 @@ const ResetPasswordPage = () => {
               </div>
             </div>
           ) : (
-            // Formularz
             <>
               <div className="text-center mb-8">
                 <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">

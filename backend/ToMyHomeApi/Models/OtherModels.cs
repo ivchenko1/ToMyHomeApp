@@ -132,7 +132,6 @@ public class Favorite
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
-// Request do tworzenia profilu usługodawcy
 public class CreateProviderRequest
 {
     [Required]

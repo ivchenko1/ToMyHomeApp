@@ -125,13 +125,11 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-500">Przegląd statystyk platformy</p>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat, index) => (
           <div key={index} className="bg-white rounded-2xl p-6 shadow-sm">
@@ -159,7 +157,6 @@ const AdminDashboard = () => {
         ))}
       </div>
 
-      {/* Alerts */}
       {stats && stats.pendingVerifications > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-4">
           <div className="p-2 bg-amber-100 rounded-lg">
@@ -182,7 +179,6 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-2xl p-6 shadow-sm">
           <div className="flex items-center gap-3 mb-4">
@@ -254,9 +250,7 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Recent Bookings & Pending Providers */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Bookings */}
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           <div className="p-6 border-b border-gray-100">
             <div className="flex items-center justify-between">
@@ -292,7 +286,6 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Pending Verifications */}
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           <div className="p-6 border-b border-gray-100">
             <div className="flex items-center justify-between">

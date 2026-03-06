@@ -1,7 +1,3 @@
-/**
- * favoriteService - Zarządzanie ulubionymi usługodawcami
- */
-
 import { db } from '../firebase';
 import { 
   collection, 
@@ -27,9 +23,6 @@ export interface Favorite {
 }
 
 const favoriteService = {
-  /**
-   * Dodaj do ulubionych
-   */
   async add(userId: string, provider: {
     id: string;
     name: string;
@@ -48,17 +41,11 @@ const favoriteService = {
     });
   },
 
-  /**
-   * Usuń z ulubionych
-   */
   async remove(userId: string, providerId: string): Promise<void> {
     const favoriteId = `${userId}_${providerId}`;
     await deleteDoc(doc(db, COLLECTION, favoriteId));
   },
 
-  /**
-   * Sprawdź czy jest w ulubionych
-   */
   async isFavorite(userId: string, providerId: string): Promise<boolean> {
     const favoriteId = `${userId}_${providerId}`;
     const docRef = doc(db, COLLECTION, favoriteId);
@@ -66,9 +53,6 @@ const favoriteService = {
     return docSnap.exists();
   },
 
-  /**
-   * Pobierz wszystkie ulubione użytkownika
-   */
   async getByUser(userId: string): Promise<Favorite[]> {
     const q = query(collection(db, COLLECTION), where('userId', '==', userId));
     const snapshot = await getDocs(q);
@@ -79,9 +63,6 @@ const favoriteService = {
     })) as Favorite[];
   },
 
-  /**
-   * Toggle - dodaj lub usuń z ulubionych
-   */
   async toggle(userId: string, provider: {
     id: string;
     name: string;

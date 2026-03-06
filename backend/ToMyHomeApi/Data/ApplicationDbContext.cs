@@ -21,13 +21,11 @@ public class ApplicationDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // User
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasIndex(u => u.Email).IsUnique();
         });
 
-        // Provider
         modelBuilder.Entity<Provider>(entity =>
         {
             entity.HasOne(p => p.Category)
@@ -35,7 +33,6 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(p => p.CategoryId);
         });
 
-        // Booking
         modelBuilder.Entity<Booking>(entity =>
         {
             entity.HasOne(b => b.User)
@@ -47,7 +44,6 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(b => b.ProviderId);
         });
 
-        // Review
         modelBuilder.Entity<Review>(entity =>
         {
             entity.HasOne(r => r.Provider)
@@ -55,7 +51,6 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(r => r.ProviderId);
         });
 
-        // Favorite
         modelBuilder.Entity<Favorite>(entity =>
         {
             entity.HasOne(f => f.User)
@@ -65,13 +60,11 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(f => new { f.UserId, f.ProviderId }).IsUnique();
         });
 
-        // Seed data
         SeedData(modelBuilder);
     }
 
     private static void SeedData(ModelBuilder modelBuilder)
     {
-        // Seed service categories
         modelBuilder.Entity<ServiceCategory>().HasData(
             new ServiceCategory { Id = 1, Name = "Fryzjer", Icon = "✂️", Slug = "fryzjer", PriceFrom = 80 },
             new ServiceCategory { Id = 2, Name = "Tatuaże", Icon = "🖊️", Slug = "tatuaze", PriceFrom = 200 },
@@ -82,7 +75,6 @@ public class ApplicationDbContext : DbContext
             new ServiceCategory { Id = 7, Name = "Inne", Icon = "✨", Slug = "inne", PriceFrom = 50 }
         );
 
-        // Seed providers
         modelBuilder.Entity<Provider>().HasData(
             new Provider
             {

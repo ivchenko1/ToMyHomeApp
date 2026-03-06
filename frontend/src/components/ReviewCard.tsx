@@ -28,7 +28,6 @@ const ReviewCard = ({ review }: ReviewCardProps) => {
 
   return (
     <div className="card card-hover p-6">
-      {/* Header */}
       <div className="flex items-center gap-4 mb-4">
         <div
           className={`w-12 h-12 rounded-full ${review.gradientClass} flex items-center justify-center text-white font-bold text-lg`}
@@ -43,7 +42,6 @@ const ReviewCard = ({ review }: ReviewCardProps) => {
         </div>
       </div>
 
-      {/* Stars */}
       <div className="flex items-center gap-1 mb-4">
         {[...Array(5)].map((_, i) => (
           <Star
@@ -57,10 +55,8 @@ const ReviewCard = ({ review }: ReviewCardProps) => {
         ))}
       </div>
 
-      {/* Content */}
       <p className="text-gray-600 leading-relaxed mb-4">{review.content}</p>
 
-      {/* Footer */}
       <button
         onClick={handleHelpful}
         disabled={hasVoted}

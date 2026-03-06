@@ -33,7 +33,6 @@ const NotificationsPage = () => {
     
     console.log('NotificationsPage: Subscribing for user', user.id);
     
-    // Subskrybuj powiadomienia real-time
     const unsubscribe = notificationService.subscribe(
       user.id,
       (newNotifications) => {
@@ -88,9 +87,8 @@ const NotificationsPage = () => {
   const handleNotificationClick = (notification: Notification) => {
     markAsRead(notification.id);
     
-    // Nawiguj w zależności od typu
     if (notification.data?.bookingId) {
-      navigate('/profil'); // lub dedykowana strona rezerwacji
+      navigate('/profil'); 
     } else if (notification.type === 'new_message') {
       navigate('/wiadomosci');
     } else if (notification.type === 'new_review' && notification.data?.providerId) {
@@ -190,7 +188,6 @@ const NotificationsPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 pt-8 pb-16">
       <div className="max-w-3xl mx-auto px-4">
-        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Powiadomienia</h1>
@@ -211,7 +208,6 @@ const NotificationsPage = () => {
           </div>
         </div>
 
-        {/* Filters */}
         <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex bg-gray-100 rounded-lg p-1">
@@ -258,7 +254,6 @@ const NotificationsPage = () => {
           </div>
         </div>
 
-        {/* Notifications List */}
         <div className="space-y-3">
           {filteredNotifications.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm p-12 text-center">

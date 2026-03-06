@@ -97,7 +97,6 @@ const FAQPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero */}
       <section className="bg-gradient-to-br from-primary via-secondary to-accent text-white py-20">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <h1 className="text-4xl lg:text-5xl font-bold mb-6">Często zadawane pytania</h1>
@@ -105,7 +104,6 @@ const FAQPage = () => {
             Znajdź odpowiedzi na najczęstsze pytania dotyczące naszej platformy.
           </p>
           
-          {/* Search */}
           <div className="max-w-xl mx-auto relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
@@ -119,7 +117,6 @@ const FAQPage = () => {
         </div>
       </section>
 
-      {/* Categories */}
       <section className="py-8 bg-white border-b sticky top-16 z-10">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-wrap gap-2 justify-center">
@@ -141,7 +138,6 @@ const FAQPage = () => {
         </div>
       </section>
 
-      {/* FAQ List */}
       <section className="py-12">
         <div className="max-w-3xl mx-auto px-6">
           {filteredFaqs.length === 0 ? (
@@ -182,7 +178,6 @@ const FAQPage = () => {
         </div>
       </section>
 
-      {/* Still have questions */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-6">
           <div className="bg-gradient-to-r from-primary to-secondary rounded-2xl p-8 lg:p-12 text-white text-center">

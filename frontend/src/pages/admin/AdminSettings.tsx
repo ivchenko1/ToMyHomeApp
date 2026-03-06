@@ -20,7 +20,6 @@ const AdminSettings = () => {
   const [activeTab, setActiveTab] = useState('general');
   const [isSaving, setIsSaving] = useState(false);
 
-  // General settings
   const [generalSettings, setGeneralSettings] = useState({
     siteName: 'ToMyHomeApp',
     siteDescription: 'Profesjonalne usługi beauty i wellness w zaciszu Twojego domu',
@@ -29,14 +28,12 @@ const AdminSettings = () => {
     maintenanceMode: false,
   });
 
-  // Commission settings
   const [commissionSettings, setCommissionSettings] = useState({
-    platformCommission: 10, // procent
-    minWithdrawal: 50, // zł
-    payoutDelay: 7, // dni
+    platformCommission: 10, 
+    minWithdrawal: 50, 
+    payoutDelay: 7, 
   });
 
-  // Notification settings
   const [notificationSettings, setNotificationSettings] = useState({
     emailNotifications: true,
     bookingReminders: true,
@@ -44,7 +41,6 @@ const AdminSettings = () => {
     providerAlerts: true,
   });
 
-  // Security settings
   const [securitySettings, setSecuritySettings] = useState({
     requireEmailVerification: false,
     requirePhoneVerification: false,
@@ -62,7 +58,6 @@ const AdminSettings = () => {
 
   const handleSave = async () => {
     setIsSaving(true);
-    // Symulacja zapisu - w prawdziwej aplikacji zapisywałoby do Firestore
     await new Promise((resolve) => setTimeout(resolve, 1000));
     showToast('Ustawienia zapisane', 'success');
     setIsSaving(false);
@@ -74,7 +69,6 @@ const AdminSettings = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Ustawienia</h1>
@@ -94,7 +88,6 @@ const AdminSettings = () => {
         </button>
       </div>
 
-      {/* Super Admin Notice */}
       {!isSuperAdmin && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-4">
           <div className="p-2 bg-amber-100 rounded-lg">
@@ -110,7 +103,6 @@ const AdminSettings = () => {
       )}
 
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* Tabs */}
         <div className="lg:w-64 bg-white rounded-2xl shadow-sm p-4">
           <nav className="space-y-1">
             {tabs.map((tab) => {
@@ -139,9 +131,7 @@ const AdminSettings = () => {
           </nav>
         </div>
 
-        {/* Content */}
         <div className="flex-1 bg-white rounded-2xl shadow-sm p-6">
-          {/* General Settings */}
           {activeTab === 'general' && (
             <div className="space-y-6">
               <h2 className="text-lg font-bold text-gray-900">Ustawienia ogólne</h2>
@@ -199,7 +189,6 @@ const AdminSettings = () => {
             </div>
           )}
 
-          {/* Commission Settings - Super Admin Only */}
           {activeTab === 'commission' && isSuperAdmin && (
             <div className="space-y-6">
               <div className="flex items-center gap-2">
@@ -259,7 +248,6 @@ const AdminSettings = () => {
             </div>
           )}
 
-          {/* Notification Settings */}
           {activeTab === 'notifications' && (
             <div className="space-y-6">
               <h2 className="text-lg font-bold text-gray-900">Ustawienia powiadomień</h2>
@@ -300,7 +288,6 @@ const AdminSettings = () => {
             </div>
           )}
 
-          {/* Security Settings - Super Admin Only */}
           {activeTab === 'security' && isSuperAdmin && (
             <div className="space-y-6">
               <div className="flex items-center gap-2">
@@ -362,7 +349,6 @@ const AdminSettings = () => {
             </div>
           )}
 
-          {/* Maintenance Settings - Super Admin Only */}
           {activeTab === 'maintenance' && isSuperAdmin && (
             <div className="space-y-6">
               <div className="flex items-center gap-2">
@@ -425,7 +411,6 @@ const AdminSettings = () => {
             </div>
           )}
 
-          {/* Locked Tab Message */}
           {((activeTab === 'commission' || activeTab === 'security' || activeTab === 'maintenance') && !isSuperAdmin) && (
             <div className="text-center py-12">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">

@@ -40,7 +40,6 @@ const AdminSidebar = ({ isOpen, onClose, isSuperAdmin = false }: AdminSidebarPro
 
   return (
     <>
-      {/* Overlay dla mobile */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
@@ -48,14 +47,12 @@ const AdminSidebar = ({ isOpen, onClose, isSuperAdmin = false }: AdminSidebarPro
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-gray-900 text-white transform transition-transform duration-300 lg:transform-none ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
         <div className="flex flex-col h-full">
-          {/* Header */}
           <div className="p-4 border-b border-white/10">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -80,7 +77,6 @@ const AdminSidebar = ({ isOpen, onClose, isSuperAdmin = false }: AdminSidebarPro
             </div>
           </div>
 
-          {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
             {menuItems.map((item) => (
               <NavLink
@@ -104,7 +100,6 @@ const AdminSidebar = ({ isOpen, onClose, isSuperAdmin = false }: AdminSidebarPro
             ))}
           </nav>
 
-          {/* Footer */}
           <div className="p-4 border-t border-white/10">
             <NavLink
               to="/"

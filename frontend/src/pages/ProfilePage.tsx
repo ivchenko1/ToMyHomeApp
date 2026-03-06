@@ -1,4 +1,3 @@
-// src/pages/ProfilePage.tsx
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -53,7 +52,6 @@ const ProfilePage = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
   
-  // Stan dla modalu opinii
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewBooking, setReviewBooking] = useState<Booking | null>(null);
   const [reviewRating, setReviewRating] = useState(5);
@@ -67,7 +65,6 @@ const ProfilePage = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  // Ładuj rezerwacje użytkownika
   useEffect(() => {
     const loadBookings = async () => {
       if (!user?.id) return;
@@ -86,7 +83,6 @@ const ProfilePage = () => {
     loadBookings();
   }, [user?.id]);
 
-  // Ładuj ulubione przy starcie
   useEffect(() => {
     const loadFavorites = async () => {
       if (!user?.id) return;
@@ -105,7 +101,6 @@ const ProfilePage = () => {
     loadFavorites();
   }, [user?.id]);
 
-  // Sprawdź które rezerwacje mają już opinie
   useEffect(() => {
     const checkReviews = async () => {
       if (!bookings.length) return;
@@ -125,7 +120,6 @@ const ProfilePage = () => {
     checkReviews();
   }, [bookings]);
 
-  // Otwórz modal opinii
   const openReviewModal = (booking: Booking) => {
     setReviewBooking(booking);
     setReviewRating(5);
@@ -133,7 +127,6 @@ const ProfilePage = () => {
     setShowReviewModal(true);
   };
 
-  // Wyślij opinię
   const submitReview = async () => {
     if (!reviewBooking || !user) return;
     
@@ -165,7 +158,6 @@ const ProfilePage = () => {
     }
   };
 
-  // Pobierz nadchodzące wizyty (od dziś)
   const getUpcomingBookings = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -178,7 +170,6 @@ const ProfilePage = () => {
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   };
 
-  // Pobierz daty z rezerwacjami w danym miesiącu
   const getBookingDatesInMonth = () => {
     const dates = new Set<number>();
     bookings.forEach(b => {
@@ -194,7 +185,6 @@ const ProfilePage = () => {
     return dates;
   };
 
-  // Anuluj rezerwację
   const cancelBooking = async (bookingId: string) => {
     if (!confirm('Czy na pewno chcesz anulować tę wizytę?')) return;
     
@@ -209,7 +199,6 @@ const ProfilePage = () => {
     }
   };
 
-  // Usuń z ulubionych
   const removeFavorite = async (providerId: string) => {
     if (!user?.id) return;
     
@@ -243,7 +232,6 @@ const ProfilePage = () => {
     }
   };
 
-  // Calendar functions
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   };
@@ -326,7 +314,6 @@ const ProfilePage = () => {
           })}
         </div>
         
-        {/* Legenda */}
         <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-4 text-xs text-gray-500">
           <div className="flex items-center gap-1">
             <div className="w-3 h-3 bg-primary rounded" />
@@ -489,7 +476,6 @@ const ProfilePage = () => {
               <h3 className="font-bold text-lg mb-4">Kalendarz wizyt</h3>
               {renderCalendar()}
               
-              {/* Historia wizyt */}
               {pastBookings.length > 0 && (
                 <div className="mt-6">
                   <h3 className="font-bold text-lg mb-4">Historia wizyt</h3>
@@ -529,7 +515,6 @@ const ProfilePage = () => {
                           </div>
                         </div>
                         
-                        {/* Przycisk opinii */}
                         {canReview && (
                           <div className="mt-3 pt-3 border-t border-gray-100">
                             <button
@@ -677,11 +662,9 @@ const ProfilePage = () => {
     }
   };
 
-  // ==================== SETTINGS SECTION ====================
   const SettingsSection = () => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     
-    // Parsuj numer telefonu
     const parsePhoneNumber = (phone: string | undefined) => {
       if (!phone) return { countryCode: '+48', number: '' };
       const match = phone.match(/^(\+\d{1,3})\s?(.*)$/);
@@ -693,7 +676,6 @@ const ProfilePage = () => {
 
     const parsedPhone = parsePhoneNumber(userData?.phone || user?.phone);
     
-    // Form state
     const [formData, setFormData] = useState({
       username: userData?.username || user?.username || '',
       phone: parsedPhone.number,
@@ -705,7 +687,6 @@ const ProfilePage = () => {
     const [saving, setSaving] = useState(false);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     
-    // Password change state
     const [showPasswordForm, setShowPasswordForm] = useState(false);
     const [passwordData, setPasswordData] = useState({
       currentPassword: '',
@@ -716,7 +697,6 @@ const ProfilePage = () => {
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [changingPassword, setChangingPassword] = useState(false);
 
-    // Handle avatar upload
     const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file || !user?.id) return;
@@ -733,18 +713,15 @@ const ProfilePage = () => {
       }
     };
 
-    // Handle profile form submit
     const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       
-      // Walidacja imienia i nazwiska
       const nameParts = formData.username.trim().split(/\s+/);
       if (nameParts.length < 2 || nameParts.some((part: string) => part.length < 2)) {
         showToast('Podaj pełne imię i nazwisko (np. Jan Kowalski)', 'error');
         return;
       }
       
-      // Walidacja telefonu
       const phoneValidation = validatePhoneNumber(formData.phoneCountryCode, formData.phone);
       if (!phoneValidation.valid) {
         showToast(phoneValidation.message, 'error');
@@ -757,13 +734,11 @@ const ProfilePage = () => {
       try {
         const formattedPhone = `${formData.phoneCountryCode} ${formData.phone.replace(/\D/g, '')}`;
         
-        // Przygotuj dane do aktualizacji (bez pustych wartości)
         const updateData: Record<string, string> = {
           username: formData.username,
           phone: formattedPhone,
         };
         
-        // Dodaj businessName tylko jeśli nie jest pusty
         if (formData.businessName && formData.businessName.trim()) {
           updateData.businessName = formData.businessName.trim();
         }
@@ -778,7 +753,6 @@ const ProfilePage = () => {
       }
     };
 
-    // Handle password change
     const handlePasswordChange = async (e: React.FormEvent) => {
       e.preventDefault();
 
@@ -805,7 +779,6 @@ const ProfilePage = () => {
       }
     };
 
-    // Handle account deletion
     const handleDeleteAccount = async () => {
       const password = window.prompt('Aby usunąć konto, wpisz swoje hasło:');
       if (password === null) return;
@@ -830,7 +803,6 @@ const ProfilePage = () => {
 
     return (
       <div className="max-w-2xl space-y-6">
-        {/* Avatar */}
         <div className="card p-8">
           <h3 className="font-bold text-lg mb-6">Zdjęcie profilowe</h3>
           <div className="flex items-center gap-6">
@@ -870,7 +842,6 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {/* Dane osobowe */}
         <div className="card p-8">
           <h3 className="font-bold text-lg mb-6">Dane osobowe</h3>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -941,7 +912,6 @@ const ProfilePage = () => {
           </form>
         </div>
 
-        {/* Zmiana hasła */}
         <div className="card p-8">
           <div className="flex items-center justify-between mb-6">
             <h3 className="font-bold text-lg">Zmiana hasła</h3>
@@ -1053,7 +1023,6 @@ const ProfilePage = () => {
           )}
         </div>
 
-        {/* Strefa zagrożenia */}
         <div className="card p-8 border-2 border-red-200 bg-red-50">
           <h3 className="font-bold text-lg text-red-600 mb-4">Strefa zagrożenia</h3>
           <p className="text-gray-600 mb-4">
@@ -1077,7 +1046,6 @@ const ProfilePage = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
-      {/* Mobile Navigation */}
       <div className="lg:hidden mb-6 overflow-x-auto">
         <div className="flex gap-2 pb-2 min-w-max">
           {menuItems.map((item) => {
@@ -1111,10 +1079,8 @@ const ProfilePage = () => {
       </div>
 
       <div className="flex gap-8">
-        {/* Sidebar - tylko desktop */}
         <aside className="w-72 shrink-0 hidden lg:block">
           <div className="card p-6 sticky top-24">
-            {/* Profile Section */}
             <div className="text-center mb-6 pb-6 border-b border-gray-100">
               <div className="relative inline-block">
                 <div className="w-20 h-20 rounded-full overflow-hidden bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-white text-3xl">
@@ -1138,7 +1104,6 @@ const ProfilePage = () => {
               )}
             </div>
 
-            {/* Menu */}
             <nav className="space-y-1">
               {menuItems.map((item) => {
                 const isDisabled = item.id === 'referral';
@@ -1171,7 +1136,6 @@ const ProfilePage = () => {
           </div>
         </aside>
 
-        {/* Main Content */}
         <main className="flex-1 min-w-0">
           <div className="mb-6">
             <h1 className="text-2xl font-bold">
@@ -1191,7 +1155,6 @@ const ProfilePage = () => {
         </main>
       </div>
 
-      {/* Modal wystawiania opinii */}
       {showReviewModal && reviewBooking && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
@@ -1206,7 +1169,6 @@ const ProfilePage = () => {
                 </button>
               </div>
 
-              {/* Info o wizycie */}
               <div className="p-4 bg-gray-50 rounded-xl mb-6">
                 <div className="flex items-center gap-3">
                   <img 
@@ -1224,7 +1186,6 @@ const ProfilePage = () => {
                 </div>
               </div>
 
-              {/* Ocena gwiazdkowa */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Twoja ocena
@@ -1255,7 +1216,6 @@ const ProfilePage = () => {
                 </p>
               </div>
 
-              {/* Komentarz */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Twoja opinia
@@ -1272,7 +1232,6 @@ const ProfilePage = () => {
                 </p>
               </div>
 
-              {/* Przyciski */}
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowReviewModal(false)}

@@ -32,7 +32,7 @@ public class ProviderService : IProviderService
     {
         var query = _context.Providers
             .Include(p => p.Category)
-            .Where(p => p.OwnerId == null || p.IsAvailableToday) // Tylko aktywni
+            .Where(p => p.OwnerId == null || p.IsAvailableToday)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(category))
@@ -80,32 +80,27 @@ public class ProviderService : IProviderService
 
     public async Task<ProviderDto?> CreateProvider(int userId, CreateProviderRequest request)
     {
-        // Sprawdź czy użytkownik już ma profil
         var existingProvider = await _context.Providers.FirstOrDefaultAsync(p => p.OwnerId == userId);
         if (existingProvider != null)
         {
-            return null; // Użytkownik już ma profil
+            return null;
         }
 
-        // Znajdź kategorię
         var category = await _context.ServiceCategories
             .FirstOrDefaultAsync(c => c.Slug == request.Category.ToLower());
 
         if (category == null)
         {
-            // Domyślna kategoria "inne"
             category = await _context.ServiceCategories.FirstOrDefaultAsync(c => c.Slug == "inne")
                        ?? await _context.ServiceCategories.FirstAsync();
         }
 
-        // Przygotuj lokalizację
         var locationString = $"{request.Location.City}";
         if (!string.IsNullOrEmpty(request.Location.District))
             locationString += $", {request.Location.District}";
         if (!string.IsNullOrEmpty(request.Location.Address))
             locationString += $", {request.Location.Address}";
 
-        // Znajdź minimalną cenę usług
         var minPrice = request.Services.Any() 
             ? request.Services.Min(s => s.Price) 
             : category.PriceFrom;
@@ -265,7 +260,7 @@ public class ProviderService : IProviderService
             Rating = provider.Rating,
             ReviewsCount = provider.ReviewsCount,
             Location = provider.Location,
-            Distance = "2.5 km", // This would be calculated based on user location
+            Distance = "2.5 km", 
             Description = provider.Description,
             Services = services,
             Features = features,

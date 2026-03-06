@@ -1,8 +1,3 @@
-/**
- * Wallet Service - zarządzanie portfelem usługodawcy
- * Przechowuje saldo, historię transakcji i statystyki finansowe
- */
-
 import { 
   doc, 
   getDoc, 
@@ -13,30 +8,22 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 
-// ============================================
-// TYPY
-// ============================================
-
 export interface ProviderWallet {
   providerId: string;
   providerName: string;
   
-  // Saldo
-  balance: number;           // Dostępne do wypłaty
-  pendingBalance: number;    // Oczekujące (jeszcze nie rozliczone)
+  balance: number;           
+  pendingBalance: number;    
   
-  // Statystyki
-  totalEarned: number;       // Suma wszystkich zarobków
-  totalWithdrawn: number;    // Suma wszystkich wypłat
+  totalEarned: number;       
+  totalWithdrawn: number;    
   
-  // Dane bankowe (opcjonalne)
   bankAccount?: {
     bankName: string;
-    accountNumber: string;   // Numer konta (zamaskowany w UI)
-    accountHolder: string;   // Imię i nazwisko właściciela
+    accountNumber: string;  
+    accountHolder: string;  
   };
   
-  // Daty
   createdAt: string;
   updatedAt: string;
 }
@@ -48,32 +35,18 @@ export interface WalletTransaction {
   amount: number;
   description: string;
   
-  // Referencje
   bookingId?: string;
   withdrawalId?: string;
   
-  // Status
   status: 'pending' | 'completed' | 'failed';
   
-  // Daty
   createdAt: string;
   completedAt?: string;
 }
 
-// ============================================
-// HELPERS
-// ============================================
-
 const WALLETS_COLLECTION = 'providerWallets';
 
-// ============================================
-// PUBLIC API
-// ============================================
-
 export const walletService = {
-  /**
-   * Pobierz portfel usługodawcy (lub utwórz jeśli nie istnieje)
-   */
   async getOrCreate(providerId: string, providerName: string): Promise<ProviderWallet> {
     try {
       const docRef = doc(db, WALLETS_COLLECTION, providerId);
@@ -83,7 +56,7 @@ export const walletService = {
         return docSnap.data() as ProviderWallet;
       }
       
-      // Utwórz nowy portfel
+
       const now = new Date().toISOString();
       const newWallet: ProviderWallet = {
         providerId,
@@ -105,9 +78,7 @@ export const walletService = {
     }
   },
 
-  /**
-   * Pobierz portfel usługodawcy
-   */
+
   async get(providerId: string): Promise<ProviderWallet | null> {
     try {
       const docRef = doc(db, WALLETS_COLLECTION, providerId);
@@ -123,26 +94,18 @@ export const walletService = {
     }
   },
 
-  /**
-   * Dodaj zarobek do portfela (po zakończeniu rezerwacji)
-   * Automatycznie tworzy portfel jeśli nie istnieje
-   * Środki trafiają do pendingBalance (oczekujące na rozliczenie)
-   */
   async addEarning(providerId: string, amount: number, _bookingId: string): Promise<void> {
     try {
       const docRef = doc(db, WALLETS_COLLECTION, providerId);
       let wallet = await this.get(providerId);
       
-      // Jeśli portfel nie istnieje, utwórz go
       if (!wallet) {
-        // Pobierz nazwę providera
         const providerDoc = await getDoc(doc(db, 'providers', providerId));
         const providerName = providerDoc.exists() ? providerDoc.data()?.name || 'Usługodawca' : 'Usługodawca';
         
         wallet = await this.getOrCreate(providerId, providerName);
       }
       
-      // Dodaj do pendingBalance (oczekujące na rozliczenie)
       await updateDoc(docRef, {
         pendingBalance: increment(amount),
         totalEarned: increment(amount),
@@ -156,10 +119,6 @@ export const walletService = {
     }
   },
 
-  /**
-   * Przenieś środki z pendingBalance do balance (rozliczenie)
-   * Typowo wykonywane po X dniach od zakończenia usługi
-   */
   async settlePending(providerId: string, amount: number): Promise<void> {
     try {
       const docRef = doc(db, WALLETS_COLLECTION, providerId);
@@ -186,9 +145,6 @@ export const walletService = {
     }
   },
 
-  /**
-   * Rozlicz wszystkie oczekujące środki (dla uproszczenia demo)
-   */
   async settleAllPending(providerId: string): Promise<void> {
     try {
       const wallet = await this.get(providerId);
@@ -209,9 +165,6 @@ export const walletService = {
     }
   },
 
-  /**
-   * Dodaj kwotę bezpośrednio do balance (np. przy zwrocie)
-   */
   async addToBalance(providerId: string, amount: number): Promise<void> {
     try {
       const docRef = doc(db, WALLETS_COLLECTION, providerId);
@@ -228,9 +181,6 @@ export const walletService = {
     }
   },
 
-  /**
-   * Odejmij kwotę po wypłacie
-   */
   async deductBalance(providerId: string, amount: number): Promise<void> {
     try {
       const docRef = doc(db, WALLETS_COLLECTION, providerId);
@@ -257,9 +207,6 @@ export const walletService = {
     }
   },
 
-  /**
-   * Zaktualizuj dane bankowe
-   */
   async updateBankAccount(providerId: string, bankData: {
     bankName: string;
     accountNumber: string;
@@ -280,9 +227,6 @@ export const walletService = {
     }
   },
 
-  /**
-   * Subskrybuj zmiany portfela (real-time)
-   */
   subscribeToWallet(
     providerId: string,
     callback: (wallet: ProviderWallet | null) => void
@@ -298,9 +242,6 @@ export const walletService = {
     });
   },
 
-  /**
-   * Formatuj numer konta (zamaskuj)
-   */
   maskAccountNumber(accountNumber: string): string {
     if (!accountNumber || accountNumber.length < 8) return accountNumber;
     const visible = accountNumber.slice(-4);

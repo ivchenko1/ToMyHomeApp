@@ -32,12 +32,10 @@ const BusinessWorkingHours = () => {
     sunday: 'Niedziela',
   };
 
-  // Jawna kolejność dni (chronologiczna)
   const daysOrder: (keyof WorkingHours)[] = [
     'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'
   ];
 
-  // Generuj opcje godzin
   const timeOptions: string[] = [];
   for (let h = 0; h < 24; h++) {
     for (let m = 0; m < 60; m += 30) {
@@ -46,7 +44,6 @@ const BusinessWorkingHours = () => {
     }
   }
 
-  // Załaduj dane providera
   useEffect(() => {
     const loadProvider = async () => {
       if (!user?.id) {
@@ -88,7 +85,6 @@ const BusinessWorkingHours = () => {
       return;
     }
 
-    // Walidacja godzin
     for (const [day, hours] of Object.entries(workingHours)) {
       if (hours.enabled) {
         const fromHour = parseInt(hours.from.split(':')[0]);
@@ -157,7 +153,6 @@ const BusinessWorkingHours = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
@@ -190,7 +185,6 @@ const BusinessWorkingHours = () => {
         </div>
       ) : (
         <>
-          {/* Quick presets */}
           <div className="bg-white rounded-2xl shadow-sm p-6">
             <h3 className="font-semibold text-gray-900 mb-4">Szybkie szablony</h3>
             <div className="flex flex-wrap gap-3">
@@ -215,7 +209,6 @@ const BusinessWorkingHours = () => {
             </div>
           </div>
 
-          {/* Working hours editor */}
           <div className="bg-white rounded-2xl shadow-sm p-6">
             <h3 className="font-semibold text-gray-900 mb-6">Dostosuj godziny dla każdego dnia</h3>
             
@@ -231,7 +224,6 @@ const BusinessWorkingHours = () => {
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
-                      {/* Toggle */}
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input
                           type="checkbox"
@@ -242,13 +234,11 @@ const BusinessWorkingHours = () => {
                         <div className="w-12 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
                       </label>
                       
-                      {/* Day name */}
                       <span className={`font-semibold text-lg min-w-[120px] ${workingHours[day].enabled ? 'text-gray-900' : 'text-gray-400'}`}>
                         {dayNames[day]}
                       </span>
                     </div>
 
-                    {/* Time selectors */}
                     {workingHours[day].enabled ? (
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2">
@@ -292,7 +282,6 @@ const BusinessWorkingHours = () => {
             </div>
           </div>
 
-          {/* Save button */}
           <div className="flex justify-end">
             <button
               onClick={handleSave}
@@ -313,7 +302,6 @@ const BusinessWorkingHours = () => {
             </button>
           </div>
 
-          {/* Info */}
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
             <p className="text-blue-700 text-sm">
               💡 <strong>Wskazówka:</strong> Klienci będą mogli rezerwować wizyty tylko w godzinach, które tutaj ustawisz. 

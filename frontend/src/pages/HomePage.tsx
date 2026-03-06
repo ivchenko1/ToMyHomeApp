@@ -7,7 +7,6 @@ import { Star } from 'lucide-react';
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 
-// Interfejs dla opinii z Firebase
 interface FirebaseReview {
   id: string;
   clientName: string;
@@ -26,12 +25,10 @@ const HomePage = () => {
   const servicesRef = useRef<HTMLDivElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
   
-  // State dla opinii z Firebase
   const [reviews, setReviews] = useState<FirebaseReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [carouselPosition, setCarouselPosition] = useState(0);
   
-  // State dla mini statystyk w Hero
   const [heroStats, setHeroStats] = useState({ clients: '0+', providers: '0+' });
 
   const services = [
@@ -69,7 +66,6 @@ const HomePage = () => {
     servicesRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Funkcja formatująca liczby dla Hero (podobna jak w StatsSection)
   const formatHeroStat = (num: number): string => {
     if (num === 0) return '0+';
     if (num < 10) return `${num}+`;
@@ -82,11 +78,9 @@ const HomePage = () => {
     return `${rounded}+`;
   };
 
-  // Pobierz opinie i mini statystyki z Firebase
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Pobierz opinie
         const reviewsQuery = query(
           collection(db, 'reviews'),
           orderBy('createdAt', 'desc'),
@@ -98,11 +92,9 @@ const HomePage = () => {
           ...doc.data()
         })) as FirebaseReview[];
         
-        // Filtruj tylko opinie z ratingiem >= 4
         const positiveReviews = fetchedReviews.filter(r => r.rating >= 4);
         setReviews(positiveReviews);
 
-        // Pobierz statystyki dla Hero
         const [usersSnapshot, providersSnapshot] = await Promise.all([
           getDocs(collection(db, 'users')),
           getDocs(collection(db, 'providers'))
@@ -128,7 +120,6 @@ const HomePage = () => {
     fetchData();
   }, []);
 
-  // Automatyczne przewijanie karuzeli
   useEffect(() => {
     if (reviews.length <= 3) return;
     
@@ -137,12 +128,11 @@ const HomePage = () => {
         const maxPosition = reviews.length - 3;
         return prev >= maxPosition ? 0 : prev + 1;
       });
-    }, 4000); // Przewiń co 4 sekundy
+    }, 4000); 
 
     return () => clearInterval(interval);
   }, [reviews.length]);
 
-  // Intersection Observer for scroll animations
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -165,11 +155,9 @@ const HomePage = () => {
 
   return (
     <div>
-      {/* Hero Section */}
       <section className="py-20 lg:py-32 animate-fade-in">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            {/* Left Content */}
             <div className="animate-slide-in-left">
               <div className="inline-flex items-center gap-2 bg-accent/10 text-accent px-4 py-2 rounded-full text-sm font-semibold mb-6 animate-bounce-slow">
                 <span>✨</span>
@@ -200,7 +188,6 @@ const HomePage = () => {
                   <span>Zarezerwuj usługę</span>
                   <span className="transition-transform group-hover:translate-x-1">→</span>
                 </button>
-                {/* Przycisk Dodaj usługę - tylko dla niezalogowanych lub usługodawców */}
                 {(!isAuthenticated || user?.accountType === 'provider') && (
                   <Link
                     to={isAuthenticated ? '/biznes/dodaj-usluge' : '/auth?mode=register&type=provider'}
@@ -225,7 +212,6 @@ const HomePage = () => {
               </div>
             </div>
 
-            {/* Right Content - Hero Card */}
             <div className="animate-slide-in-right">
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-3xl blur-3xl" />
@@ -252,7 +238,6 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Services Section */}
       <section
         id="services"
         ref={servicesRef}
@@ -269,7 +254,6 @@ const HomePage = () => {
             </p>
           </div>
 
-          {/* Grid usług */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
             {services.map((service) => (
               <ServiceCard key={service.id} service={service} />
@@ -278,7 +262,6 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* How It Works Section */}
       <section
         id="how"
         className="py-20 fade-in-scroll opacity-0 translate-y-10 transition-all duration-700"
@@ -315,7 +298,6 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Reviews Section - Automatic Carousel */}
       <section
         id="reviews"
         className="py-20 fade-in-scroll opacity-0 translate-y-10 transition-all duration-700 overflow-hidden"
@@ -347,7 +329,6 @@ const HomePage = () => {
               <p className="text-gray-400">Skorzystaj z usługi i podziel się swoją opinią</p>
             </div>
           ) : reviews.length === 1 ? (
-            // Tylko jedna opinia - wyśrodkuj bez karuzeli
             <div className="flex justify-center">
               <div className="bg-white rounded-2xl shadow-lg p-6 max-w-md">
                 <div className="flex items-center gap-4 mb-4">
@@ -369,7 +350,6 @@ const HomePage = () => {
             </div>
           ) : (
             <div className="relative">
-              {/* Carousel Container */}
               <div className="overflow-hidden">
                 <div 
                   ref={carouselRef}
@@ -384,7 +364,6 @@ const HomePage = () => {
                       className="flex-shrink-0 w-full sm:w-1/2 lg:w-1/3"
                     >
                       <div className="bg-white rounded-2xl shadow-lg p-6 h-full mx-2">
-                        {/* Header */}
                         <div className="flex items-center gap-4 mb-4">
                           <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${
                             ['from-primary to-secondary', 'from-pink-500 to-rose-500', 'from-purple-500 to-indigo-500', 'from-emerald-500 to-teal-500', 'from-orange-500 to-amber-500'][review.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 5]
@@ -408,7 +387,6 @@ const HomePage = () => {
                           </div>
                         </div>
 
-                        {/* Stars */}
                         <div className="flex items-center gap-1 mb-4">
                           {[1, 2, 3, 4, 5].map((star) => (
                             <Star
@@ -422,7 +400,6 @@ const HomePage = () => {
                           ))}
                         </div>
 
-                        {/* Content */}
                         <p className="text-gray-600 leading-relaxed line-clamp-4">{review.comment}</p>
                       </div>
                     </div>
@@ -430,7 +407,6 @@ const HomePage = () => {
                 </div>
               </div>
 
-              {/* Dots indicator */}
               {reviews.length > 3 && (
                 <div className="flex justify-center gap-2 mt-6">
                   {Array.from({ length: Math.ceil(reviews.length / 3) }).map((_, index) => (
@@ -451,10 +427,8 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Stats Section */}
       <StatsSection />
 
-      {/* CTA Section */}
       <section className="py-20 fade-in-scroll opacity-0 translate-y-10 transition-all duration-700">
         <div className="max-w-7xl mx-auto px-6">
           <div className="bg-gradient-to-r from-primary to-secondary rounded-3xl p-12 lg:p-16 text-center text-white relative overflow-hidden">

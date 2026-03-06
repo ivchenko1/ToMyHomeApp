@@ -113,7 +113,6 @@ const AdminReports = () => {
 
   return (
     <div>
-      {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <Flag className="w-7 h-7 text-red-500" />
@@ -127,7 +126,6 @@ const AdminReports = () => {
         <p className="text-gray-500 mt-1">Zarządzaj zgłoszeniami użytkowników dotyczącymi opinii</p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <div className="flex items-center gap-3">
@@ -175,7 +173,6 @@ const AdminReports = () => {
         </div>
       </div>
 
-      {/* Filters */}
       <div className="flex gap-2 mb-6">
         {(['all', 'pending', 'reviewed'] as const).map((f) => (
           <button
@@ -194,7 +191,6 @@ const AdminReports = () => {
         ))}
       </div>
 
-      {/* Reports List */}
       {filteredReports.length === 0 ? (
         <div className="bg-white rounded-xl p-8 text-center">
           <Flag className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -213,7 +209,6 @@ const AdminReports = () => {
                     </span>
                   </div>
                   
-                  {/* Zgłoszona opinia */}
                   <div className="p-4 bg-gray-50 rounded-lg mb-4">
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-8 h-8 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center text-white text-sm font-bold">
@@ -227,7 +222,6 @@ const AdminReports = () => {
                     <p className="text-gray-600 italic">"{report.reviewContent}"</p>
                   </div>
                   
-                  {/* Powód zgłoszenia */}
                   <div className="flex items-start gap-2 mb-2">
                     <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5" />
                     <div>
@@ -267,7 +261,6 @@ const AdminReports = () => {
         </div>
       )}
 
-      {/* Action Modal */}
       {showModal && selectedReport && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6">
@@ -276,19 +269,16 @@ const AdminReports = () => {
               Rozpatrz zgłoszenie
             </h3>
             
-            {/* Opinia */}
             <div className="p-4 bg-gray-50 rounded-lg mb-4">
               <p className="text-sm font-medium mb-1">{selectedReport.reviewAuthor} napisał:</p>
               <p className="text-gray-600 italic">"{selectedReport.reviewContent}"</p>
             </div>
             
-            {/* Powód */}
             <div className="mb-4">
               <p className="text-sm font-medium text-gray-700">Powód zgłoszenia:</p>
               <p className="text-gray-600">{selectedReport.reason}</p>
             </div>
             
-            {/* Notatka admina */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Notatka (opcjonalnie)
@@ -302,7 +292,6 @@ const AdminReports = () => {
               />
             </div>
             
-            {/* Akcje */}
             <div className="flex gap-3">
               <button
                 onClick={() => setShowModal(false)}

@@ -45,7 +45,6 @@ const BusinessServices = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Modal edycji
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [editForm, setEditForm] = useState({
@@ -74,20 +73,18 @@ const BusinessServices = () => {
     setIsLoading(true);
     
     try {
-      // Pobierz profil z Firebase przez ownerId
       const providers = await providerService.getByOwner(user.id.toString());
       
       if (providers.length > 0) {
         const provider = providers[0];
         
-        // Mapuj usługi z Firebase na format lokalny
         const services: Service[] = provider.services.map((s: ServiceItem) => ({
           id: s.id,
           name: s.name,
           description: s.description || '',
           price: s.price || 0,
           duration: s.duration || '30 min',
-          isActive: s.isActive !== false, // domyślnie aktywne, chyba że explicit false
+          isActive: s.isActive !== false, 
           category: s.category || 'Inne',
         }));
         
@@ -119,7 +116,6 @@ const BusinessServices = () => {
     
     setProfile({ ...profile, services: updatedServices });
     
-    // Aktualizuj w Firebase
     try {
       await providerService.update(providerId, {
         services: updatedServices.map(s => ({
@@ -129,7 +125,7 @@ const BusinessServices = () => {
           price: s.price,
           duration: s.duration,
           category: s.category,
-          isActive: s.isActive, // ← Zapisujemy status aktywności
+          isActive: s.isActive, 
         })),
       });
       showToast(updatedServices.find(s => s.id === serviceId)?.isActive 
@@ -138,7 +134,6 @@ const BusinessServices = () => {
     } catch (error) {
       console.error('Błąd aktualizacji:', error);
       showToast('Błąd aktualizacji', 'error');
-      // Przywróć poprzedni stan
       loadProfile();
     }
   };
@@ -149,19 +144,16 @@ const BusinessServices = () => {
     const updatedServices = profile.services.filter(s => s.id !== serviceId);
     setProfile({ ...profile, services: updatedServices });
     
-    // Usuń z Firebase
     try {
       await providerService.removeService(providerId, serviceId);
       showToast('Usługa usunięta', 'info');
     } catch (error) {
       console.error('Błąd usuwania:', error);
       showToast('Błąd usuwania usługi', 'error');
-      // Przywróć poprzedni stan
       loadProfile();
     }
   };
 
-  // Otwórz modal edycji
   const openEditModal = (service: Service) => {
     setEditingService(service);
     setEditForm({
@@ -174,7 +166,6 @@ const BusinessServices = () => {
     setShowEditModal(true);
   };
 
-  // Zapisz edytowaną usługę
   const handleSaveEdit = async () => {
     if (!profile || !providerId || !editingService) return;
     
@@ -204,7 +195,6 @@ const BusinessServices = () => {
           : s
       );
       
-      // Aktualizuj w Firebase
       await providerService.update(providerId, {
         services: updatedServices.map(s => ({
           id: s.id,
@@ -241,7 +231,6 @@ const BusinessServices = () => {
     );
   }
 
-  // Empty state - no profile
   if (!profile) {
     return (
       <div className="max-w-2xl mx-auto text-center py-16">
@@ -267,7 +256,6 @@ const BusinessServices = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Moje usługi</h1>
@@ -284,7 +272,6 @@ const BusinessServices = () => {
         </Link>
       </div>
 
-      {/* Profile Card */}
       <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex items-start gap-4">
           <img
@@ -307,7 +294,6 @@ const BusinessServices = () => {
         </div>
       </div>
 
-      {/* Search & Filter */}
       <div className="bg-white rounded-xl shadow-sm p-4">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative">
@@ -327,7 +313,6 @@ const BusinessServices = () => {
         </div>
       </div>
 
-      {/* Services List */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         <div className="p-4 border-b border-gray-100">
           <h3 className="font-semibold text-gray-900">
@@ -382,7 +367,6 @@ const BusinessServices = () => {
                     </div>
                   </div>
 
-                  {/* Przyciski akcji */}
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => openEditModal(service)}
@@ -410,7 +394,6 @@ const BusinessServices = () => {
         )}
       </div>
 
-      {/* Modal edycji usługi */}
       {showEditModal && editingService && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
@@ -427,7 +410,6 @@ const BusinessServices = () => {
             </div>
             
             <div className="p-6 space-y-5">
-              {/* Nazwa */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Nazwa usługi *
@@ -441,7 +423,6 @@ const BusinessServices = () => {
                 />
               </div>
 
-              {/* Opis */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Opis
@@ -455,7 +436,6 @@ const BusinessServices = () => {
                 />
               </div>
 
-              {/* Cena i czas */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -485,7 +465,6 @@ const BusinessServices = () => {
                 </div>
               </div>
 
-              {/* Kategoria */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Kategoria
@@ -500,7 +479,6 @@ const BusinessServices = () => {
               </div>
             </div>
 
-            {/* Przyciski */}
             <div className="p-6 border-t border-gray-100 flex gap-3">
               <button
                 onClick={() => setShowEditModal(false)}

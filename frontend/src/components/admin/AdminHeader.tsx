@@ -12,7 +12,6 @@ const AdminHeader = ({ onMenuClick, isSuperAdmin = false }: AdminHeaderProps) =>
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
       <div className="flex items-center justify-between px-4 lg:px-6 h-16">
-        {/* Left side */}
         <div className="flex items-center gap-4">
           <button
             onClick={onMenuClick}
@@ -21,7 +20,6 @@ const AdminHeader = ({ onMenuClick, isSuperAdmin = false }: AdminHeaderProps) =>
             <Menu className="w-6 h-6 text-gray-600" />
           </button>
 
-          {/* Search */}
           <div className="hidden md:flex items-center gap-2 bg-gray-100 rounded-xl px-4 py-2 w-64 lg:w-96">
             <Search className="w-5 h-5 text-gray-400" />
             <input
@@ -32,9 +30,7 @@ const AdminHeader = ({ onMenuClick, isSuperAdmin = false }: AdminHeaderProps) =>
           </div>
         </div>
 
-        {/* Right side */}
         <div className="flex items-center gap-3">
-          {/* Admin Badge */}
           <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${
             isSuperAdmin 
               ? 'bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700'
@@ -44,13 +40,11 @@ const AdminHeader = ({ onMenuClick, isSuperAdmin = false }: AdminHeaderProps) =>
             {isSuperAdmin ? 'Super Admin' : 'Administrator'}
           </div>
 
-          {/* Notifications */}
           <button className="relative p-2 hover:bg-gray-100 rounded-xl">
             <Bell className="w-5 h-5 text-gray-600" />
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
           </button>
 
-          {/* User */}
           <div className="flex items-center gap-3 pl-3 border-l border-gray-200">
             <div className="hidden sm:block text-right">
               <p className="text-sm font-medium text-gray-900">{user?.username}</p>

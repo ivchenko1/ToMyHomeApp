@@ -4,7 +4,6 @@ import { Star, MapPin, Check, Filter, Loader2, Navigation } from 'lucide-react';
 import { useToast } from '../App';
 import providerService, { Provider } from '../services/providerService';
 
-// Mapowanie kategorii URL na nazwy kategorii w danych
 const categoryMapping: { [key: string]: string[] } = {
   'fryzjer': ['fryzjer', 'fryzjerstwo', 'hair'],
   'pedicure': ['pedicure', 'pediküre'],
@@ -22,7 +21,6 @@ const categoryMapping: { [key: string]: string[] } = {
   'inne': ['inne', 'other'],
 };
 
-// Lista największych miast w Polsce
 const polishCities = [
   'Wszystkie miasta',
   'Warszawa',
@@ -64,7 +62,6 @@ const polishCities = [
   'Koszalin',
 ];
 
-// Lista specjalizacji (z categoryMapping)
 const specializations = [
   'Wszystkie specjalizacje',
   'Fryzjer',
@@ -81,7 +78,6 @@ const specializations = [
   'Inne usługi',
 ];
 
-// Mapowanie specjalizacji na kategorie
 const specializationToCategory: { [key: string]: string[] } = {
   'Fryzjer': ['fryzjer', 'fryzjerstwo', 'hair'],
   'Barber': ['barber', 'fryzjer męski', 'barbershop'],
@@ -97,9 +93,8 @@ const specializationToCategory: { [key: string]: string[] } = {
   'Inne usługi': ['inne', 'other'],
 };
 
-// Funkcja do obliczania odległości między dwoma punktami (wzór Haversine)
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-  const R = 6371; // Promień Ziemi w km
+  const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
   const a = 
@@ -114,25 +109,21 @@ const ProvidersPage = () => {
   const { category } = useParams();
   const { showToast } = useToast();
   
-  // Stan danych
   const [providers, setProviders] = useState<Provider[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   
-  // Filtry
   const [activeQuickFilters, setActiveQuickFilters] = useState<string[]>([]);
   const [cityFilter, setCityFilter] = useState('Wszystkie miasta');
   const [specializationFilter, setSpecializationFilter] = useState('Wszystkie specjalizacje');
   const [minRating, setMinRating] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState('rating');
   
-  // Lokalizacja użytkownika
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 
-  // Pobierz lokalizację użytkownika gdy wybrano "Najbliżej"
   const getUserLocation = () => {
     if (!navigator.geolocation) {
       showToast('Twoja przeglądarka nie wspiera geolokalizacji', 'error');
@@ -165,7 +156,6 @@ const ProvidersPage = () => {
           default:
             showToast('Błąd pobierania lokalizacji', 'error');
         }
-        // Jeśli nie udało się pobrać lokalizacji, zmień sortowanie
         setSortBy('rating');
       },
       {
@@ -176,14 +166,12 @@ const ProvidersPage = () => {
     );
   };
 
-  // Automatycznie pobierz lokalizację gdy wybrano "distance"
   useEffect(() => {
     if (sortBy === 'distance' && !userLocation) {
       getUserLocation();
     }
   }, [sortBy]);
 
-  // Pobierz usługodawców z Firebase
   const fetchProviders = async (append = false) => {
     if (append) {
       setIsLoadingMore(true);
@@ -192,10 +180,8 @@ const ProvidersPage = () => {
     }
 
     try {
-      // Pobierz z Firebase przez providerService
       let allProviders = await providerService.getAll();
 
-      // Filtruj po kategorii z URL jeśli podana
       if (category) {
         const categoryNames = categoryMapping[category] || [category];
         console.log('🔍 Filtrowanie po kategorii:', category);
@@ -213,7 +199,6 @@ const ProvidersPage = () => {
         console.log('🔍 Po filtrowaniu:', allProviders.length, 'wyników');
       }
 
-      // Filtruj po specjalizacji
       if (specializationFilter && specializationFilter !== 'Wszystkie specjalizacje') {
         const specCategories = specializationToCategory[specializationFilter] || [];
         if (specCategories.length > 0) {
@@ -225,7 +210,6 @@ const ProvidersPage = () => {
         }
       }
 
-      // Filtruj po mieście
       if (cityFilter && cityFilter !== 'Wszystkie miasta') {
         allProviders = allProviders.filter((p) => {
           const location = p.locationString?.toLowerCase() || '';
@@ -234,12 +218,10 @@ const ProvidersPage = () => {
         });
       }
 
-      // Filtruj po ocenie
       if (minRating) {
         allProviders = allProviders.filter((p) => p.rating >= minRating);
       }
 
-      // Filtrowanie po quickFilters
       if (activeQuickFilters.includes('available-today')) {
         allProviders = allProviders.filter((p) => p.isAvailableToday);
       }
@@ -248,7 +230,6 @@ const ProvidersPage = () => {
         allProviders = allProviders.filter((p) => p.hasTravel);
       }
 
-      // Sortowanie
       if (sortBy === 'rating') {
         allProviders.sort((a, b) => b.rating - a.rating);
       } else if (sortBy === 'price-asc') {
@@ -256,7 +237,6 @@ const ProvidersPage = () => {
       } else if (sortBy === 'price-desc') {
         allProviders.sort((a, b) => b.priceFrom - a.priceFrom);
       } else if (sortBy === 'distance' && userLocation) {
-        // Sortuj po odległości od użytkownika
         allProviders = allProviders.map(p => {
           let distance = Infinity;
           if (p.location?.lat && p.location?.lng) {
@@ -283,7 +263,6 @@ const ProvidersPage = () => {
     }
   };
 
-  // Efekt do pobierania danych przy zmianie filtrów
   useEffect(() => {
     fetchProviders();
   }, [category, cityFilter, specializationFilter, minRating, sortBy, activeQuickFilters, userLocation]);
@@ -325,7 +304,6 @@ const ProvidersPage = () => {
     ? category.charAt(0).toUpperCase() + category.slice(1)
     : 'Wszystkie usługi';
 
-  // Funkcja do ładowania więcej (gdyby API wspierał paginację)
   const loadMore = () => {
     if (!isLoadingMore && hasMore) {
       fetchProviders(true);
@@ -334,7 +312,6 @@ const ProvidersPage = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
-      {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
         <Link to="/" className="hover:text-primary transition-colors">
           Strona główna
@@ -351,7 +328,6 @@ const ProvidersPage = () => {
         )}
       </nav>
 
-      {/* Page Header */}
       <div className="text-center mb-10">
         <span className="inline-block bg-primary/10 text-primary px-4 py-1 rounded-full text-sm font-semibold mb-4">
           {categoryName.toUpperCase()}
@@ -362,7 +338,6 @@ const ProvidersPage = () => {
         </p>
       </div>
 
-      {/* Filters Section */}
       <section className="card p-6 mb-8">
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-bold flex items-center gap-2">
@@ -377,9 +352,7 @@ const ProvidersPage = () => {
           </button>
         </div>
 
-        {/* Filter Grid */}
         <div className="grid md:grid-cols-4 gap-4 mb-6">
-          {/* Miasto */}
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-2">Miasto</label>
             <select 
@@ -395,7 +368,6 @@ const ProvidersPage = () => {
             </select>
           </div>
 
-          {/* Specjalizacja */}
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-2">Specjalizacja</label>
             <select 
@@ -411,7 +383,6 @@ const ProvidersPage = () => {
             </select>
           </div>
 
-          {/* Ocena */}
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-2">Ocena</label>
             <select 
@@ -427,7 +398,6 @@ const ProvidersPage = () => {
             </select>
           </div>
 
-          {/* Przycisk lokalizacji */}
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-2">Twoja lokalizacja</label>
             <button
@@ -459,7 +429,6 @@ const ProvidersPage = () => {
           </div>
         </div>
 
-        {/* Quick Filters */}
         <div className="flex flex-wrap gap-2">
           {quickFilters.map((filter) => (
             <button
@@ -477,7 +446,6 @@ const ProvidersPage = () => {
         </div>
       </section>
 
-      {/* Results Count & Sort */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="text-gray-600">
           {isLoading ? (
@@ -508,7 +476,6 @@ const ProvidersPage = () => {
         </div>
       </div>
 
-      {/* Info o sortowaniu po odległości */}
       {sortBy === 'distance' && !userLocation && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6 flex items-center gap-3">
           <Navigation className="w-5 h-5 text-yellow-600" />
@@ -518,7 +485,6 @@ const ProvidersPage = () => {
         </div>
       )}
 
-      {/* Loading State */}
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-20">
           <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
@@ -526,7 +492,6 @@ const ProvidersPage = () => {
         </div>
       )}
 
-      {/* Empty State */}
       {!isLoading && providers.length === 0 && (
         <div className="text-center py-20">
           <div className="text-6xl mb-4">🔍</div>
@@ -540,7 +505,6 @@ const ProvidersPage = () => {
         </div>
       )}
 
-      {/* Providers Grid */}
       {!isLoading && providers.length > 0 && (
         <div className="grid gap-6">
           {providers.map((provider: any) => (
@@ -548,7 +512,6 @@ const ProvidersPage = () => {
               key={provider.id}
               className="card card-hover p-6 grid md:grid-cols-[200px,1fr,200px] gap-6"
             >
-              {/* Provider Image */}
               <div className="relative">
                 <img
                   src={provider.image}
@@ -562,14 +525,12 @@ const ProvidersPage = () => {
                 )}
               </div>
 
-              {/* Provider Info */}
               <div>
                 <div className="mb-3">
                   <h3 className="text-xl font-bold text-gray-900">{provider.name}</h3>
                   <p className="text-gray-500">{provider.profession}</p>
                 </div>
 
-                {/* Rating */}
                 <div className="flex items-center gap-2 mb-3">
                   <div className="flex">
                     {[...Array(5)].map((_, i) => (
@@ -587,7 +548,6 @@ const ProvidersPage = () => {
                   <span className="text-gray-500">({provider.reviewsCount} opinii)</span>
                 </div>
 
-                {/* Location & Distance */}
                 <div className="flex items-center gap-2 text-gray-500 mb-4">
                   <MapPin className="w-4 h-4" />
                   <span>{provider.locationString}</span>
@@ -600,7 +560,6 @@ const ProvidersPage = () => {
                   )}
                 </div>
 
-                {/* Services */}
                 <div className="flex flex-wrap gap-2 mb-4">
                   {provider.serviceNames.slice(0, 4).map((serviceName: string, idx: number) => (
                     <span
@@ -617,10 +576,8 @@ const ProvidersPage = () => {
                   )}
                 </div>
 
-                {/* Description */}
                 <p className="text-gray-600 text-sm mb-4 line-clamp-2">{provider.description}</p>
 
-                {/* Features */}
                 <div className="flex flex-wrap gap-4">
                   {provider.features.slice(0, 3).map((feature: string) => (
                     <span key={feature} className="flex items-center gap-1 text-sm text-gray-600">
@@ -631,7 +588,6 @@ const ProvidersPage = () => {
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="flex flex-col justify-between">
                 <div>
                   <div
@@ -676,7 +632,6 @@ const ProvidersPage = () => {
         </div>
       )}
 
-      {/* Load More Button */}
       {!isLoading && hasMore && providers.length > 0 && (
         <div className="flex justify-center mt-10">
           <button
@@ -696,7 +651,6 @@ const ProvidersPage = () => {
         </div>
       )}
 
-      {/* End of results message */}
       {!isLoading && !hasMore && providers.length > 0 && (
         <div className="text-center mt-10 py-6 border-t border-gray-200">
           <p className="text-gray-500">
@@ -705,7 +659,6 @@ const ProvidersPage = () => {
         </div>
       )}
 
-      {/* Map Toggle Button */}
       <button className="fixed bottom-6 right-6 btn btn-primary shadow-xl">
         <MapPin className="w-5 h-5" />
         <span>Pokaż na mapie</span>

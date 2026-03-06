@@ -32,13 +32,11 @@ const BusinessReviews = () => {
     ],
   });
 
-  // Modal zgłaszania
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportingReview, setReportingReview] = useState<Review | null>(null);
   const [reportReason, setReportReason] = useState('');
   const [reportSubmitting, setReportSubmitting] = useState(false);
 
-  // Modal odpowiedzi
   const [showReplyModal, setShowReplyModal] = useState(false);
   const [replyingReview, setReplyingReview] = useState<Review | null>(null);
   const [replyText, setReplyText] = useState('');
@@ -63,11 +61,9 @@ const BusinessReviews = () => {
         setProviderId(provider.id);
         setProviderName(provider.name);
 
-        // Pobierz opinie
         const reviewsData = await reviewService.getByProvider(provider.id);
         setReviews(reviewsData);
 
-        // Pobierz statystyki
         const statsData = await reviewService.getProviderStats(provider.id);
         setStats(statsData);
       }
@@ -79,14 +75,12 @@ const BusinessReviews = () => {
     }
   };
 
-  // Filtrowanie opinii
   const filteredReviews = reviews.filter(review => {
     if (filter === 'positive') return review.rating >= 4;
     if (filter === 'negative') return review.rating <= 2;
     return true;
   });
 
-  // Zgłoś opinię
   const openReportModal = (review: Review) => {
     setReportingReview(review);
     setReportReason('');
@@ -124,7 +118,6 @@ const BusinessReviews = () => {
     }
   };
 
-  // Odpowiedz na opinię
   const openReplyModal = (review: Review) => {
     setReplyingReview(review);
     setReplyText(review.providerResponse || '');
@@ -138,7 +131,6 @@ const BusinessReviews = () => {
     try {
       await reviewService.addProviderResponse(replyingReview.id, replyText.trim());
       
-      // Zaktualizuj lokalnie
       setReviews(prev => prev.map(r => 
         r.id === replyingReview.id 
           ? { ...r, providerResponse: replyText.trim() }
@@ -183,15 +175,12 @@ const BusinessReviews = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Opinie klientów</h1>
         <p className="text-gray-600">Zobacz co mówią o Tobie klienci</p>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Średnia ocena */}
         <div className="bg-white rounded-xl shadow-sm p-6">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-amber-100 rounded-xl flex items-center justify-center">
@@ -204,7 +193,6 @@ const BusinessReviews = () => {
           </div>
         </div>
 
-        {/* Liczba opinii */}
         <div className="bg-white rounded-xl shadow-sm p-6">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-emerald-100 rounded-xl flex items-center justify-center">
@@ -217,7 +205,6 @@ const BusinessReviews = () => {
           </div>
         </div>
 
-        {/* Pozytywne opinie */}
         <div className="bg-white rounded-xl shadow-sm p-6">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center">
@@ -235,7 +222,6 @@ const BusinessReviews = () => {
         </div>
       </div>
 
-      {/* Rating Distribution */}
       <div className="bg-white rounded-xl shadow-sm p-6">
         <h3 className="font-semibold text-gray-900 mb-4">Rozkład ocen</h3>
         <div className="space-y-3">
@@ -259,7 +245,6 @@ const BusinessReviews = () => {
         </div>
       </div>
 
-      {/* Filter */}
       <div className="flex gap-2">
         {(['all', 'positive', 'negative'] as const).map((f) => (
           <button
@@ -278,7 +263,6 @@ const BusinessReviews = () => {
         ))}
       </div>
 
-      {/* Reviews List */}
       {filteredReviews.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm p-12 text-center">
           <Star className="w-16 h-16 text-gray-200 mx-auto mb-4" />
@@ -322,7 +306,6 @@ const BusinessReviews = () => {
 
               <p className="text-gray-700 mb-4">{review.comment}</p>
 
-              {/* Provider Response */}
               {review.providerResponse && (
                 <div className="bg-emerald-50 rounded-lg p-4 mb-4">
                   <p className="text-sm font-medium text-emerald-700 mb-1">Twoja odpowiedź:</p>
@@ -330,7 +313,6 @@ const BusinessReviews = () => {
                 </div>
               )}
 
-              {/* Actions */}
               <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
                 <button
                   onClick={() => openReplyModal(review)}
@@ -352,7 +334,6 @@ const BusinessReviews = () => {
         </div>
       )}
 
-      {/* Report Modal */}
       {showReportModal && reportingReview && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6">
@@ -427,7 +408,6 @@ const BusinessReviews = () => {
         </div>
       )}
 
-      {/* Reply Modal */}
       {showReplyModal && replyingReview && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6">

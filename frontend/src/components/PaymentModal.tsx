@@ -31,7 +31,6 @@ const PaymentModal = ({
   const [error, setError] = useState('');
   const [countdown, setCountdown] = useState(0);
 
-  // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
       setStep('select');
@@ -42,7 +41,6 @@ const PaymentModal = ({
     }
   }, [isOpen]);
 
-  // Countdown for processing
   useEffect(() => {
     if (countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
@@ -53,7 +51,6 @@ const PaymentModal = ({
   }, [countdown, step]);
 
   const handleBlikSubmit = () => {
-    // Walidacja kodu BLIK (6 cyfr)
     if (!/^\d{6}$/.test(blikCode)) {
       setError('Kod BLIK musi składać się z 6 cyfr');
       return;
@@ -61,7 +58,7 @@ const PaymentModal = ({
     
     setError('');
     setStep('processing');
-    setCountdown(3); // 3 sekundy animacji
+    setCountdown(3); 
   };
 
   const handleSuccess = () => {
@@ -77,15 +74,12 @@ const PaymentModal = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Overlay */}
       <div 
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={step !== 'processing' ? onClose : undefined}
       />
       
-      {/* Modal */}
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-        {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -100,18 +94,14 @@ const PaymentModal = ({
           </div>
         </div>
 
-        {/* Content */}
         <div className="p-6">
-          {/* === STEP: SELECT PAYMENT METHOD === */}
           {step === 'select' && (
             <>
-              {/* Order summary */}
               <div className="bg-gray-50 rounded-xl p-4 mb-6">
                 <p className="text-sm text-gray-500 mb-1">Płacisz za:</p>
                 <p className="font-semibold text-gray-900">{serviceName}</p>
                 <p className="text-sm text-gray-600 mb-3">{providerName}</p>
                 
-                {/* Szczegóły rezerwacji */}
                 {(bookingDate || bookingTime) && (
                   <div className="border-t border-gray-200 pt-3 mb-3 space-y-2">
                     {bookingDate && (
@@ -139,7 +129,6 @@ const PaymentModal = ({
                 </div>
               </div>
 
-              {/* Payment methods */}
               <p className="text-sm font-medium text-gray-700 mb-3">Wybierz metodę płatności:</p>
               <div className="space-y-2">
                 <button
@@ -182,7 +171,6 @@ const PaymentModal = ({
                 </button>
               </div>
 
-              {/* Security badge */}
               <div className="mt-6 flex items-center justify-center gap-2 text-sm text-gray-500">
                 <Shield className="w-4 h-4" />
                 <span>Płatność zabezpieczona certyfikatem SSL</span>
@@ -190,7 +178,6 @@ const PaymentModal = ({
             </>
           )}
 
-          {/* === STEP: BLIK CODE INPUT === */}
           {step === 'blik' && (
             <>
               <button 
@@ -218,13 +205,11 @@ const PaymentModal = ({
                 </p>
               </div>
 
-              {/* Amount reminder */}
               <div className="bg-gray-50 rounded-xl p-3 mb-4 text-center">
                 <span className="text-gray-600">Kwota: </span>
                 <span className="font-bold text-gray-900">{formatAmount(amount)}</span>
               </div>
 
-              {/* Code input */}
               <div className="mb-4">
                 <input
                   type="text"
@@ -245,13 +230,11 @@ const PaymentModal = ({
                 )}
               </div>
 
-              {/* Timer info */}
               <div className="flex items-center justify-center gap-2 text-sm text-gray-500 mb-4">
                 <Smartphone className="w-4 h-4" />
                 <span>Kod ważny przez 2 minuty</span>
               </div>
 
-              {/* Submit button */}
               <button
                 onClick={handleBlikSubmit}
                 disabled={blikCode.length !== 6}
@@ -262,7 +245,6 @@ const PaymentModal = ({
             </>
           )}
 
-          {/* === STEP: PROCESSING === */}
           {step === 'processing' && (
             <div className="text-center py-8">
               <div className="relative w-20 h-20 mx-auto mb-6">
@@ -284,7 +266,6 @@ const PaymentModal = ({
             </div>
           )}
 
-          {/* === STEP: SUCCESS === */}
           {step === 'success' && (
             <div className="text-center py-8">
               <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
@@ -322,7 +303,6 @@ const PaymentModal = ({
           )}
         </div>
 
-        {/* Footer - Przelewy24 style */}
         {step !== 'success' && (
           <div className="bg-gray-50 px-6 py-3 flex items-center justify-center gap-4 border-t">
             <span className="text-xs text-gray-400">Płatność obsługiwana przez</span>

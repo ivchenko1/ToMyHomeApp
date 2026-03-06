@@ -10,7 +10,6 @@ const api = axios.create({
   },
 });
 
-// Add token to requests
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -19,14 +18,12 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Auth service
 export const authService = {
   async login(email: string, password: string): Promise<AuthResponse> {
     try {
       const response = await api.post<AuthResponse>('/auth/login', { email, password });
       return response.data;
     } catch (error) {
-      // For demo, simulate successful login
       const mockUser: User = {
         id: '1',
         username: email.split('@')[0],
@@ -45,7 +42,6 @@ export const authService = {
       const response = await api.post<AuthResponse>('/auth/register', data);
       return response.data;
     } catch (error) {
-      // For demo, simulate successful registration
       const mockUser: User = {
         id: Date.now().toString(),
         username: data.username,
@@ -65,7 +61,6 @@ export const authService = {
     try {
       await api.post('/auth/logout');
     } catch (error) {
-      // Logout locally even if API fails
     }
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -81,7 +76,6 @@ export const authService = {
   },
 };
 
-// Providers service
 export const providersService = {
   async getProviders(params?: {
     category?: string;
@@ -92,7 +86,6 @@ export const providersService = {
       const response = await api.get<Provider[]>('/providers', { params });
       return response.data;
     } catch (error) {
-      // Return local providers if API fails
       const localProviders = JSON.parse(localStorage.getItem('localProviders') || '[]');
       return localProviders;
     }
@@ -103,7 +96,6 @@ export const providersService = {
       const response = await api.get<Provider>(`/providers/${id}`);
       return response.data;
     } catch (error) {
-      // Check local providers
       const localProviders = JSON.parse(localStorage.getItem('localProviders') || '[]');
       return localProviders.find((p: Provider) => p.id === id) || null;
     }
@@ -114,7 +106,6 @@ export const providersService = {
       const response = await api.post<Provider>('/providers', data);
       return response.data;
     } catch (error) {
-      // Save locally if API fails
       const localProviders = JSON.parse(localStorage.getItem('localProviders') || '[]');
       const newProvider: Provider = {
         id: Date.now(),
@@ -143,7 +134,6 @@ export const providersService = {
       const response = await api.get<Provider>('/providers/my');
       return response.data;
     } catch (error) {
-      // Check local providers for current user
       const localProviders = JSON.parse(localStorage.getItem('localProviders') || '[]');
       return localProviders.length > 0 ? localProviders[localProviders.length - 1] : null;
     }
@@ -195,7 +185,6 @@ export const providersService = {
   },
 };
 
-// Types for provider requests
 export interface CreateProviderRequest {
   businessName: string;
   profession: string;
@@ -250,7 +239,6 @@ export interface DayHoursDto {
   enabled: boolean;
 }
 
-// Services service
 export const servicesService = {
   async getServices() {
     try {
@@ -262,7 +250,6 @@ export const servicesService = {
   },
 };
 
-// Bookings service
 export const bookingsService = {
   async createBooking(data: {
     providerId: number;

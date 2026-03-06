@@ -6,7 +6,6 @@ public class Provider
 {
     public int Id { get; set; }
 
-    // Właściciel profilu (użytkownik)
     public int? OwnerId { get; set; }
     public User? Owner { get; set; }
 
@@ -37,11 +36,9 @@ public class Provider
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    // JSON stored as string
     public string ServicesJson { get; set; } = "[]";
     public string FeaturesJson { get; set; } = "[]";
 
-    // Navigation properties
     public int CategoryId { get; set; }
     public ServiceCategory Category { get; set; } = null!;
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();

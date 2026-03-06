@@ -25,11 +25,9 @@ const BusinessSettings = () => {
   const { user, login, logout } = useAuth();
   const { showToast } = useToast();
 
-  // Provider data
   const [provider, setProvider] = useState<Provider | null>(null);
   const [isLoadingProvider, setIsLoadingProvider] = useState(true);
 
-  // Parsuj numer telefonu żeby wyciągnąć kod kraju
   const parsePhoneNumber = (phone: string | undefined) => {
     if (!phone) return { countryCode: '+48', number: '' };
     const match = phone.match(/^(\+\d{1,3})\s?(.*)$/);
@@ -41,7 +39,6 @@ const BusinessSettings = () => {
 
   const parsedPhone = parsePhoneNumber(user?.phone);
 
-  // Profile settings
   const [profileData, setProfileData] = useState({
     username: user?.username || '',
     email: user?.email || '',
@@ -50,7 +47,6 @@ const BusinessSettings = () => {
     businessName: user?.businessName || '',
   });
 
-  // Password settings
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -62,7 +58,6 @@ const BusinessSettings = () => {
     confirm: false,
   });
 
-  // Working hours
   const [workingHours, setWorkingHours] = useState<WorkingHours>({
     monday: { from: '09:00', to: '18:00', enabled: true },
     tuesday: { from: '09:00', to: '18:00', enabled: true },
@@ -73,7 +68,6 @@ const BusinessSettings = () => {
     sunday: { from: '00:00', to: '00:00', enabled: false },
   });
 
-  // Notification settings
   const [notifications, setNotifications] = useState({
     emailBookings: true,
     emailMessages: true,
@@ -83,7 +77,6 @@ const BusinessSettings = () => {
     pushNotifications: true,
   });
 
-  // Privacy settings
   const [privacy, setPrivacy] = useState({
     profileVisible: true,
     showPhone: false,
@@ -93,7 +86,6 @@ const BusinessSettings = () => {
   const [activeTab, setActiveTab] = useState<'profile' | 'hours' | 'password' | 'notifications' | 'privacy' | 'billing' | 'danger'>('profile');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load provider data
   useEffect(() => {
     const loadProvider = async () => {
       if (!user?.id) {
@@ -121,7 +113,6 @@ const BusinessSettings = () => {
   const handleSaveProfile = async () => {
     setIsLoading(true);
     
-    // Walidacja imienia i nazwiska (minimum 2 wyrazy)
     const nameParts = profileData.username.trim().split(/\s+/);
     if (nameParts.length < 2 || nameParts.some(part => part.length < 2)) {
       showToast('Podaj pełne imię i nazwisko (np. Jan Kowalski)', 'error');
@@ -129,7 +120,6 @@ const BusinessSettings = () => {
       return;
     }
 
-    // Validate email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(profileData.email)) {
       showToast('Nieprawidłowy adres email', 'error');
@@ -137,7 +127,6 @@ const BusinessSettings = () => {
       return;
     }
 
-    // Walidacja numeru telefonu z kodem kraju
     if (profileData.phone) {
       const phoneValidation = validatePhoneNumber(profileData.phoneCountryCode, profileData.phone);
       if (!phoneValidation.valid) {
@@ -147,14 +136,11 @@ const BusinessSettings = () => {
       }
     }
 
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    // Formatuj numer telefonu z kodem kraju
     const phoneDigits = profileData.phone.replace(/\D/g, '');
     const formattedPhone = `${profileData.phoneCountryCode} ${phoneDigits}`;
 
-    // Update user in session
     const updatedUser = {
       ...user!,
       username: profileData.username,
@@ -174,7 +160,6 @@ const BusinessSettings = () => {
       return;
     }
 
-    // Walidacja godzin
     for (const [day, hours] of Object.entries(workingHours)) {
       if (hours.enabled) {
         const fromHour = parseInt(hours.from.split(':')[0]);
@@ -263,7 +248,7 @@ const BusinessSettings = () => {
 
   const handleDeleteAccount = () => {
     const password = window.prompt('Aby usunąć konto, wpisz swoje hasło:');
-    if (password === null) return; // Anulowano
+    if (password === null) return; 
     
     if (!password || password.length < 8) {
       showToast('Nieprawidłowe hasło', 'error');
@@ -286,7 +271,6 @@ const BusinessSettings = () => {
     }));
   };
 
-  // Generuj opcje godzin
   const timeOptions: string[] = [];
   for (let h = 0; h < 24; h++) {
     for (let m = 0; m < 60; m += 30) {
@@ -317,14 +301,12 @@ const BusinessSettings = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Ustawienia</h1>
         <p className="text-gray-600">Zarządzaj ustawieniami swojego konta i profilu</p>
       </div>
 
       <div className="grid lg:grid-cols-[250px,1fr] gap-6">
-        {/* Sidebar */}
         <div className="bg-white rounded-2xl shadow-sm p-4">
           <nav className="space-y-1">
             {tabs.map((tab) => (
@@ -344,9 +326,7 @@ const BusinessSettings = () => {
           </nav>
         </div>
 
-        {/* Content */}
         <div className="bg-white rounded-2xl shadow-sm p-6">
-          {/* Profile Tab */}
           {activeTab === 'profile' && (
             <div className="space-y-6">
               <div>
@@ -425,7 +405,6 @@ const BusinessSettings = () => {
             </div>
           )}
 
-          {/* Working Hours Tab */}
           {activeTab === 'hours' && (
             <div className="space-y-6">
               <div>
@@ -460,7 +439,6 @@ const BusinessSettings = () => {
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
-                            {/* Toggle */}
                             <label className="relative inline-flex items-center cursor-pointer">
                               <input
                                 type="checkbox"
@@ -471,13 +449,11 @@ const BusinessSettings = () => {
                               <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
                             </label>
                             
-                            {/* Day name */}
                             <span className={`font-medium min-w-[100px] ${workingHours[day].enabled ? 'text-gray-900' : 'text-gray-400'}`}>
                               {dayNames[day]}
                             </span>
                           </div>
 
-                          {/* Time selectors */}
                           {workingHours[day].enabled ? (
                             <div className="flex items-center gap-3">
                               <select
@@ -512,7 +488,6 @@ const BusinessSettings = () => {
                     ))}
                   </div>
 
-                  {/* Quick presets */}
                   <div className="pt-4 border-t">
                     <p className="text-sm font-medium text-gray-700 mb-3">Szybkie ustawienia:</p>
                     <div className="flex flex-wrap gap-2">
@@ -585,7 +560,6 @@ const BusinessSettings = () => {
             </div>
           )}
 
-          {/* Password Tab */}
           {activeTab === 'password' && (
             <div className="space-y-6">
               <div>
@@ -677,7 +651,6 @@ const BusinessSettings = () => {
             </div>
           )}
 
-          {/* Notifications Tab */}
           {activeTab === 'notifications' && (
             <div className="space-y-6">
               <div>
@@ -686,7 +659,6 @@ const BusinessSettings = () => {
               </div>
 
               <div className="space-y-6">
-                {/* Email Notifications - DISABLED */}
                 <div className="opacity-50">
                   <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
                     <Mail className="w-5 h-5 text-gray-400" />
@@ -732,7 +704,6 @@ const BusinessSettings = () => {
                   </div>
                 </div>
 
-                {/* SMS Notifications - DISABLED */}
                 <div className="opacity-50">
                   <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
                     <Phone className="w-5 h-5 text-gray-400" />
@@ -766,7 +737,6 @@ const BusinessSettings = () => {
                   </div>
                 </div>
 
-                {/* Push Notifications - ACTIVE */}
                 <div>
                   <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
                     <Bell className="w-5 h-5 text-gray-400" />
@@ -800,7 +770,6 @@ const BusinessSettings = () => {
             </div>
           )}
 
-          {/* Privacy Tab */}
           {activeTab === 'privacy' && (
             <div className="space-y-6">
               <div>
@@ -862,7 +831,6 @@ const BusinessSettings = () => {
             </div>
           )}
 
-          {/* Billing Tab */}
           {activeTab === 'billing' && (
             <div className="space-y-6">
               <div>
@@ -870,7 +838,6 @@ const BusinessSettings = () => {
                 <p className="text-sm text-gray-500">Zarządzaj swoim planem i metodami płatności</p>
               </div>
 
-              {/* Current Plan */}
               <div className="p-6 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-200">
                 <div className="flex items-center justify-between mb-4">
                   <div>
@@ -900,7 +867,6 @@ const BusinessSettings = () => {
                 </button>
               </div>
 
-              {/* Payment Methods */}
               <div>
                 <h3 className="font-medium text-gray-900 mb-3">Metody płatności</h3>
                 <div className="p-4 bg-gray-50 rounded-xl text-center">
@@ -914,7 +880,6 @@ const BusinessSettings = () => {
             </div>
           )}
 
-          {/* Danger Zone Tab */}
           {activeTab === 'danger' && (
             <div className="space-y-6">
               <div>

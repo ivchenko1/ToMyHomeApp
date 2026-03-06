@@ -28,7 +28,6 @@ const BusinessCalendar = () => {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Pobierz rezerwacje z Firebase
   useEffect(() => {
     const loadBookings = async () => {
       if (!user || !user.id) {
@@ -40,14 +39,12 @@ const BusinessCalendar = () => {
       console.log('BusinessCalendar: Loading for user', user.id);
       
       try {
-        // Najpierw znajdź providerId
         const providers = await providerService.getByOwner(user.id);
         console.log('BusinessCalendar: Found providers', providers.length);
         
         if (providers.length > 0) {
           const provider = providers[0];
           
-          // Subskrybuj rezerwacje real-time
           const unsubscribe = bookingService.subscribeToProviderBookings(
             provider.id,
             (newBookings) => {
@@ -70,7 +67,6 @@ const BusinessCalendar = () => {
     loadBookings();
   }, [user]);
 
-  // Potwierdź rezerwację
   const handleConfirmBooking = async (bookingId: string) => {
     try {
       await bookingService.confirm(bookingId);
@@ -80,7 +76,6 @@ const BusinessCalendar = () => {
     }
   };
 
-  // Anuluj rezerwację
   const handleCancelBooking = async (bookingId: string) => {
     try {
       await bookingService.cancel(bookingId, 'provider');
@@ -92,7 +87,6 @@ const BusinessCalendar = () => {
     }
   };
 
-  // Oznacz jako zakończoną
   const handleCompleteBooking = async (bookingId: string) => {
     try {
       await bookingService.complete(bookingId);
@@ -104,7 +98,6 @@ const BusinessCalendar = () => {
     }
   };
 
-  // Nawigacja kalendarza
   const goToPrevious = () => {
     const newDate = new Date(currentDate);
     if (viewMode === 'month') {
@@ -134,7 +127,6 @@ const BusinessCalendar = () => {
     setSelectedDate(new Date().toISOString().split('T')[0]);
   };
 
-  // Pomocnicze funkcje
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
@@ -142,18 +134,15 @@ const BusinessCalendar = () => {
     const lastDay = new Date(year, month + 1, 0);
     const days: Date[] = [];
 
-    // Dodaj dni z poprzedniego miesiąca
     const startDay = firstDay.getDay() || 7;
     for (let i = startDay - 1; i > 0; i--) {
       days.push(new Date(year, month, 1 - i));
     }
 
-    // Dni bieżącego miesiąca
     for (let i = 1; i <= lastDay.getDate(); i++) {
       days.push(new Date(year, month, i));
     }
 
-    // Dodaj dni z następnego miesiąca
     const remaining = 42 - days.length;
     for (let i = 1; i <= remaining; i++) {
       days.push(new Date(year, month + 1, i));
@@ -226,7 +215,6 @@ const BusinessCalendar = () => {
     }
   };
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -235,7 +223,7 @@ const BusinessCalendar = () => {
     );
   }
 
-  const hours = Array.from({ length: 12 }, (_, i) => i + 8); // 8:00 - 19:00
+  const hours = Array.from({ length: 12 }, (_, i) => i + 8);
 
   const dayNames = ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Nd'];
   const monthNames = [
@@ -247,7 +235,6 @@ const BusinessCalendar = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Kalendarz</h1>
@@ -278,7 +265,6 @@ const BusinessCalendar = () => {
         </div>
       </div>
 
-      {/* Navigation */}
       <div className="bg-white rounded-xl shadow-sm p-4">
         <div className="flex items-center justify-between">
           <button
@@ -308,11 +294,9 @@ const BusinessCalendar = () => {
         </div>
       </div>
 
-      {/* Calendar Grid */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {viewMode === 'week' && (
           <>
-            {/* Week Header */}
             <div className="grid grid-cols-8 border-b border-gray-200">
               <div className="p-3 text-center text-sm font-medium text-gray-500 border-r border-gray-200">
                 Godzina
@@ -348,7 +332,6 @@ const BusinessCalendar = () => {
               })}
             </div>
 
-            {/* Time Grid */}
             <div className="max-h-[600px] overflow-y-auto">
               {hours.map((hour) => (
                 <div key={hour} className="grid grid-cols-8 border-b border-gray-100">
@@ -463,7 +446,6 @@ const BusinessCalendar = () => {
 
         {viewMode === 'month' && (
           <div className="p-4">
-            {/* Month Header */}
             <div className="grid grid-cols-7 gap-1 mb-2">
               {dayNames.map((day) => (
                 <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
@@ -472,7 +454,6 @@ const BusinessCalendar = () => {
               ))}
             </div>
             
-            {/* Month Days */}
             <div className="grid grid-cols-7 gap-1">
               {getDaysInMonth(currentDate).map((day, index) => {
                 const dateStr = formatDate(day);
@@ -524,7 +505,6 @@ const BusinessCalendar = () => {
         )}
       </div>
 
-      {/* Today's Summary */}
       <div className="bg-white rounded-xl shadow-sm p-6">
         <h3 className="font-bold text-lg mb-4">Podsumowanie dnia</h3>
         <div className="grid sm:grid-cols-4 gap-4">
@@ -557,7 +537,6 @@ const BusinessCalendar = () => {
         </div>
       </div>
 
-      {/* Booking Detail Modal */}
       {showBookingModal && selectedBooking && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
@@ -576,7 +555,6 @@ const BusinessCalendar = () => {
               </div>
 
               <div className="space-y-4">
-                {/* Status */}
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Status:</span>
                   <span
@@ -588,7 +566,6 @@ const BusinessCalendar = () => {
                   </span>
                 </div>
 
-                {/* Client Info */}
                 <div className="p-4 bg-gray-50 rounded-xl space-y-3">
                   <div className="flex items-center gap-3">
                     <User className="w-5 h-5 text-gray-400" />
@@ -614,7 +591,6 @@ const BusinessCalendar = () => {
                   </div>
                 </div>
 
-                {/* Service Info */}
                 <div className="p-4 bg-emerald-50 rounded-xl">
                   <div className="font-bold text-emerald-700">{selectedBooking.serviceName}</div>
                   <div className="flex items-center gap-4 mt-2 text-sm text-emerald-600">
@@ -627,7 +603,6 @@ const BusinessCalendar = () => {
                   </div>
                 </div>
 
-                {/* Actions */}
                 <div className="flex gap-3 pt-4">
                   {selectedBooking.status === 'pending' && (
                     <>
@@ -649,7 +624,6 @@ const BusinessCalendar = () => {
                   )}
                   {selectedBooking.status === 'confirmed' && (
                     <div className="flex gap-3 w-full">
-                      {/* Przycisk Zakończ - tylko jeśli termin już minął lub trwa */}
                       {(() => {
                         const bookingDateTime = new Date(`${selectedBooking.date}T${selectedBooking.time}`);
                         const now = new Date();

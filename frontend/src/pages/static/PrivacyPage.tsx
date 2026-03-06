@@ -151,7 +151,6 @@ const PrivacyPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero */}
       <section className="bg-gradient-to-br from-primary via-secondary to-accent text-white py-20">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <h1 className="text-4xl lg:text-5xl font-bold mb-6">Polityka Prywatności</h1>
@@ -161,7 +160,6 @@ const PrivacyPage = () => {
         </div>
       </section>
 
-      {/* Highlights */}
       <section className="py-12 -mt-8">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -178,10 +176,8 @@ const PrivacyPage = () => {
         </div>
       </section>
 
-      {/* Content */}
       <section className="py-12">
         <div className="max-w-4xl mx-auto px-6">
-          {/* Last Updated */}
           <div className="bg-white rounded-2xl shadow-sm p-6 mb-8 flex items-center gap-4">
             <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
               <Calendar className="w-6 h-6 text-primary" />
@@ -192,7 +188,6 @@ const PrivacyPage = () => {
             </div>
           </div>
 
-          {/* Sections */}
           <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
             {sections.map((section, index) => (
               <div
@@ -211,7 +206,6 @@ const PrivacyPage = () => {
             ))}
           </div>
 
-          {/* Actions */}
           <div className="mt-8 grid md:grid-cols-2 gap-4">
             <a
               href="mailto:dane@tomyhomeapp.pl"

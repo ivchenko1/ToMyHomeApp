@@ -32,7 +32,6 @@ const StatItem = ({ value, label, isLoading }: StatItemProps) => {
   }, [hasAnimated, isLoading, value]);
 
   const animateValue = () => {
-    // Wyciągnij liczbę z wartości (np. "15+" -> 15)
     const numericPart = parseInt(value.replace(/[^0-9]/g, '')) || 0;
     const suffix = value.replace(/[0-9]/g, ''); // np. "+", "%"
     
@@ -44,7 +43,7 @@ const StatItem = ({ value, label, isLoading }: StatItemProps) => {
     const timer = setInterval(() => {
       current += increment;
       if (current >= numericPart) {
-        setDisplayValue(value); // Ustaw finalną wartość ze suffixem
+        setDisplayValue(value); 
         clearInterval(timer);
       } else {
         setDisplayValue(Math.floor(current).toLocaleString() + suffix);
@@ -66,28 +65,23 @@ const StatItem = ({ value, label, isLoading }: StatItemProps) => {
   );
 };
 
-// Funkcja do zaokrąglania liczb (18 -> 15+, 21 -> 20+, 156 -> 150+, itd.)
 const formatStatNumber = (num: number, suffix: string = '+'): string => {
   if (num === 0) return `0${suffix}`;
   
   if (num < 10) {
     return `${num}${suffix}`;
   } else if (num < 100) {
-    // Zaokrąglij do najbliższej 5 w dół (18 -> 15, 21 -> 20, 27 -> 25)
     const rounded = Math.floor(num / 5) * 5;
     return `${rounded}${suffix}`;
   } else if (num < 1000) {
-    // Zaokrąglij do najbliższej 50 w dół (156 -> 150, 234 -> 200)
     const rounded = Math.floor(num / 50) * 50;
     return `${rounded}${suffix}`;
   } else {
-    // Zaokrąglij do najbliższego 500 lub 1000 (1234 -> 1000, 5678 -> 5500)
     const rounded = Math.floor(num / 500) * 500;
     return `${rounded.toLocaleString()}${suffix}`;
   }
 };
 
-// Funkcja do obliczania % pozytywnych opinii
 const calculatePositivePercentage = (reviews: any[]): string => {
   if (reviews.length === 0) return '0%';
   const positive = reviews.filter(r => r.rating >= 4).length;
@@ -95,14 +89,12 @@ const calculatePositivePercentage = (reviews: any[]): string => {
   return `${percentage}%`;
 };
 
-// Funkcja do zliczania unikalnych miast
 const countUniqueCities = (providers: any[]): number => {
   const cities = new Set<string>();
   providers.forEach(p => {
     if (p.location?.city) {
       cities.add(p.location.city.toLowerCase());
     } else if (p.locationString) {
-      // Wyciągnij miasto z locationString (np. "Warszawa, Mokotów")
       const city = p.locationString.split(',')[0]?.trim();
       if (city) cities.add(city.toLowerCase());
     }
@@ -122,25 +114,20 @@ const StatsSection = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // Pobierz użytkowników (klientów)
         const usersSnapshot = await getDocs(collection(db, 'users'));
         const clientsCount = usersSnapshot.docs.filter(
           doc => doc.data().accountType === 'client'
         ).length;
 
-        // Pobierz usługodawców
         const providersSnapshot = await getDocs(collection(db, 'providers'));
         const providers = providersSnapshot.docs.map(doc => doc.data());
         const providersCount = providers.length;
 
-        // Policz unikalne miasta
         const citiesCount = countUniqueCities(providers);
 
-        // Pobierz opinie
         const reviewsSnapshot = await getDocs(collection(db, 'reviews'));
         const reviews = reviewsSnapshot.docs.map(doc => doc.data());
 
-        // Pobierz ukończone rezerwacje (zadowoleni klienci)
         const bookingsQuery = query(
           collection(db, 'bookings'),
           where('status', '==', 'completed')
@@ -148,7 +135,6 @@ const StatsSection = () => {
         const bookingsSnapshot = await getDocs(bookingsQuery);
         const completedBookings = bookingsSnapshot.size;
 
-        // Użyj większej liczby: klienci lub ukończone rezerwacje
         const happyCustomers = Math.max(clientsCount, completedBookings);
 
         setStats([
@@ -171,7 +157,6 @@ const StatsSection = () => {
         ]);
       } catch (error) {
         console.error('Error fetching stats:', error);
-        // Fallback values
         setStats([
           { value: '0+', label: 'Zadowolonych klientów' },
           { value: '0+', label: 'Specjalistów' },

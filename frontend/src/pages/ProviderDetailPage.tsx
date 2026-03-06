@@ -1,8 +1,3 @@
-/**
- * ProviderDetailPage - Strona profilu usługodawcy
- * Pobiera dane z Firebase przez providerService
- */
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -30,10 +25,6 @@ import bookingService from '../services/bookingService';
 import favoriteService from '../services/favoriteService';
 import reviewService, { Review } from '../services/reviewService';
 import PaymentModal from '../components/PaymentModal';
-
-// ============================================
-// KOMPONENTY POMOCNICZE
-// ============================================
 
 const StatBadge = ({ icon: Icon, value, label, color }: {
   icon: any;
@@ -109,17 +100,12 @@ const ServiceCard = ({
   </div>
 );
 
-// ============================================
-// GŁÓWNY KOMPONENT
-// ============================================
-
 const ProviderDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { showToast } = useToast();
   const { user } = useAuth();
 
-  // State
   const [provider, setProvider] = useState<Provider | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -136,7 +122,6 @@ const ProviderDetailPage = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   
-  // State dla danych potwierdzenia rezerwacji (zapisane przed resetem)
   const [confirmedBooking, setConfirmedBooking] = useState<{
     date: string;
     time: string;
@@ -144,13 +129,11 @@ const ProviderDetailPage = () => {
     price: number;
   } | null>(null);
   
-  // State dla zgłaszania opinii
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportingReview, setReportingReview] = useState<Review | null>(null);
   const [reportReason, setReportReason] = useState('');
   const [reportSubmitting, setReportSubmitting] = useState(false);
 
-  // Sprawdź czy jest w ulubionych
   useEffect(() => {
     const checkFavorite = async () => {
       if (!user?.id || !id) return;
@@ -164,7 +147,6 @@ const ProviderDetailPage = () => {
     checkFavorite();
   }, [user?.id, id]);
 
-  // Ładuj opinie
   useEffect(() => {
     const loadReviews = async () => {
       if (!id) return;
@@ -181,7 +163,6 @@ const ProviderDetailPage = () => {
     loadReviews();
   }, [id]);
 
-  // Toggle ulubione
   const toggleFavorite = async () => {
     if (!user?.id) {
       showToast('Zaloguj się, aby dodać do ulubionych', 'info');
@@ -208,7 +189,6 @@ const ProviderDetailPage = () => {
     }
   };
 
-  // Otwórz modal zgłaszania opinii
   const openReportModal = (review: Review) => {
     if (!user) {
       showToast('Zaloguj się, aby zgłosić opinię', 'info');
@@ -219,7 +199,6 @@ const ProviderDetailPage = () => {
     setShowReportModal(true);
   };
 
-  // Zgłoś opinię
   const submitReport = async () => {
     if (!reportingReview || !user || !provider) return;
     
@@ -251,13 +230,11 @@ const ProviderDetailPage = () => {
     }
   };
 
-  // Nazwy miesięcy po polsku
   const monthNames = [
     'Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec',
     'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'
   ];
 
-  // Nawigacja między miesiącami
   const goToPrevMonth = () => {
     setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
     setSelectedDate(null);
@@ -268,21 +245,18 @@ const ProviderDetailPage = () => {
     setSelectedDate(null);
   };
 
-  // Czy można cofnąć się do poprzedniego miesiąca (nie wcześniej niż obecny)
   const canGoPrev = () => {
     const now = new Date();
     return currentDate.getFullYear() > now.getFullYear() || 
            (currentDate.getFullYear() === now.getFullYear() && currentDate.getMonth() > now.getMonth());
   };
 
-  // Sprawdź czy to własny profil - PROSTO
   const isOwner = Boolean(
     user?.id && 
     provider?.ownerId && 
     String(user.id) === String(provider.ownerId)
   );
 
-  // Załaduj dane usługodawcy z Firebase
   useEffect(() => {
     const loadProvider = async () => {
       if (!id) return;
@@ -305,7 +279,6 @@ const ProviderDetailPage = () => {
 
     loadProvider();
 
-    // Nasłuchuj na aktualizacje
     const handleUpdate = (e: CustomEvent) => {
       if (e.detail?.id === id) {
         setProvider(e.detail);
@@ -315,24 +288,20 @@ const ProviderDetailPage = () => {
     return () => window.removeEventListener('providerUpdated', handleUpdate as EventListener);
   }, [id]);
 
-  // Kategorie usług
   const serviceCategories = provider?.services
     ? ['Wszystkie', ...new Set(provider.services.map(s => s.category).filter(Boolean))]
     : ['Wszystkie'];
 
-  // Filtrowane usługi
   const filteredServices = provider?.services?.filter(
     s => activeServiceFilter === 'Wszystkie' || s.category === activeServiceFilter
   ) || [];
 
-  // Suma wybranych usług
   const totalPrice = selectedServices.reduce((sum, s) => sum + s.price, 0);
   const totalDuration = selectedServices.reduce((sum, s) => {
     const match = s.duration.match(/(\d+)/);
     return sum + (match ? parseInt(match[1]) : 30);
   }, 0);
 
-  // Toggle usługi
   const toggleService = (service: ServiceItem) => {
     setSelectedServices(prev => 
       prev.find(s => s.id === service.id)
@@ -341,7 +310,6 @@ const ProviderDetailPage = () => {
     );
   };
 
-  // Dni kalendarza
   const generateCalendarDays = () => {
     const today = new Date();
     const days = [];
@@ -350,7 +318,6 @@ const ProviderDetailPage = () => {
     const firstDay = new Date(year, month, 1);
     const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
     
-    // Mapowanie dnia tygodnia na klucz workingHours
     const dayKeyMap: { [key: number]: string } = {
       1: 'monday',
       2: 'tuesday',
@@ -367,7 +334,6 @@ const ProviderDetailPage = () => {
       const isCurrentMonth = date.getMonth() === month;
       const isPast = date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
       
-      // Sprawdź czy dzień jest zamknięty według workingHours
       let isClosed = false;
       if (provider) {
         const dayKey = dayKeyMap[date.getDay()] as keyof typeof provider.workingHours;
@@ -388,12 +354,10 @@ const ProviderDetailPage = () => {
 
   const calendarDays = generateCalendarDays();
 
-  // Pobierz zajęte sloty gdy zmienia się data
   useEffect(() => {
     const loadBookedSlots = async () => {
       if (!provider?.id || !selectedDate) return;
       
-      // Użyj wybranego miesiąca/roku z kalendarza
       const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`;
       
       const slots = await bookingService.getBookedSlots(provider.id, dateStr);
@@ -403,7 +367,6 @@ const ProviderDetailPage = () => {
     loadBookedSlots();
   }, [provider?.id, selectedDate, currentDate]);
 
-  // Mapowanie dnia tygodnia na klucz workingHours
   type DayKey = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
   const getDayKey = (date: Date): DayKey | null => {
     const dayMap: { [key: number]: DayKey } = {
@@ -418,8 +381,6 @@ const ProviderDetailPage = () => {
     return dayMap[date.getDay()] || null;
   };
 
-  // Dostępne godziny - generowane dynamicznie z godzin pracy providera
-  // Uwzględnia czas trwania wybranych usług
   const generateTimeSlots = () => {
     if (!provider || !selectedDate) {
       return [];
@@ -427,7 +388,6 @@ const ProviderDetailPage = () => {
 
     const slots: { time: string; disabled: boolean }[] = [];
     
-    // Znajdź pełną datę dla wybranego dnia (używając wybranego miesiąca)
     const now = new Date();
     const selectedFullDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), selectedDate);
     const dayKey = getDayKey(selectedFullDate);
@@ -436,19 +396,15 @@ const ProviderDetailPage = () => {
     
     const dayHours = provider.workingHours[dayKey];
     
-    // Jeśli dzień jest zamknięty
     if (!dayHours.enabled) {
       return [];
     }
 
-    // Parsuj godziny otwarcia
     const [fromHour, fromMin] = dayHours.from.split(':').map(Number);
     const [toHour, toMin] = dayHours.to.split(':').map(Number);
     
-    // Godzina zamknięcia w minutach
     const closingTimeMinutes = toHour * 60 + toMin;
     
-    // Generuj sloty co 30 minut
     let currentHour = fromHour;
     let currentMin = fromMin;
     
@@ -456,18 +412,12 @@ const ProviderDetailPage = () => {
       const time = `${String(currentHour).padStart(2, '0')}:${String(currentMin).padStart(2, '0')}`;
       const slotStartMinutes = currentHour * 60 + currentMin;
       
-      // Sprawdź czy slot nie jest w przeszłości (dla dzisiejszego dnia)
       const isToday = selectedFullDate.toDateString() === now.toDateString();
       const slotInPast = isToday && (currentHour < now.getHours() || (currentHour === now.getHours() && currentMin <= now.getMinutes()));
       
-      // Sprawdź czy usługa zmieści się przed zamknięciem
       const serviceEndMinutes = slotStartMinutes + totalDuration;
       const fitsBeforeClosing = serviceEndMinutes <= closingTimeMinutes;
       
-      // Slot jest zablokowany jeśli:
-      // 1. Jest w przeszłości
-      // 2. Jest na liście zajętych slotów (bookedSlots uwzględnia już czas trwania rezerwacji)
-      // 3. Wybrana usługa nie zmieści się przed zamknięciem
       const isDisabled = slotInPast || bookedSlots.includes(time) || (selectedServices.length > 0 && !fitsBeforeClosing);
       
       slots.push({
@@ -475,7 +425,6 @@ const ProviderDetailPage = () => {
         disabled: isDisabled,
       });
       
-      // Następny slot (+30 min)
       currentMin += 30;
       if (currentMin >= 60) {
         currentMin = 0;
@@ -488,7 +437,6 @@ const ProviderDetailPage = () => {
 
   const timeSlots = generateTimeSlots();
 
-  // Potwierdź rezerwację - otwiera modal płatności
   const confirmBooking = async () => {
     if (!user || !user.id) {
       showToast('Zaloguj się, aby zarezerwować wizytę', 'info');
@@ -508,11 +456,9 @@ const ProviderDetailPage = () => {
 
     if (!provider) return;
 
-    // Otwórz modal płatności
     setShowPaymentModal(true);
   };
 
-  // Po udanej płatności - tworzy rezerwację
   const handlePaymentSuccess = async () => {
     if (!user || !provider || !selectedDate || !selectedTime) return;
 
@@ -520,10 +466,8 @@ const ProviderDetailPage = () => {
     console.log('Payment successful, creating booking for user:', user.id);
 
     try {
-      // Użyj wybranego miesiąca/roku z kalendarza
       const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`;
       
-      // Sprawdź czy termin jest wolny (z uwzględnieniem czasu trwania wybranej usługi)
       const isAvailable = await bookingService.isTimeSlotAvailable(provider.id, dateStr, selectedTime, totalDuration);
       if (!isAvailable) {
         showToast('Ten termin jest już zajęty. Wybierz inny.', 'error');
@@ -531,7 +475,6 @@ const ProviderDetailPage = () => {
         return;
       }
 
-      // Utwórz rezerwację dla każdej wybranej usługi (lub połącz w jedną)
       const mainService = selectedServices[0];
       
       await bookingService.create({
@@ -552,7 +495,6 @@ const ProviderDetailPage = () => {
 
       console.log('Booking created successfully');
       
-      // Zapisz dane rezerwacji PRZED resetem do wyświetlenia w modalu
       setConfirmedBooking({
         date: `${selectedDate} ${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`,
         time: selectedTime,
@@ -562,7 +504,6 @@ const ProviderDetailPage = () => {
       
       setShowBookingModal(true);
       
-      // Reset selekcji (PO zapisaniu danych!)
       setSelectedServices([]);
       setSelectedDate(null);
       setSelectedTime(null);
@@ -573,7 +514,6 @@ const ProviderDetailPage = () => {
       
       if (error.message === 'SLOT_TAKEN') {
         showToast('Ten termin został właśnie zarezerwowany przez kogoś innego. Wybierz inny termin.', 'error');
-        // Odśwież listę zajętych slotów
         if (provider && selectedDate) {
           const refreshDateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`;
           const slots = await bookingService.getBookedSlots(provider.id, refreshDateStr);
@@ -588,7 +528,6 @@ const ProviderDetailPage = () => {
     }
   };
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -600,7 +539,6 @@ const ProviderDetailPage = () => {
     );
   }
 
-  // Not found state
   if (!provider) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -626,7 +564,6 @@ const ProviderDetailPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white border-b sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-14">
@@ -650,12 +587,9 @@ const ProviderDetailPage = () => {
         </div>
       </div>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Left Column */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Hero */}
             <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
               <div className="relative h-48 sm:h-64">
                 <img src={provider.image} alt={provider.name} className="w-full h-full object-cover" />
@@ -685,7 +619,6 @@ const ProviderDetailPage = () => {
               </div>
             </div>
 
-            {/* About */}
             <div className="bg-white rounded-2xl shadow-sm p-6">
               <h2 className="text-xl font-bold mb-4">O mnie</h2>
               {provider.description ? <p className="text-gray-600 whitespace-pre-line">{provider.description}</p> : <p className="text-gray-400 italic">Brak opisu</p>}
@@ -704,7 +637,6 @@ const ProviderDetailPage = () => {
               )}
             </div>
 
-            {/* Services */}
             <div className="bg-white rounded-2xl shadow-sm p-6">
               <h2 className="text-xl font-bold mb-4">Usługi i cennik</h2>
               {serviceCategories.length > 1 && (
@@ -726,7 +658,6 @@ const ProviderDetailPage = () => {
               </div>
             </div>
 
-            {/* Location */}
             <div className="bg-white rounded-2xl shadow-sm p-6">
               <h2 className="text-xl font-bold mb-4">Lokalizacja</h2>
               <div className="flex items-start gap-3 mb-4">
@@ -763,7 +694,6 @@ const ProviderDetailPage = () => {
               )}
             </div>
 
-            {/* Working Hours */}
             <div className="bg-white rounded-2xl shadow-sm p-6">
               <h2 className="text-xl font-bold mb-4">Godziny pracy</h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -776,7 +706,6 @@ const ProviderDetailPage = () => {
               </div>
             </div>
 
-            {/* Reviews Section */}
             <div className="bg-white rounded-2xl shadow-sm p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">Opinie klientów</h2>
@@ -831,7 +760,6 @@ const ProviderDetailPage = () => {
                       </div>
                       <p className="text-gray-600 text-sm">{review.comment}</p>
                       
-                      {/* Odpowiedź usługodawcy */}
                       {review.providerResponse && (
                         <div className="mt-3 p-3 bg-emerald-50 border-l-4 border-emerald-500 rounded-r-lg">
                           <p className="text-xs font-semibold text-emerald-700 mb-1">💬 Odpowiedź usługodawcy:</p>
@@ -861,7 +789,6 @@ const ProviderDetailPage = () => {
             </div>
           </div>
 
-          {/* Right Column - Booking */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-sm p-6 sticky top-20">
               <h3 className="text-lg font-bold mb-4">Zarezerwuj wizytę</h3>
@@ -1014,7 +941,6 @@ const ProviderDetailPage = () => {
         </div>
       </main>
 
-      {/* Booking Modal */}
       {showBookingModal && confirmedBooking && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full">
@@ -1055,7 +981,6 @@ const ProviderDetailPage = () => {
         </div>
       )}
 
-      {/* Payment Modal */}
       <PaymentModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
@@ -1067,7 +992,6 @@ const ProviderDetailPage = () => {
         bookingTime={selectedTime || undefined}
       />
 
-      {/* Report Review Modal */}
       {showReportModal && reportingReview && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
@@ -1085,7 +1009,6 @@ const ProviderDetailPage = () => {
                 </button>
               </div>
 
-              {/* Info o opinii */}
               <div className="p-4 bg-gray-50 rounded-xl mb-6">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-8 h-8 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center text-white text-sm font-bold">
@@ -1106,7 +1029,6 @@ const ProviderDetailPage = () => {
                 <p className="text-sm text-gray-600 italic">"{reportingReview.comment}"</p>
               </div>
 
-              {/* Powód zgłoszenia */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Dlaczego zgłaszasz tę opinię?
@@ -1144,7 +1066,6 @@ const ProviderDetailPage = () => {
                 </p>
               </div>
 
-              {/* Przyciski */}
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowReportModal(false)}

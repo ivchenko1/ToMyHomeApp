@@ -19,12 +19,10 @@ import {
 import { useAuth, useToast } from '../../App';
 import providerService from '../../services/providerService';
 
-// Leaflet imports
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Fix for default marker icon
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
@@ -86,7 +84,6 @@ interface LocationSuggestion {
   };
 }
 
-// Component to handle map clicks
 const MapClickHandler = ({ onLocationSelect }: { onLocationSelect: (lat: number, lng: number) => void }) => {
   useMapEvents({
     click: (e) => {
@@ -96,7 +93,6 @@ const MapClickHandler = ({ onLocationSelect }: { onLocationSelect: (lat: number,
   return null;
 };
 
-// Component to recenter map
 const MapRecenter = ({ lat, lng }: { lat: number; lng: number }) => {
   const map = useMap();
   useEffect(() => {
@@ -117,7 +113,6 @@ const BusinessAddService = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [_imageFile, setImageFile] = useState<File | null>(null);
   
-  // Location search state
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
@@ -134,7 +129,7 @@ const BusinessAddService = () => {
       district: '',
       address: '',
       postalCode: '',
-      lat: 52.2297, // Default: Warszawa
+      lat: 52.2297, 
       lng: 21.0122,
     },
     services: [],
@@ -163,7 +158,6 @@ const BusinessAddService = () => {
   const [_newFeature, setNewFeature] = useState('');
   const [markerPosition, setMarkerPosition] = useState<[number, number]>([52.2297, 21.0122]);
 
-  // Wczytaj istniejący profil przy starcie
   useEffect(() => {
     const loadExistingProfile = async () => {
       if (!user?.id) {
@@ -177,7 +171,6 @@ const BusinessAddService = () => {
           const provider = providers[0];
           setExistingProviderId(provider.id);
           
-          // Wypełnij formularz istniejącymi danymi (bez usług - te dodajemy osobno)
           setFormData(prev => ({
             ...prev,
             businessName: provider.name || prev.businessName,
@@ -209,7 +202,6 @@ const BusinessAddService = () => {
     loadExistingProfile();
   }, [user?.id]);
 
-  // Search location using Nominatim (OpenStreetMap)
   const searchLocation = async (query: string) => {
     if (!query || query.length < 3) {
       setLocationSuggestions([]);
@@ -239,7 +231,6 @@ const BusinessAddService = () => {
     }
   };
 
-  // Debounced search
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
     
@@ -252,7 +243,6 @@ const BusinessAddService = () => {
     }, 500);
   };
 
-  // Select location from suggestions
   const selectLocation = (suggestion: LocationSuggestion) => {
     const lat = parseFloat(suggestion.lat);
     const lng = parseFloat(suggestion.lon);
@@ -275,7 +265,6 @@ const BusinessAddService = () => {
     setSearchQuery(suggestion.display_name.split(',')[0]);
   };
 
-  // Reverse geocoding - get address from coordinates
   const reverseGeocode = async (lat: number, lng: number) => {
     try {
       const response = await fetch(
@@ -306,7 +295,6 @@ const BusinessAddService = () => {
     }
   };
 
-  // Handle map click
   const handleMapClick = (lat: number, lng: number) => {
     setMarkerPosition([lat, lng]);
     reverseGeocode(lat, lng);
@@ -423,13 +411,11 @@ const BusinessAddService = () => {
         return;
       }
       
-      // Sprawdź czy użytkownik ma już profil w Firebase
       const existingProviders = await providerService.getByOwner(ownerId);
       console.log('existingProviders:', existingProviders);
       const existingProvider = existingProviders[0];
       
       const providerData = {
-        // Dane z formularza
         name: formData.businessName,
         profession: formData.profession,
         category: formData.category,
@@ -448,7 +434,6 @@ const BusinessAddService = () => {
         hasTravel: formData.features.includes('Dojazd do klienta'),
         acceptsCard: formData.features.includes('Płatność kartą'),
         
-        // Dane użytkownika
         ownerEmail: userData?.email || user?.email || '',
         ownerUsername: userData?.username || user?.username || '',
         ownerPhone: userData?.phone || user?.phone || '',
@@ -457,12 +442,9 @@ const BusinessAddService = () => {
       };
 
       if (existingProvider) {
-        // Aktualizuj istniejący profil w Firebase
-        // WAŻNE: Połącz istniejące usługi z nowymi (nie nadpisuj!)
         const existingServices = existingProvider.services || [];
         const newServicesFromForm = providerData.services || [];
         
-        // Połącz: stare usługi + nowe (unikaj duplikatów po ID)
         const existingIds = new Set(existingServices.map((s: any) => s.id));
         const uniqueNewServices = newServicesFromForm.filter((s: any) => !existingIds.has(s.id));
         const mergedServices = [...existingServices, ...uniqueNewServices];
@@ -478,7 +460,6 @@ const BusinessAddService = () => {
         });
         showToast('🎉 Profil zaktualizowany!', 'success');
       } else {
-        // Utwórz nowy profil w Firebase
         console.log('Tworzę nowy profil z ownerId:', ownerId);
         console.log('providerData:', providerData);
         const created = await providerService.create(providerData, ownerId);
@@ -490,13 +471,12 @@ const BusinessAddService = () => {
     } catch (error: any) {
       console.error('Błąd zapisywania:', error);
       
-      // Obsłuż błąd duplikatu nazwy
       if (error.message === 'DUPLICATE_NAME') {
         showToast('❌ Salon o takiej nazwie już istnieje! Wybierz inną nazwę.', 'error');
-        setCurrentStep(1); // Wróć do kroku z nazwą
+        setCurrentStep(1); 
       } else if (error.message === 'DUPLICATE_PHONE') {
         showToast('❌ Ten numer telefonu jest już używany przez inny salon!', 'error');
-        setCurrentStep(2); // Wróć do kroku z lokalizacją/kontaktem
+        setCurrentStep(2); 
       } else {
         showToast('Błąd podczas zapisywania', 'error');
       }
@@ -535,7 +515,6 @@ const BusinessAddService = () => {
     { number: 4, title: 'Szczegóły', icon: FileText },
   ];
 
-  // Pokaż loader podczas wczytywania profilu
   if (isLoadingProfile) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
@@ -547,7 +526,6 @@ const BusinessAddService = () => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Header */}
       <div className="mb-8">
         <button
           onClick={() => navigate(-1)}
@@ -567,7 +545,6 @@ const BusinessAddService = () => {
         </p>
       </div>
 
-      {/* Progress Steps */}
       <div className="flex items-center justify-between mb-8 bg-white rounded-2xl p-4 shadow-sm">
         {steps.map((step, index) => (
           <div key={step.number} className="flex items-center">
@@ -595,9 +572,7 @@ const BusinessAddService = () => {
         ))}
       </div>
 
-      {/* Form Content */}
       <div className="bg-white rounded-2xl shadow-sm p-8">
-        {/* Step 1: Basic Info */}
         {currentStep === 1 && (
           <div className="space-y-6">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
@@ -683,7 +658,6 @@ const BusinessAddService = () => {
           </div>
         )}
 
-        {/* Step 2: Location with OpenStreetMap */}
         {currentStep === 2 && (
           <div className="space-y-6">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
@@ -691,7 +665,6 @@ const BusinessAddService = () => {
               Lokalizacja
             </h2>
 
-            {/* Location Search */}
             <div className="relative z-20">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Wyszukaj adres
@@ -710,7 +683,6 @@ const BusinessAddService = () => {
                 )}
               </div>
               
-              {/* Suggestions Dropdown - nachodzi na mapę */}
               {showSuggestions && locationSuggestions.length > 0 && (
                 <div className="absolute z-50 w-full mt-1 bg-white border-2 border-emerald-300 rounded-xl shadow-2xl max-h-72 overflow-y-auto">
                   <div className="p-2 bg-emerald-50 border-b border-emerald-200 text-sm text-emerald-700 font-medium">
@@ -734,7 +706,6 @@ const BusinessAddService = () => {
               )}
             </div>
 
-            {/* OpenStreetMap */}
             <div className="rounded-xl overflow-hidden border-2 border-gray-200 relative z-10" style={{ height: '300px' }}>
               <MapContainer
                 center={markerPosition}
@@ -756,7 +727,6 @@ const BusinessAddService = () => {
               Kliknij na mapę aby wybrać dokładną lokalizację
             </p>
 
-            {/* Location Fields */}
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -820,7 +790,6 @@ const BusinessAddService = () => {
               </div>
             </div>
 
-            {/* Travel Radius */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Maksymalny zasięg dojazdu: <span className="font-bold text-emerald-600">{formData.travelRadius} km</span>
@@ -842,7 +811,6 @@ const BusinessAddService = () => {
           </div>
         )}
 
-        {/* Step 3: Services */}
         {currentStep === 3 && (
           <div className="space-y-6">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
@@ -850,7 +818,6 @@ const BusinessAddService = () => {
               Usługi i ceny
             </h2>
 
-            {/* Added Services */}
             {formData.services.length > 0 && (
               <div className="space-y-3 mb-6">
                 <h3 className="font-medium text-gray-700">Dodane usługi ({formData.services.length})</h3>
@@ -876,7 +843,6 @@ const BusinessAddService = () => {
               </div>
             )}
 
-            {/* Add New Service */}
             <div className="p-6 bg-emerald-50 rounded-xl">
               <h3 className="font-bold mb-4 flex items-center gap-2">
                 <Plus className="w-5 h-5" />
@@ -938,7 +904,6 @@ const BusinessAddService = () => {
           </div>
         )}
 
-        {/* Step 4: Details */}
         {currentStep === 4 && (
           <div className="space-y-6">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
@@ -973,7 +938,6 @@ const BusinessAddService = () => {
               />
             </div>
 
-            {/* Features */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Udogodnienia
@@ -1003,7 +967,6 @@ const BusinessAddService = () => {
               </div>
             </div>
 
-            {/* Summary */}
             <div className="mt-8 p-6 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl">
               <h3 className="font-bold text-lg mb-4">📋 Podsumowanie</h3>
               <div className="grid md:grid-cols-2 gap-4 text-sm">
@@ -1028,7 +991,6 @@ const BusinessAddService = () => {
           </div>
         )}
 
-        {/* Navigation Buttons */}
         <div className="flex justify-between mt-8 pt-6 border-t border-gray-100">
           <button
             type="button"

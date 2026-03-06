@@ -41,7 +41,6 @@ const CareerPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero */}
       <section className="bg-gradient-to-br from-primary via-secondary to-accent text-white py-20">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <h1 className="text-4xl lg:text-5xl font-bold mb-6">Kariera</h1>
@@ -52,7 +51,6 @@ const CareerPage = () => {
         </div>
       </section>
 
-      {/* Why Join Us */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-12">
@@ -75,7 +73,6 @@ const CareerPage = () => {
         </div>
       </section>
 
-      {/* Open Positions */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-12">
@@ -123,7 +120,6 @@ const CareerPage = () => {
         </div>
       </section>
 
-      {/* No Position */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-6">
           <div className="bg-gradient-to-r from-primary to-secondary rounded-2xl p-8 lg:p-12 text-white text-center">

@@ -56,7 +56,6 @@ const MyShopPage = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'services' | 'settings'>('overview');
   const [editingService, setEditingService] = useState<string | null>(null);
 
-  // Przykładowe dane sklepu (normalnie z API)
   const [shopData, setShopData] = useState<ShopData>({
     id: 1,
     businessName: 'Barber Shop Premium',
@@ -83,7 +82,6 @@ const MyShopPage = () => {
     },
   });
 
-  // Nowa usługa
   const [newService, setNewService] = useState({
     name: '',
     price: 0,
@@ -101,7 +99,6 @@ const MyShopPage = () => {
 
   const durations = ['15 min', '30 min', '45 min', '1h', '1h 30min', '2h'];
 
-  // Dodaj usługę
   const handleAddService = () => {
     if (!newService.name || newService.price <= 0) {
       showToast('Podaj nazwę i cenę usługi', 'error');
@@ -124,7 +121,6 @@ const MyShopPage = () => {
     showToast('✅ Usługa dodana!', 'success');
   };
 
-  // Usuń usługę
   const handleDeleteService = (id: string) => {
     if (!window.confirm('Czy na pewno chcesz usunąć tę usługę?')) return;
 
@@ -135,7 +131,6 @@ const MyShopPage = () => {
     showToast('Usługa usunięta', 'info');
   };
 
-  // Toggle aktywność usługi
   const toggleServiceActive = (id: string) => {
     setShopData((prev) => ({
       ...prev,
@@ -145,7 +140,6 @@ const MyShopPage = () => {
     }));
   };
 
-  // Aktualizuj usługę
   const updateService = (id: string, field: keyof ServiceItem, value: string | number | boolean) => {
     setShopData((prev) => ({
       ...prev,
@@ -155,7 +149,6 @@ const MyShopPage = () => {
     }));
   };
 
-  // Zapisz zmiany usługi
   const saveServiceEdit = (_id: string) => {
     setEditingService(null);
     showToast('Zmiany zapisane!', 'success');
@@ -168,7 +161,6 @@ const MyShopPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-6">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-2xl overflow-hidden">
@@ -202,7 +194,6 @@ const MyShopPage = () => {
           </div>
         </div>
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="card p-6">
             <div className="flex items-center gap-3 mb-2">
@@ -250,7 +241,6 @@ const MyShopPage = () => {
           </div>
         </div>
 
-        {/* Tabs */}
         <div className="flex gap-2 mb-6 bg-white rounded-xl p-2 shadow-sm">
           <button
             onClick={() => setActiveTab('overview')}
@@ -287,9 +277,7 @@ const MyShopPage = () => {
           </button>
         </div>
 
-        {/* Tab Content */}
         <div className="card p-6">
-          {/* Overview Tab */}
           {activeTab === 'overview' && (
             <div>
               <h2 className="text-xl font-bold mb-6">Przegląd działalności</h2>
@@ -335,7 +323,6 @@ const MyShopPage = () => {
             </div>
           )}
 
-          {/* Services Tab */}
           {activeTab === 'services' && (
             <div>
               <div className="flex items-center justify-between mb-6">
@@ -351,7 +338,6 @@ const MyShopPage = () => {
                 </button>
               </div>
 
-              {/* Add Service Modal */}
               {showAddService && (
                 <div className="mb-6 p-6 border-2 border-dashed border-primary/30 rounded-xl bg-primary/5">
                   <div className="flex items-center justify-between mb-4">
@@ -405,7 +391,6 @@ const MyShopPage = () => {
                 </div>
               )}
 
-              {/* Services List */}
               <div className="space-y-3">
                 {shopData.services.map((service) => (
                   <div
@@ -417,7 +402,6 @@ const MyShopPage = () => {
                     }`}
                   >
                     {editingService === service.id ? (
-                      // Edit mode
                       <div className="grid md:grid-cols-5 gap-3 items-center">
                         <input
                           type="text"
@@ -466,7 +450,6 @@ const MyShopPage = () => {
                         </div>
                       </div>
                     ) : (
-                      // View mode
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                           <label className="flex items-center">
@@ -529,7 +512,6 @@ const MyShopPage = () => {
             </div>
           )}
 
-          {/* Settings Tab */}
           {activeTab === 'settings' && (
             <div>
               <h2 className="text-xl font-bold mb-6">Ustawienia profilu</h2>

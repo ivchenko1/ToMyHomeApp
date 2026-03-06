@@ -1,8 +1,3 @@
-/**
- * Booking Service - zarządzanie rezerwacjami
- * Używa Firebase Firestore
- */
-
 import { 
   collection, 
   doc, 
@@ -18,44 +13,33 @@ import { db } from '../firebase';
 import { notificationService } from './notificationService';
 import { walletService } from './walletService';
 
-// ============================================
-// TYPY
-// ============================================
-
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
 
 export interface Booking {
   id: string;
   
-  // Klient
   clientId: string;
   clientName: string;
   clientEmail: string;
   clientPhone: string;
   
-  // Usługodawca
   providerId: string;
   providerName: string;
   providerImage: string;
   
-  // Usługa
   serviceId: string;
   serviceName: string;
   servicePrice: number;
   serviceDuration: string;
   
-  // Termin
-  date: string; // YYYY-MM-DD
-  time: string; // HH:MM
+  date: string; 
+  time: string; 
   
-  // Status
   status: BookingStatus;
   
-  // Notatki
   clientNote?: string;
   providerNote?: string;
   
-  // Daty
   createdAt: string;
   updatedAt: string;
   confirmedAt?: string;
@@ -63,25 +47,13 @@ export interface Booking {
   cancelledAt?: string;
 }
 
-// ============================================
-// HELPERS
-// ============================================
-
 const BOOKINGS_COLLECTION = 'bookings';
 
 const generateId = (): string => {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 };
 
-// ============================================
-// PUBLIC API
-// ============================================
-
 export const bookingService = {
-  /**
-   * Utwórz nową rezerwację (status: pending)
-   * Sprawdza czy termin jest wolny przed utworzeniem
-   */
   async create(data: {
     clientId: string;
     clientName: string;
@@ -98,7 +70,6 @@ export const bookingService = {
     time: string;
     clientNote?: string;
   }): Promise<Booking> {
-    // Sprawdź czy termin jest wolny PRZED utworzeniem rezerwacji
     const isAvailable = await this.isTimeSlotAvailable(data.providerId, data.date, data.time);
     if (!isAvailable) {
       throw new Error('SLOT_TAKEN');
@@ -119,8 +90,7 @@ export const bookingService = {
       await setDoc(doc(db, BOOKINGS_COLLECTION, id), booking);
       console.log('Booking created:', booking);
       
-      // Pobierz ownerId z providera, żeby wysłać powiadomienie do właściciela
-      let ownerUserId = data.providerId; // fallback
+      let ownerUserId = data.providerId;
       try {
         const providerDoc = await getDoc(doc(db, 'providers', data.providerId));
         if (providerDoc.exists()) {
@@ -130,7 +100,6 @@ export const bookingService = {
         console.warn('Could not get provider owner, using providerId');
       }
       
-      // Wyślij powiadomienie do usługodawcy (właściciela profilu)
       await notificationService.create({
         userId: ownerUserId,
         type: 'booking_request',
@@ -146,9 +115,6 @@ export const bookingService = {
     }
   },
 
-  /**
-   * Pobierz rezerwację po ID
-   */
   async getById(id: string): Promise<Booking | null> {
     try {
       const docRef = doc(db, BOOKINGS_COLLECTION, id);
@@ -163,9 +129,6 @@ export const bookingService = {
     }
   },
 
-  /**
-   * Pobierz rezerwacje klienta
-   */
   async getByClient(clientId: string): Promise<Booking[]> {
     try {
       const q = query(
@@ -174,7 +137,6 @@ export const bookingService = {
       );
       const snapshot = await getDocs(q);
       const bookings = snapshot.docs.map(doc => doc.data() as Booking);
-      // Sort in JS instead of Firestore to avoid index requirement
       return bookings.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     } catch (error) {
       console.error('Booking getByClient error:', error);
@@ -182,9 +144,6 @@ export const bookingService = {
     }
   },
 
-  /**
-   * Pobierz rezerwacje usługodawcy
-   */
   async getByProvider(providerId: string): Promise<Booking[]> {
     try {
       const q = query(
@@ -193,7 +152,6 @@ export const bookingService = {
       );
       const snapshot = await getDocs(q);
       const bookings = snapshot.docs.map(doc => doc.data() as Booking);
-      // Sort in JS instead of Firestore to avoid index requirement
       return bookings.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     } catch (error) {
       console.error('Booking getByProvider error:', error);
@@ -201,9 +159,6 @@ export const bookingService = {
     }
   },
 
-  /**
-   * Pobierz rezerwacje usługodawcy na dany dzień
-   */
   async getByProviderAndDate(providerId: string, date: string): Promise<Booking[]> {
     try {
       const q = query(
@@ -219,9 +174,6 @@ export const bookingService = {
     }
   },
 
-  /**
-   * Potwierdź rezerwację (usługodawca)
-   */
   async confirm(bookingId: string): Promise<Booking | null> {
     try {
       const booking = await this.getById(bookingId);
@@ -235,8 +187,7 @@ export const bookingService = {
       };
       
       await updateDoc(doc(db, BOOKINGS_COLLECTION, bookingId), updates);
-      
-      // Wyślij powiadomienie do klienta
+
       await notificationService.create({
         userId: booking.clientId,
         type: 'booking_confirmed',
@@ -252,9 +203,6 @@ export const bookingService = {
     }
   },
 
-  /**
-   * Anuluj rezerwację
-   */
   async cancel(bookingId: string, cancelledBy: 'client' | 'provider'): Promise<Booking | null> {
     try {
       const booking = await this.getById(bookingId);
@@ -268,13 +216,11 @@ export const bookingService = {
       };
       
       await updateDoc(doc(db, BOOKINGS_COLLECTION, bookingId), updates);
-      
-      // Wyślij powiadomienie
+
       let targetUserId: string;
       const cancellerName = cancelledBy === 'client' ? booking.clientName : booking.providerName;
       
       if (cancelledBy === 'client') {
-        // Klient anulował - powiadom usługodawcę (ownerId)
         try {
           const providerDoc = await getDoc(doc(db, 'providers', booking.providerId));
           targetUserId = providerDoc.exists() 
@@ -284,7 +230,6 @@ export const bookingService = {
           targetUserId = booking.providerId;
         }
       } else {
-        // Usługodawca anulował - powiadom klienta
         targetUserId = booking.clientId;
       }
       
@@ -303,9 +248,6 @@ export const bookingService = {
     }
   },
 
-  /**
-   * Oznacz jako zakończoną
-   */
   async complete(bookingId: string): Promise<Booking | null> {
     try {
       const booking = await this.getById(bookingId);
@@ -320,7 +262,6 @@ export const bookingService = {
       
       await updateDoc(doc(db, BOOKINGS_COLLECTION, bookingId), updates);
       
-      // 💰 Dodaj zarobek do portfela usługodawcy
       try {
         await walletService.addEarning(
           booking.providerId, 
@@ -330,10 +271,8 @@ export const bookingService = {
         console.log(`Added ${booking.servicePrice} PLN to provider ${booking.providerId} wallet`);
       } catch (walletError) {
         console.error('Error adding earning to wallet:', walletError);
-        // Nie przerywamy - rezerwacja została zakończona
       }
       
-      // Wyślij powiadomienie do klienta o zakończeniu i prośbę o opinię
       await notificationService.create({
         userId: booking.clientId,
         type: 'booking_completed',
@@ -349,34 +288,22 @@ export const bookingService = {
     }
   },
 
-  /**
-   * Pomocnicza funkcja - konwertuje czas "HH:MM" na minuty od północy
-   */
   timeToMinutes(time: string): number {
     const [hours, minutes] = time.split(':').map(Number);
     return hours * 60 + minutes;
   },
 
-  /**
-   * Pomocnicza funkcja - konwertuje minuty od północy na czas "HH:MM"
-   */
   minutesToTime(minutes: number): string {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
   },
 
-  /**
-   * Pobierz czas trwania usługi w minutach z stringa (np. "60 min" -> 60)
-   */
   parseDuration(duration: string): number {
     const match = duration.match(/(\d+)/);
-    return match ? parseInt(match[1]) : 30; // domyślnie 30 min
+    return match ? parseInt(match[1]) : 30;
   },
 
-  /**
-   * Sprawdź czy termin jest wolny (uwzględnia czas trwania usługi)
-   */
   async isTimeSlotAvailable(providerId: string, date: string, time: string, duration?: number): Promise<boolean> {
     try {
       const bookings = await this.getByProviderAndDate(providerId, date);
@@ -386,13 +313,11 @@ export const bookingService = {
       const newDuration = duration || 30;
       const newEndMinutes = newStartMinutes + newDuration;
       
-      // Sprawdź kolizje z istniejącymi rezerwacjami
       for (const booking of activeBookings) {
         const bookingStartMinutes = this.timeToMinutes(booking.time);
         const bookingDuration = this.parseDuration(booking.serviceDuration);
         const bookingEndMinutes = bookingStartMinutes + bookingDuration;
-        
-        // Kolizja jeśli przedziały się nakładają
+
         if (newStartMinutes < bookingEndMinutes && newEndMinutes > bookingStartMinutes) {
           return false;
         }
@@ -405,10 +330,6 @@ export const bookingService = {
     }
   },
 
-  /**
-   * Pobierz zajęte sloty dla usługodawcy na dany dzień
-   * Uwzględnia czas trwania każdej rezerwacji
-   */
   async getBookedSlots(providerId: string, date: string): Promise<string[]> {
     try {
       const bookings = await this.getByProviderAndDate(providerId, date);
@@ -420,8 +341,7 @@ export const bookingService = {
         const startMinutes = this.timeToMinutes(booking.time);
         const duration = this.parseDuration(booking.serviceDuration);
         const endMinutes = startMinutes + duration;
-        
-        // Dodaj wszystkie sloty 30-minutowe które są zajęte przez tę rezerwację
+
         for (let mins = startMinutes; mins < endMinutes; mins += 30) {
           bookedSlots.add(this.minutesToTime(mins));
         }
@@ -434,9 +354,6 @@ export const bookingService = {
     }
   },
 
-  /**
-   * Pobierz statystyki usługodawcy
-   */
   async getProviderStats(providerId: string): Promise<{
     totalBookings: number;
     completedBookings: number;
@@ -482,9 +399,6 @@ export const bookingService = {
     }
   },
 
-  /**
-   * Nasłuchuj na zmiany rezerwacji usługodawcy (real-time)
-   */
   subscribeToProviderBookings(
     providerId: string, 
     callback: (bookings: Booking[]) => void
@@ -501,9 +415,6 @@ export const bookingService = {
     });
   },
 
-  /**
-   * Aktualizuj status rezerwacji
-   */
   async updateStatus(bookingId: string, status: BookingStatus): Promise<void> {
     try {
       const bookingRef = doc(db, BOOKINGS_COLLECTION, bookingId);
@@ -518,9 +429,6 @@ export const bookingService = {
     }
   },
 
-  /**
-   * Nasłuchuj na zmiany rezerwacji klienta (real-time)
-   */
   subscribeToClientBookings(
     clientId: string, 
     callback: (bookings: Booking[]) => void

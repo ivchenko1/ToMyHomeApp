@@ -86,7 +86,6 @@ const SupportPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero */}
       <section className="bg-gradient-to-br from-primary via-secondary to-accent text-white py-20">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <h1 className="text-4xl lg:text-5xl font-bold mb-6">Centrum wsparcia</h1>
@@ -97,7 +96,6 @@ const SupportPage = () => {
         </div>
       </section>
 
-      {/* Support Options */}
       <section className="py-12 -mt-8">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid md:grid-cols-3 gap-6">
@@ -142,7 +140,6 @@ const SupportPage = () => {
         </div>
       </section>
 
-      {/* Quick Links */}
       <section className="py-12 bg-white">
         <div className="max-w-7xl mx-auto px-6">
           <h2 className="text-2xl font-bold mb-8 text-center">Przydatne linki</h2>
@@ -170,7 +167,6 @@ const SupportPage = () => {
         </div>
       </section>
 
-      {/* Step by Step Guides */}
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-6">
           <h2 className="text-2xl font-bold mb-8 text-center">Poradniki krok po kroku</h2>
@@ -194,7 +190,6 @@ const SupportPage = () => {
         </div>
       </section>
 
-      {/* Common Issues */}
       <section className="py-12 bg-white">
         <div className="max-w-7xl mx-auto px-6">
           <h2 className="text-2xl font-bold mb-8 text-center">Najczęstsze problemy</h2>
@@ -212,7 +207,6 @@ const SupportPage = () => {
         </div>
       </section>
 
-      {/* Still Need Help */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-6">
           <div className="bg-gradient-to-r from-primary to-secondary rounded-2xl p-8 lg:p-12 text-white text-center">

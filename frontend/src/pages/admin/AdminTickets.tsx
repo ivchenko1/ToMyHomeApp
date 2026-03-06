@@ -28,13 +28,11 @@ const AdminTickets = () => {
   const [stats, setStats] = useState({ total: 0, new: 0, open: 0, inProgress: 0, resolved: 0 });
 
   useEffect(() => {
-    // Subskrybuj tickety w czasie rzeczywistym
     const unsubscribe = ticketService.subscribeToTickets((data) => {
       setTickets(data);
       setIsLoading(false);
     });
     
-    // Pobierz statystyki
     loadStats();
     
     return () => unsubscribe();
@@ -50,7 +48,6 @@ const AdminTickets = () => {
     setResolution('');
     setShowModal(true);
     
-    // Jeśli ticket jest 'new', zmień na 'open'
     if (ticket.status === 'new') {
       ticketService.updateStatus(ticket.id, 'open');
     }
@@ -164,13 +161,11 @@ const AdminTickets = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Zgłoszenia kontaktowe</h1>
         <p className="text-gray-600">Wiadomości z formularza kontaktowego</p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <div className="bg-white p-4 rounded-xl shadow-sm">
           <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
@@ -194,7 +189,6 @@ const AdminTickets = () => {
         </div>
       </div>
 
-      {/* Filters */}
       <div className="flex items-center gap-2 flex-wrap">
         <Filter className="w-5 h-5 text-gray-400" />
         {(['all', 'new', 'open', 'in_progress', 'resolved', 'closed'] as const).map((status) => (
@@ -212,7 +206,6 @@ const AdminTickets = () => {
         ))}
       </div>
 
-      {/* Tickets List */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {filteredTickets.length === 0 ? (
           <div className="p-12 text-center text-gray-500">
@@ -263,7 +256,6 @@ const AdminTickets = () => {
         )}
       </div>
 
-      {/* Modal */}
       {showModal && selectedTicket && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -286,7 +278,6 @@ const AdminTickets = () => {
             </div>
             
             <div className="p-6 space-y-6">
-              {/* Dane kontaktowe */}
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="bg-gray-50 p-4 rounded-xl">
                   <div className="text-sm text-gray-500 mb-1">Od</div>
@@ -309,7 +300,6 @@ const AdminTickets = () => {
                 </div>
               </div>
 
-              {/* Treść wiadomości */}
               <div>
                 <div className="text-sm font-medium text-gray-700 mb-2">Treść wiadomości</div>
                 <div className="bg-gray-50 p-4 rounded-xl text-gray-800 whitespace-pre-wrap">
@@ -317,7 +307,6 @@ const AdminTickets = () => {
                 </div>
               </div>
 
-              {/* Rozwiązanie */}
               {selectedTicket.resolution && (
                 <div>
                   <div className="text-sm font-medium text-gray-700 mb-2">Rozwiązanie</div>
@@ -327,7 +316,6 @@ const AdminTickets = () => {
                 </div>
               )}
 
-              {/* Formularz odpowiedzi */}
               {selectedTicket.status !== 'resolved' && selectedTicket.status !== 'closed' && (
                 <div>
                   <div className="text-sm font-medium text-gray-700 mb-2">Odpowiedź / Rozwiązanie</div>
@@ -342,7 +330,6 @@ const AdminTickets = () => {
               )}
             </div>
 
-            {/* Akcje */}
             <div className="p-6 border-t border-gray-100 flex gap-3">
               {selectedTicket.status !== 'resolved' && selectedTicket.status !== 'closed' && (
                 <>

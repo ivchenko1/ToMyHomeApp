@@ -5,7 +5,6 @@ import AdminHeader from './AdminHeader';
 import AdminSidebar from './AdminSidebar';
 import { Shield, Loader2 } from 'lucide-react';
 
-// Context dla roli admina
 interface AdminContextType {
   isSuperAdmin: boolean;
   role: 'admin' | 'superadmin' | null;
@@ -20,12 +19,10 @@ const AdminLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { pathname } = useLocation();
 
-  // Scroll to top on route change
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
 
-  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
@@ -37,12 +34,10 @@ const AdminLayout = () => {
     );
   }
 
-  // Redirect to login if not authenticated
   if (!isAuthenticated) {
     return <Navigate to="/auth?redirect=/admin" replace />;
   }
 
-  // Access denied if not admin
   if (!isAdmin) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">

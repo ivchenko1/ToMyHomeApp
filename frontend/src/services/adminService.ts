@@ -1,8 +1,3 @@
-/**
- * Admin Service - zarządzanie użytkownikami, providerami i statystykami
- * Tylko dla administratorów
- */
-
 import {
   collection,
   doc,
@@ -16,10 +11,6 @@ import {
   limit,
 } from 'firebase/firestore';
 import { db } from '../firebase';
-
-// ============================================
-// TYPY
-// ============================================
 
 export type UserRole = 'user' | 'admin' | 'superadmin';
 
@@ -93,17 +84,10 @@ export interface PlatformStats {
   totalSuperAdmins: number;
 }
 
-// ============================================
-// FUNKCJE POMOCNICZE
-// ============================================
 
 const USERS_COLLECTION = 'users';
 const PROVIDERS_COLLECTION = 'providers';
 const BOOKINGS_COLLECTION = 'bookings';
-
-// ============================================
-// SPRAWDZANIE UPRAWNIEŃ
-// ============================================
 
 export const getUserRole = async (userId: string): Promise<UserRole> => {
   try {
@@ -129,25 +113,17 @@ export const checkIsSuperAdmin = async (userId: string): Promise<boolean> => {
   return role === 'superadmin';
 };
 
-// ============================================
-// STATYSTYKI PLATFORMY
-// ============================================
-
 export const getPlatformStats = async (): Promise<PlatformStats> => {
   try {
-    // Pobierz wszystkich użytkowników
     const usersSnapshot = await getDocs(collection(db, USERS_COLLECTION));
     const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
-    
-    // Pobierz wszystkich providerów
+
     const providersSnapshot = await getDocs(collection(db, PROVIDERS_COLLECTION));
     const providers = providersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
-    // Pobierz wszystkie rezerwacje
+
     const bookingsSnapshot = await getDocs(collection(db, BOOKINGS_COLLECTION));
     const bookings = bookingsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
-    
-    // Oblicz statystyki
+
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -193,10 +169,6 @@ export const getPlatformStats = async (): Promise<PlatformStats> => {
   }
 };
 
-// ============================================
-// ZARZĄDZANIE UŻYTKOWNIKAMI
-// ============================================
-
 export const getAllUsers = async (): Promise<AdminUser[]> => {
   try {
     const snapshot = await getDocs(collection(db, USERS_COLLECTION));
@@ -236,7 +208,6 @@ export const updateUser = async (userId: string, data: Partial<AdminUser>): Prom
   }
 };
 
-// Sprawdź czy można wykonać akcję na użytkowniku
 export const canPerformActionOnUser = (
   actorRole: UserRole,
   targetRole: UserRole | undefined,
@@ -244,24 +215,21 @@ export const canPerformActionOnUser = (
 ): boolean => {
   const targetRoleNormalized = targetRole || 'user';
   
-  // Super admin może wszystko
+
   if (actorRole === 'superadmin') {
     return true;
   }
   
-  // Admin nie może nic robić z superadminami
   if (targetRoleNormalized === 'superadmin') {
     return false;
   }
-  
-  // Admin nie może zmieniać roli ani usuwać innych adminów
+
   if (actorRole === 'admin' && targetRoleNormalized === 'admin') {
     if (action === 'changeRole' || action === 'delete') {
       return false;
     }
   }
-  
-  // Admin może nadawać rolę admin tylko zwykłym użytkownikom (nie superadmin)
+
   if (actorRole === 'admin' && action === 'changeRole') {
     return targetRoleNormalized === 'user' || targetRoleNormalized === 'admin';
   }
@@ -317,9 +285,6 @@ export const setUserRole = async (userId: string, role: UserRole): Promise<boole
   }
 };
 
-// ============================================
-// ZARZĄDZANIE PROVIDERAMI
-// ============================================
 
 export const getAllProviders = async (): Promise<AdminProvider[]> => {
   try {
@@ -417,10 +382,6 @@ export const deleteProvider = async (providerId: string): Promise<boolean> => {
   }
 };
 
-// ============================================
-// ZARZĄDZANIE REZERWACJAMI
-// ============================================
-
 export const getAllBookings = async (): Promise<AdminBooking[]> => {
   try {
     const snapshot = await getDocs(collection(db, BOOKINGS_COLLECTION));
@@ -476,10 +437,6 @@ export const updateBookingStatus = async (
     return false;
   }
 };
-
-// ============================================
-// EXPORT
-// ============================================
 
 const adminService = {
   getUserRole,

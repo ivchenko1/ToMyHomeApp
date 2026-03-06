@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
 
-// Definicje krajów z kodami, flagami i walidacją
 export const countries = [
   { code: '+48', flag: '🇵🇱', name: 'Polska', minDigits: 9, maxDigits: 9 },
   { code: '+49', flag: '🇩🇪', name: 'Niemcy', minDigits: 10, maxDigits: 11 },
@@ -79,7 +78,6 @@ const PhoneInput = ({ value, countryCode, onChange, className = '', error }: Pho
   
   const selectedCountry = getCountryByCode(countryCode);
 
-  // Zamknij dropdown po kliknięciu poza
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -104,7 +102,6 @@ const PhoneInput = ({ value, countryCode, onChange, className = '', error }: Pho
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Pozwól tylko na cyfry i spacje
     const newValue = e.target.value.replace(/[^\d\s]/g, '');
     onChange(newValue, countryCode);
   };
@@ -119,7 +116,6 @@ const PhoneInput = ({ value, countryCode, onChange, className = '', error }: Pho
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
       <div className={`flex rounded-xl border-2 ${error ? 'border-red-300' : 'border-gray-200'} focus-within:border-primary overflow-hidden`}>
-        {/* Country Selector */}
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
@@ -130,32 +126,27 @@ const PhoneInput = ({ value, countryCode, onChange, className = '', error }: Pho
           <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
         </button>
 
-        {/* Phone Input */}
         <input
           ref={inputRef}
           type="tel"
           value={value}
           onChange={handlePhoneChange}
           placeholder={getPlaceholder()}
-          maxLength={selectedCountry.maxDigits + 3} // +3 dla spacji
+          maxLength={selectedCountry.maxDigits + 3} 
           className="flex-1 px-4 py-3 focus:outline-none"
         />
       </div>
 
-      {/* Hint */}
       <p className="text-xs text-gray-500 mt-1">
         {selectedCountry.name}: {selectedCountry.minDigits === selectedCountry.maxDigits 
           ? `${selectedCountry.minDigits} cyfr` 
           : `${selectedCountry.minDigits}-${selectedCountry.maxDigits} cyfr`}
       </p>
 
-      {/* Error Message */}
       {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
 
-      {/* Dropdown */}
       {isOpen && (
         <div className="absolute z-50 w-full mt-1 bg-white border-2 border-primary/30 rounded-xl shadow-2xl max-h-80 overflow-hidden">
-          {/* Search */}
           <div className="p-2 border-b border-gray-100">
             <input
               type="text"
@@ -167,7 +158,6 @@ const PhoneInput = ({ value, countryCode, onChange, className = '', error }: Pho
             />
           </div>
 
-          {/* Countries List */}
           <div className="overflow-y-auto max-h-60">
             {filteredCountries.map((country) => (
               <button

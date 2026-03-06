@@ -4,7 +4,6 @@ import { Eye, EyeOff, User, Briefcase, ArrowLeft, Check, Loader2 } from 'lucide-
 import { useAuth, useToast } from '../App';
 import PhoneInput, { validatePhoneNumber } from '../components/PhoneInput';
 
-// 🔥 Firebase imports
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
@@ -14,17 +13,14 @@ import {
 import { doc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 
-// Funkcja sprawdzająca duplikaty w bazie
 const checkDuplicates = async (phone: string, businessName?: string): Promise<{ isDuplicate: boolean; message: string }> => {
   try {
-    // Sprawdź duplikat telefonu
     const phoneQuery = query(collection(db, 'users'), where('phone', '==', phone));
     const phoneSnapshot = await getDocs(phoneQuery);
     if (!phoneSnapshot.empty) {
       return { isDuplicate: true, message: 'Ten numer telefonu jest już używany przez inne konto' };
     }
 
-    // Sprawdź duplikat nazwy salonu (dla usługodawców)
     if (businessName && businessName.trim()) {
       const businessQuery = query(collection(db, 'users'), where('businessName', '==', businessName.trim()));
       const businessSnapshot = await getDocs(businessQuery);
@@ -36,7 +32,7 @@ const checkDuplicates = async (phone: string, businessName?: string): Promise<{ 
     return { isDuplicate: false, message: '' };
   } catch (error) {
     console.error('Error checking duplicates:', error);
-    return { isDuplicate: false, message: '' }; // W razie błędu pozwól kontynuować
+    return { isDuplicate: false, message: '' }; 
   }
 };
 
@@ -50,14 +46,12 @@ const AuthPage = () => {
 
   const [mode, setMode] = useState<AuthMode>('select');
   
-  // Login form state
   const [loginData, setLoginData] = useState({
     email: '',
     password: '',
   });
   const [showLoginPassword, setShowLoginPassword] = useState(false);
 
-  // Register form state
   const [registerData, setRegisterData] = useState({
     email: '',
     username: '',
@@ -74,7 +68,6 @@ const AuthPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Handle URL params
   useEffect(() => {
     const urlMode = searchParams.get('mode');
     const urlType = searchParams.get('type');
@@ -92,7 +85,6 @@ const AuthPage = () => {
     }
   }, [searchParams]);
 
-  // Redirect if already logged in
   useEffect(() => {
     if (isAuthenticated) {
       const redirect = searchParams.get('redirect');
@@ -100,7 +92,6 @@ const AuthPage = () => {
     }
   }, [isAuthenticated, navigate, searchParams]);
 
-  // 🔥 Firebase Login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -109,8 +100,6 @@ const AuthPage = () => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, loginData.email, loginData.password);
       
-      // Sprawdź czy email jest zweryfikowany (tylko dla nowych kont)
-      // Stare konta (utworzone przed 2026-01-08) nie wymagają weryfikacji
       const creationTime = userCredential.user.metadata.creationTime;
       const accountCreatedAt = creationTime ? new Date(creationTime) : new Date(0);
       const verificationRequiredAfter = new Date('2026-01-08');
@@ -118,18 +107,14 @@ const AuthPage = () => {
       const isNewAccount = accountCreatedAt > verificationRequiredAfter;
       
       if (isNewAccount && !userCredential.user.emailVerified) {
-        // Zapisz hasło tymczasowo
         sessionStorage.setItem('temp_password', loginData.password);
         const emailForRedirect = loginData.email;
-        // Wyloguj użytkownika
         await auth.signOut();
-        // Przekieruj na stronę weryfikacji
         setIsLoading(false);
         window.location.href = `${window.location.origin}${window.location.pathname}#/weryfikacja-email?email=${encodeURIComponent(emailForRedirect)}`;
         return;
       }
       
-      // Poczekaj chwilę na aktualizację auth state
       await new Promise(resolve => setTimeout(resolve, 500));
       
       showToast('Logowanie pomyślne! Witaj z powrotem!', 'success');
@@ -138,7 +123,6 @@ const AuthPage = () => {
     } catch (err: any) {
       console.error('Login error:', err);
       
-      // Obsługa błędów Firebase
       let errorMessage = 'Nieprawidłowy email lub hasło';
       switch (err.code) {
         case 'auth/user-not-found':
@@ -168,7 +152,6 @@ const AuthPage = () => {
     }
   };
 
-  // 🔥 Firebase Register
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -178,21 +161,18 @@ const AuthPage = () => {
       return;
     }
 
-    // Walidacja imienia i nazwiska (minimum 2 wyrazy)
     const nameParts = registerData.username.trim().split(/\s+/);
     if (nameParts.length < 2 || nameParts.some(part => part.length < 2)) {
       setError('Podaj pełne imię i nazwisko (np. Jan Kowalski)');
       return;
     }
 
-    // Walidacja numeru telefonu
     const phoneValidation = validatePhoneNumber(registerData.phoneCountryCode, registerData.phone);
     if (!phoneValidation.valid) {
       setError(phoneValidation.message);
       return;
     }
 
-    // Walidacja hasła
     if (registerData.password.length < 8) {
       setError('Hasło musi mieć co najmniej 8 znaków');
       return;
@@ -221,11 +201,9 @@ const AuthPage = () => {
     setIsLoading(true);
 
     try {
-      // Formatuj numer telefonu z kodem kraju do sprawdzenia
       const phoneDigits = registerData.phone.replace(/\D/g, '');
       const formattedPhone = `${registerData.phoneCountryCode} ${phoneDigits}`;
 
-      // 0. Sprawdź duplikaty (telefon i nazwa salonu)
       const duplicateCheck = await checkDuplicates(
         formattedPhone, 
         registerData.accountType === 'provider' ? registerData.businessName : undefined
@@ -237,7 +215,6 @@ const AuthPage = () => {
         return;
       }
 
-      // 1. Tworzenie użytkownika w Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(
         auth, 
         registerData.email, 
@@ -246,12 +223,10 @@ const AuthPage = () => {
 
       const user = userCredential.user;
 
-      // 2. Aktualizacja profilu (displayName)
       await updateProfile(user, {
         displayName: registerData.username
       });
 
-      // 3. Zapisanie dodatkowych danych w Firestore
       await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
         username: registerData.username,
@@ -261,7 +236,6 @@ const AuthPage = () => {
         businessName: registerData.businessName || null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        // Dodatkowe pola dla usługodawców
         ...(registerData.accountType === 'provider' && {
           isVerified: false,
           rating: 0,
@@ -270,30 +244,24 @@ const AuthPage = () => {
         })
       });
 
-      // 4. Wyślij email weryfikacyjny
       await sendEmailVerification(user, {
         url: window.location.origin + '/#/auth?mode=login&verified=true',
         handleCodeInApp: false,
       });
 
-      // Zapisz hasło tymczasowo (do ponownego wysłania emaila)
       sessionStorage.setItem('temp_password', registerData.password);
       
-      // Zapisz email do przekierowania
       const emailForRedirect = registerData.email;
       
-      // Wyloguj użytkownika - musi zweryfikować email przed zalogowaniem
       await auth.signOut();
       
       showToast('Konto utworzone! Sprawdź email.', 'success');
       
-      // Przekieruj na stronę weryfikacji używając window.location (pewniejsze)
       window.location.href = `${window.location.origin}${window.location.pathname}#/weryfikacja-email?email=${encodeURIComponent(emailForRedirect)}`;
       
     } catch (err: any) {
       console.error('Registration error:', err);
       
-      // Obsługa błędów Firebase
       let errorMessage = 'Błąd podczas rejestracji';
       switch (err.code) {
         case 'auth/email-already-in-use':
@@ -317,7 +285,6 @@ const AuthPage = () => {
     }
   };
 
-  // ==================== SELECTION SCREEN ====================
   if (mode === 'select') {
     return (
       <div className="min-h-screen py-12 px-6 flex items-center justify-center">
@@ -336,7 +303,6 @@ const AuthPage = () => {
           </div>
 
           <div className="bg-white rounded-2xl shadow-xl p-8">
-            {/* Login Button */}
             <button
               onClick={() => setMode('login')}
               className="w-full py-4 bg-gradient-to-r from-primary to-secondary text-white rounded-xl font-bold text-lg hover:shadow-lg transition-all mb-6"
@@ -353,7 +319,6 @@ const AuthPage = () => {
               </div>
             </div>
 
-            {/* Register Options */}
             <div className="space-y-4">
               <button
                 onClick={() => {
@@ -389,7 +354,6 @@ const AuthPage = () => {
     );
   }
 
-  // ==================== LOGIN SCREEN ====================
   if (mode === 'login') {
     return (
       <div className="min-h-screen py-12 px-6 flex items-center justify-center">
@@ -492,7 +456,6 @@ const AuthPage = () => {
     );
   }
 
-  // ==================== REGISTER SCREEN ====================
   const isProvider = mode === 'register-provider';
 
   return (
@@ -507,7 +470,6 @@ const AuthPage = () => {
         </button>
 
         <div className="bg-white rounded-2xl shadow-xl p-8">
-          {/* Header */}
           <div className="text-center mb-8">
             <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
               isProvider ? 'bg-emerald-100' : 'bg-primary/10'
@@ -528,7 +490,6 @@ const AuthPage = () => {
             </p>
           </div>
 
-          {/* Benefits */}
           <div className={`mb-6 p-4 rounded-xl ${isProvider ? 'bg-emerald-50' : 'bg-primary/5'}`}>
             <p className="font-semibold mb-2 text-sm">
               {isProvider ? '✨ Korzyści dla usługodawcy:' : '✨ Korzyści dla klienta:'}

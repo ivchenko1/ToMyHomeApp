@@ -15,7 +15,6 @@ const VerifyEmailPage = () => {
   const [checking, setChecking] = useState(false);
   const [countdown, setCountdown] = useState(0);
 
-  // Countdown dla przycisku "Wyślij ponownie"
   useEffect(() => {
     if (countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
@@ -23,7 +22,6 @@ const VerifyEmailPage = () => {
     }
   }, [countdown]);
 
-  // Wyślij ponownie email weryfikacyjny
   const resendEmail = async () => {
     if (countdown > 0) return;
     
@@ -44,7 +42,7 @@ const VerifyEmailPage = () => {
       await auth.signOut();
       
       showToast('Email weryfikacyjny wysłany ponownie!', 'success');
-      setCountdown(60); // Blokuj na 60 sekund
+      setCountdown(60);
     } catch (error: any) {
       console.error('Resend error:', error);
       if (error.code === 'auth/too-many-requests') {
@@ -58,7 +56,6 @@ const VerifyEmailPage = () => {
     }
   };
 
-  // Sprawdź czy email został zweryfikowany
   const checkVerification = async () => {
     const password = sessionStorage.getItem('temp_password');
     if (!password) {
@@ -71,7 +68,6 @@ const VerifyEmailPage = () => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
-      // Odśwież dane użytkownika
       await userCredential.user.reload();
       
       if (userCredential.user.emailVerified) {
@@ -94,7 +90,6 @@ const VerifyEmailPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 flex items-center justify-center px-4">
       <div className="max-w-md w-full">
-        {/* Logo / Powrót */}
         <button
           onClick={() => navigate('/auth?mode=login')}
           className="flex items-center gap-2 text-gray-600 hover:text-primary mb-8 transition-colors"
@@ -103,14 +98,11 @@ const VerifyEmailPage = () => {
           Powrót do logowania
         </button>
 
-        {/* Główna karta */}
         <div className="bg-white rounded-3xl shadow-xl p-8 text-center">
-          {/* Ikona */}
           <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <Mail className="w-10 h-10 text-emerald-600" />
           </div>
 
-          {/* Nagłówek */}
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
             Sprawdź swoją skrzynkę
           </h1>
@@ -118,12 +110,10 @@ const VerifyEmailPage = () => {
             Wysłaliśmy link weryfikacyjny na adres:
           </p>
 
-          {/* Email */}
           <div className="bg-gray-50 rounded-xl py-3 px-4 mb-6">
             <p className="font-semibold text-gray-900">{email}</p>
           </div>
 
-          {/* Instrukcje */}
           <div className="text-left bg-emerald-50 rounded-xl p-4 mb-6">
             <p className="text-sm text-emerald-800 mb-2 font-medium">Co dalej?</p>
             <ol className="text-sm text-emerald-700 space-y-1 list-decimal list-inside">
@@ -134,7 +124,6 @@ const VerifyEmailPage = () => {
             </ol>
           </div>
 
-          {/* Przyciski */}
           <div className="space-y-3">
             <button
               onClick={checkVerification}
@@ -178,7 +167,6 @@ const VerifyEmailPage = () => {
             </button>
           </div>
 
-          {/* Podpowiedź */}
           <p className="text-xs text-gray-500 mt-6">
             Nie widzisz maila? Sprawdź folder SPAM lub poczekaj chwilę.
           </p>

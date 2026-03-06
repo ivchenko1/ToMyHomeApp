@@ -54,7 +54,6 @@ const BusinessDashboard = () => {
       console.log('BusinessDashboard: Loading for user', user.id);
       
       try {
-        // Pobierz profil usługodawcy
         const providers = await providerService.getByOwner(user.id);
         console.log('BusinessDashboard: Found providers', providers.length);
         
@@ -62,7 +61,6 @@ const BusinessDashboard = () => {
           setHasProvider(true);
           const provider = providers[0];
           
-          // Pobierz statystyki z bookingService
           const providerStats = await bookingService.getProviderStats(provider.id);
           
           setStats({
@@ -75,11 +73,9 @@ const BusinessDashboard = () => {
             reviewsCount: provider.reviewsCount || 0,
           });
           
-          // Subskrybuj rezerwacje real-time
           const unsubscribe = bookingService.subscribeToProviderBookings(
             provider.id,
             (bookings) => {
-              // Filtruj tylko pending i confirmed, sortuj po dacie
               const upcoming = bookings
                 .filter(b => b.status === 'pending' || b.status === 'confirmed')
                 .slice(0, 5);
@@ -101,7 +97,6 @@ const BusinessDashboard = () => {
     loadData();
   }, [user]);
 
-  // Potwierdź rezerwację
   const handleConfirm = async (bookingId: string) => {
     try {
       await bookingService.confirm(bookingId);
@@ -111,7 +106,6 @@ const BusinessDashboard = () => {
     }
   };
 
-  // Anuluj rezerwację
   const handleCancel = async (bookingId: string) => {
     try {
       await bookingService.cancel(bookingId, 'provider');
@@ -165,7 +159,6 @@ const BusinessDashboard = () => {
     }
   };
 
-  // If loading, show spinner
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -174,7 +167,6 @@ const BusinessDashboard = () => {
     );
   }
 
-  // If no provider profile, show empty state
   if (!hasProvider) {
     return (
       <div className="max-w-2xl mx-auto text-center py-16">
@@ -231,7 +223,6 @@ const BusinessDashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
@@ -250,7 +241,6 @@ const BusinessDashboard = () => {
         </Link>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat, index) => (
           <div key={index} className="bg-white p-5 rounded-xl shadow-sm">
@@ -265,9 +255,7 @@ const BusinessDashboard = () => {
         ))}
       </div>
 
-      {/* Recent Bookings & Quick Actions */}
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Recent Bookings */}
         <div className="lg:col-span-2 bg-white rounded-xl shadow-sm">
           <div className="p-5 border-b border-gray-100">
             <div className="flex items-center justify-between">
@@ -329,7 +317,6 @@ const BusinessDashboard = () => {
           </div>
         </div>
 
-        {/* Quick Actions */}
         <div className="bg-white rounded-xl shadow-sm p-5">
           <h2 className="text-lg font-bold text-gray-900 mb-4">Szybkie akcje</h2>
           <div className="space-y-3">

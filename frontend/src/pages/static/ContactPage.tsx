@@ -96,7 +96,6 @@ const ContactPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero */}
       <section className="bg-gradient-to-br from-primary via-secondary to-accent text-white py-20">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <h1 className="text-4xl lg:text-5xl font-bold mb-6">Kontakt</h1>
@@ -107,7 +106,6 @@ const ContactPage = () => {
         </div>
       </section>
 
-      {/* Contact Info Cards */}
       <section className="py-12 -mt-8">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -130,11 +128,9 @@ const ContactPage = () => {
         </div>
       </section>
 
-      {/* Main Content */}
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid lg:grid-cols-2 gap-12">
-            {/* Contact Form */}
             <div className="bg-white p-8 rounded-2xl shadow-sm">
               <h2 className="text-2xl font-bold mb-6">Wyślij wiadomość</h2>
               
@@ -235,7 +231,6 @@ const ContactPage = () => {
               )}
             </div>
 
-            {/* Departments */}
             <div>
               <h2 className="text-2xl font-bold mb-6">Działy</h2>
               <div className="space-y-4 mb-8">
@@ -260,7 +255,6 @@ const ContactPage = () => {
                 ))}
               </div>
 
-              {/* Map */}
               <div className="bg-white p-6 rounded-2xl shadow-sm">
                 <h3 className="font-bold text-gray-900 mb-4">Nasza lokalizacja</h3>
                 <div className="h-64 bg-gray-100 rounded-xl overflow-hidden">

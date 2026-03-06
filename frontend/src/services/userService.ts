@@ -1,4 +1,3 @@
-// src/services/userService.ts
 import { 
   doc, 
   getDoc, 
@@ -21,7 +20,6 @@ import {
 } from 'firebase/storage';
 import { db, auth, storage } from '../firebase';
 
-// ==================== TYPES ====================
 export interface UserProfile {
   uid: string;
   email: string;
@@ -41,11 +39,6 @@ export interface UpdateProfileData {
   businessName?: string;
 }
 
-// ==================== USER FUNCTIONS ====================
-
-/**
- * Pobierz profil użytkownika z Firestore
- */
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
   try {
     const userRef = doc(db, 'users', userId);
@@ -64,9 +57,6 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
   }
 };
 
-/**
- * Zaktualizuj profil użytkownika w Firestore i Auth
- */
 export const updateUserProfile = async (
   userId: string, 
   data: UpdateProfileData
@@ -74,7 +64,6 @@ export const updateUserProfile = async (
   try {
     const userRef = doc(db, 'users', userId);
     
-    // Usuń undefined wartości (Firebase nie akceptuje undefined)
     const cleanData: Record<string, any> = {};
     Object.entries(data).forEach(([key, value]) => {
       if (value !== undefined) {
@@ -82,7 +71,6 @@ export const updateUserProfile = async (
       }
     });
     
-    // Aktualizuj Firestore tylko jeśli są dane do zapisania
     if (Object.keys(cleanData).length > 0) {
       await updateDoc(userRef, {
         ...cleanData,
@@ -90,14 +78,12 @@ export const updateUserProfile = async (
       });
     }
     
-    // Aktualizuj Firebase Auth displayName jeśli zmieniono username
     if (data.username && auth.currentUser) {
       await updateProfile(auth.currentUser, {
         displayName: data.username
       });
     }
     
-    // Aktualizuj Firebase Auth photoURL jeśli zmieniono avatar
     if (data.avatar && auth.currentUser) {
       await updateProfile(auth.currentUser, {
         photoURL: data.avatar
@@ -109,36 +95,27 @@ export const updateUserProfile = async (
   }
 };
 
-/**
- * Prześlij avatar do Firebase Storage
- */
 export const uploadAvatar = async (
   userId: string, 
   file: File
 ): Promise<string> => {
   try {
-    // Walidacja typu pliku
     if (!file.type.startsWith('image/')) {
       throw new Error('Plik musi być obrazem');
     }
     
-    // Walidacja rozmiaru (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       throw new Error('Plik jest za duży (max 5MB)');
     }
     
-    // Utwórz unikalną nazwę pliku
     const fileExtension = file.name.split('.').pop();
     const fileName = `avatars/${userId}_${Date.now()}.${fileExtension}`;
     
-    // Prześlij do Firebase Storage
     const storageRef = ref(storage, fileName);
     const snapshot = await uploadBytes(storageRef, file);
     
-    // Pobierz URL
     const downloadURL = await getDownloadURL(snapshot.ref);
     
-    // Zaktualizuj profil z nowym URL avatara
     await updateUserProfile(userId, { avatar: downloadURL });
     
     return downloadURL;
@@ -148,9 +125,6 @@ export const uploadAvatar = async (
   }
 };
 
-/**
- * Zmień hasło użytkownika (wymaga obecnego hasła)
- */
 export const changePassword = async (
   currentPassword: string, 
   newPassword: string
@@ -161,7 +135,6 @@ export const changePassword = async (
       throw new Error('Brak zalogowanego użytkownika');
     }
     
-    // Walidacja nowego hasła
     if (newPassword.length < 8) {
       throw new Error('Hasło musi mieć co najmniej 8 znaków');
     }
@@ -175,11 +148,9 @@ export const changePassword = async (
       throw new Error('Hasło musi zawierać cyfrę');
     }
     
-    // Reautoryzacja z obecnym hasłem
     const credential = EmailAuthProvider.credential(user.email, currentPassword);
     await reauthenticateWithCredential(user, credential);
     
-    // Zmień hasło
     await updatePassword(user, newPassword);
   } catch (error: any) {
     console.error('Error changing password:', error);
@@ -198,9 +169,6 @@ export const changePassword = async (
   }
 };
 
-/**
- * Usuń konto użytkownika (wymaga hasła)
- */
 export const deleteUserAccount = async (password: string): Promise<void> => {
   try {
     const user = auth.currentUser;
@@ -208,11 +176,9 @@ export const deleteUserAccount = async (password: string): Promise<void> => {
       throw new Error('Brak zalogowanego użytkownika');
     }
     
-    // Reautoryzacja
     const credential = EmailAuthProvider.credential(user.email, password);
     await reauthenticateWithCredential(user, credential);
     
-    // Usuń avatar z Storage (jeśli istnieje)
     try {
       const userProfile = await getUserProfile(user.uid);
       if (userProfile?.avatar && userProfile.avatar.includes('firebase')) {
@@ -223,10 +189,8 @@ export const deleteUserAccount = async (password: string): Promise<void> => {
       console.log('Avatar deletion skipped');
     }
     
-    // Usuń dokument użytkownika z Firestore
     await deleteDoc(doc(db, 'users', user.uid));
     
-    // Usuń konto z Firebase Auth
     await deleteUser(user);
   } catch (error: any) {
     console.error('Error deleting account:', error);

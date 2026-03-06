@@ -28,8 +28,6 @@ public class User
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime? UpdatedAt { get; set; }
-
-    // Navigation properties
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
     public ICollection<Favorite> Favorites { get; set; } = new List<Favorite>();
 }

@@ -1,4 +1,3 @@
-// User types
 export interface User {
   id: string; 
   username: string;
@@ -29,7 +28,6 @@ export interface AuthResponse {
   token: string;
 }
 
-// Service types
 export interface Service {
   id: string;
   name: string;
@@ -38,7 +36,6 @@ export interface Service {
   slug: string;
 }
 
-// Provider types
 export interface Provider {
   id: number;
   name: string;
@@ -56,7 +53,6 @@ export interface Provider {
   isAvailableToday?: boolean;
 }
 
-// Review types
 export interface Review {
   id: number;
   author: string;
@@ -68,14 +64,12 @@ export interface Review {
   helpful: number;
 }
 
-// Toast types
 export interface ToastMessage {
   id: string;
   message: string;
   type: 'success' | 'error' | 'info';
 }
 
-// Filter types
 export interface ProviderFilters {
   location: string;
   specialization: string;

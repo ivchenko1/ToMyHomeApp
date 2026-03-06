@@ -24,24 +24,21 @@ const MessagesPage = () => {
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Obsłuż parametr providerId - otwórz/utwórz konwersację z usługodawcą
   useEffect(() => {
     const initConversation = async () => {
       const providerId = searchParams.get('providerId');
       if (!providerId || !user?.id) return;
 
       try {
-        // Pobierz dane providera
         const provider = await providerService.getById(providerId);
         if (!provider) return;
 
-        // Utwórz lub pobierz konwersację
         const conversation = await messageService.getOrCreateConversation(
           user.id,
           user.username || 'Użytkownik',
           user.avatar || '',
-          provider.id, // providerId
-          provider.ownerId, // providerOwnerId
+          provider.id, 
+          provider.ownerId, 
           provider.name,
           provider.image || ''
         );
@@ -55,7 +52,6 @@ const MessagesPage = () => {
     initConversation();
   }, [searchParams, user]);
 
-  // Subskrybuj konwersacje
   useEffect(() => {
     if (!user?.id) {
       setIsLoading(false);
@@ -73,11 +69,9 @@ const MessagesPage = () => {
     return () => unsubscribe();
   }, [user?.id]);
 
-  // Subskrybuj wiadomości z wybranej konwersacji
   useEffect(() => {
     if (!selectedConversation || !user?.id) return;
 
-    // Oznacz jako przeczytane
     messageService.markAsRead(selectedConversation.id, user.id);
 
     const unsubscribe = messageService.subscribeToMessages(
@@ -90,7 +84,6 @@ const MessagesPage = () => {
     return () => unsubscribe();
   }, [selectedConversation, user?.id]);
 
-  // Auto-scroll do dołu
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -148,7 +141,6 @@ const MessagesPage = () => {
     return other.name.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
-  // Nie zalogowany
   if (!user) {
     return (
       <div className="min-h-screen pt-24 pb-12">
@@ -181,7 +173,6 @@ const MessagesPage = () => {
     <div className="min-h-screen pt-20 pb-0">
       <div className="max-w-6xl mx-auto px-6">
         <div className="h-[calc(100vh-120px)] flex bg-white rounded-2xl shadow-lg overflow-hidden">
-          {/* Lista konwersacji */}
           <div className={`w-full md:w-80 lg:w-96 border-r border-gray-100 flex flex-col ${selectedConversation ? 'hidden md:flex' : ''}`}>
             <div className="p-4 border-b border-gray-100">
               <h2 className="text-lg font-bold text-gray-900 mb-3">Wiadomości</h2>
@@ -253,10 +244,8 @@ const MessagesPage = () => {
             </div>
           </div>
 
-          {/* Panel czatu */}
           {selectedConversation ? (
             <div className="flex-1 flex flex-col">
-              {/* Header czatu */}
               <div className="p-4 border-b border-gray-100 flex items-center gap-3">
                 <button
                   onClick={() => setSelectedConversation(null)}
@@ -284,7 +273,6 @@ const MessagesPage = () => {
                 })()}
               </div>
 
-              {/* Wiadomości */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
                 {messages.length === 0 ? (
                   <div className="text-center text-gray-500 py-8">
@@ -322,7 +310,6 @@ const MessagesPage = () => {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Input */}
               <div className="p-4 border-t border-gray-100 bg-white">
                 <div className="flex items-center gap-3">
                   <input

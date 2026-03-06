@@ -1,8 +1,3 @@
-/**
- * Ticket Service - zarządzanie zgłoszeniami kontaktowymi
- * Zgłoszenia trafiają do panelu administracyjnego
- */
-
 import { 
   collection, 
   doc, 
@@ -16,58 +11,44 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 
-// ============================================
-// TYPY
-// ============================================
-
 export type TicketStatus = 'new' | 'open' | 'in_progress' | 'resolved' | 'closed';
 export type TicketPriority = 'low' | 'normal' | 'high' | 'urgent';
 
 export type TicketSubject = 
-  | 'general'      // Pytanie ogólne
-  | 'booking'      // Problem z rezerwacją
-  | 'account'      // Problem z kontem
-  | 'specialist'   // Chcę zostać specjalistą
-  | 'partnership'  // Współpraca biznesowa
-  | 'complaint'    // Reklamacja
-  | 'other';       // Inne
+  | 'general'   
+  | 'booking'  
+  | 'account'  
+  | 'specialist'   
+  | 'partnership' 
+  | 'complaint'
+  | 'other';
 
 export interface ContactTicket {
   id: string;
   
-  // Dane kontaktowe
   name: string;
   email: string;
   phone?: string;
   
-  // Treść zgłoszenia
   subject: TicketSubject;
   subjectLabel: string;
   message: string;
   
-  // Status
   status: TicketStatus;
   priority: TicketPriority;
   
-  // Powiązanie z użytkownikiem (jeśli zalogowany)
   userId?: string;
   
-  // Obsługa przez admina
   assignedTo?: string;
   assignedToName?: string;
   adminNotes?: string;
   resolution?: string;
   
-  // Daty
   createdAt: string;
   updatedAt: string;
   resolvedAt?: string;
   closedAt?: string;
 }
-
-// ============================================
-// HELPERS
-// ============================================
 
 const TICKETS_COLLECTION = 'contactTickets';
 
@@ -85,14 +66,7 @@ const subjectLabels: Record<TicketSubject, string> = {
   other: 'Inne',
 };
 
-// ============================================
-// PUBLIC API
-// ============================================
-
 export const ticketService = {
-  /**
-   * Utwórz nowe zgłoszenie kontaktowe
-   */
   async create(data: {
     name: string;
     email: string;
@@ -104,7 +78,6 @@ export const ticketService = {
     const id = generateId();
     const now = new Date().toISOString();
     
-    // Ustal priorytet na podstawie tematu
     let priority: TicketPriority = 'normal';
     if (data.subject === 'complaint') priority = 'high';
     if (data.subject === 'partnership') priority = 'low';
@@ -134,9 +107,6 @@ export const ticketService = {
     }
   },
 
-  /**
-   * Pobierz ticket po ID
-   */
   async getById(id: string): Promise<ContactTicket | null> {
     try {
       const docRef = doc(db, TICKETS_COLLECTION, id);
@@ -151,9 +121,6 @@ export const ticketService = {
     }
   },
 
-  /**
-   * Pobierz wszystkie tickety (dla admina)
-   */
   async getAll(): Promise<ContactTicket[]> {
     try {
       const q = query(collection(db, TICKETS_COLLECTION));
@@ -168,9 +135,6 @@ export const ticketService = {
     }
   },
 
-  /**
-   * Pobierz tickety po statusie
-   */
   async getByStatus(status: TicketStatus): Promise<ContactTicket[]> {
     try {
       const q = query(
@@ -188,9 +152,6 @@ export const ticketService = {
     }
   },
 
-  /**
-   * Aktualizuj status ticketu
-   */
   async updateStatus(ticketId: string, status: TicketStatus, adminNotes?: string): Promise<void> {
     try {
       const now = new Date().toISOString();
@@ -218,9 +179,6 @@ export const ticketService = {
     }
   },
 
-  /**
-   * Przypisz ticket do admina
-   */
   async assignTo(ticketId: string, adminId: string, adminName: string): Promise<void> {
     try {
       await updateDoc(doc(db, TICKETS_COLLECTION, ticketId), {
@@ -236,9 +194,6 @@ export const ticketService = {
     }
   },
 
-  /**
-   * Dodaj rozwiązanie i zamknij ticket
-   */
   async resolve(ticketId: string, resolution: string): Promise<void> {
     try {
       const now = new Date().toISOString();
@@ -255,9 +210,6 @@ export const ticketService = {
     }
   },
 
-  /**
-   * Subskrybuj tickety (real-time dla admina)
-   */
   subscribeToTickets(callback: (tickets: ContactTicket[]) => void): () => void {
     const q = query(collection(db, TICKETS_COLLECTION));
     
@@ -270,9 +222,6 @@ export const ticketService = {
     });
   },
 
-  /**
-   * Pobierz statystyki ticketów
-   */
   async getStats(): Promise<{
     total: number;
     new: number;
@@ -295,9 +244,6 @@ export const ticketService = {
     }
   },
 
-  /**
-   * Formatuj status po polsku
-   */
   getStatusLabel(status: TicketStatus): string {
     switch (status) {
       case 'new': return 'Nowe';
@@ -309,9 +255,6 @@ export const ticketService = {
     }
   },
 
-  /**
-   * Pobierz kolor statusu
-   */
   getStatusColor(status: TicketStatus): string {
     switch (status) {
       case 'new': return 'red';
@@ -323,9 +266,6 @@ export const ticketService = {
     }
   },
 
-  /**
-   * Formatuj priorytet po polsku
-   */
   getPriorityLabel(priority: TicketPriority): string {
     switch (priority) {
       case 'low': return 'Niski';

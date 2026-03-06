@@ -12,10 +12,8 @@ const BusinessHeader = () => {
   const navigate = useNavigate();
   const notificationsRef = useRef<HTMLDivElement>(null);
 
-  // Real-time powiadomienia z Firebase
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  // Subskrybuj powiadomienia
   useEffect(() => {
     if (!user?.id) {
       setNotifications([]);
@@ -25,7 +23,7 @@ const BusinessHeader = () => {
     const unsubscribe = notificationService.subscribe(
       user.id,
       (newNotifications) => {
-        setNotifications(newNotifications.slice(0, 5)); // Max 5 w dropdown
+        setNotifications(newNotifications.slice(0, 5));
       }
     );
     
@@ -34,7 +32,6 @@ const BusinessHeader = () => {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  // Formatuj czas
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -48,18 +45,15 @@ const BusinessHeader = () => {
     return date.toLocaleDateString('pl-PL');
   };
 
-  // Oznacz powiadomienie jako przeczytane
   const markAsRead = async (notificationId: string) => {
     await notificationService.markAsRead(notificationId);
   };
 
-  // Oznacz wszystkie jako przeczytane
   const markAllAsRead = async () => {
     if (!user?.id) return;
     await notificationService.markAllAsRead(user.id);
   };
 
-  // Ikona powiadomienia
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'booking':
@@ -76,12 +70,10 @@ const BusinessHeader = () => {
     }
   };
 
-  // Pobierz link z powiadomienia
   const getNotificationLink = (notification: Notification): string | undefined => {
     return notification.data?.link;
   };
 
-  // Zamknij dropdown po kliknięciu poza
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
@@ -96,7 +88,6 @@ const BusinessHeader = () => {
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
       <div className="px-4 lg:px-8">
         <div className="h-16 flex items-center justify-between">
-          {/* Logo */}
           <div className="flex items-center gap-4">
             <button
               className="lg:hidden p-2 bg-white rounded-lg border border-gray-200 hover:bg-gray-50"
@@ -123,9 +114,7 @@ const BusinessHeader = () => {
             </Link>
           </div>
 
-          {/* Right Side */}
           <div className="flex items-center gap-3">
-            {/* Switch to Client View - widoczny zawsze */}
             <Link
               to="/"
               className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
@@ -135,7 +124,6 @@ const BusinessHeader = () => {
               <span>→</span>
             </Link>
 
-            {/* Notifications */}
             <div className="relative" ref={notificationsRef}>
               <button 
                 onClick={() => setShowNotifications(!showNotifications)}
@@ -149,7 +137,6 @@ const BusinessHeader = () => {
                 )}
               </button>
 
-              {/* Notifications Dropdown */}
               {showNotifications && (
                 <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
                   <div className="p-3 border-b border-gray-100 flex items-center justify-between">
@@ -219,7 +206,6 @@ const BusinessHeader = () => {
               )}
             </div>
 
-            {/* User Menu */}
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
@@ -271,7 +257,6 @@ const BusinessHeader = () => {
         </div>
       </div>
 
-      {/* Mobile Menu Overlay */}
       {isMenuOpen && (
         <div 
           className="lg:hidden fixed inset-0 bg-black/50 z-40"

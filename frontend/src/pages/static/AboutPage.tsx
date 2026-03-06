@@ -39,7 +39,6 @@ const AboutPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero */}
       <section className="bg-gradient-to-br from-primary via-secondary to-accent text-white py-20">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <h1 className="text-4xl lg:text-5xl font-bold mb-6">O nas</h1>
@@ -50,7 +49,6 @@ const AboutPage = () => {
         </div>
       </section>
 
-      {/* Mission */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -94,7 +92,6 @@ const AboutPage = () => {
         </div>
       </section>
 
-      {/* Stats */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
@@ -108,7 +105,6 @@ const AboutPage = () => {
         </div>
       </section>
 
-      {/* Values */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-12">
@@ -131,7 +127,6 @@ const AboutPage = () => {
         </div>
       </section>
 
-      {/* Team */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-12">
@@ -156,7 +151,6 @@ const AboutPage = () => {
         </div>
       </section>
 
-      {/* CTA */}
       <section className="py-16 bg-gradient-to-r from-primary to-secondary text-white">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <h2 className="text-3xl font-bold mb-4">Dołącz do nas!</h2>

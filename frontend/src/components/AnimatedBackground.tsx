@@ -1,7 +1,6 @@
 const AnimatedBackground = () => {
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden opacity-40 pointer-events-none">
-      {/* Gradient Orb 1 */}
       <div
         className="absolute w-[600px] h-[600px] rounded-full blur-[100px] animate-float"
         style={{
@@ -12,7 +11,6 @@ const AnimatedBackground = () => {
         }}
       />
       
-      {/* Gradient Orb 2 */}
       <div
         className="absolute w-[800px] h-[800px] rounded-full blur-[100px] animate-float"
         style={{
@@ -23,7 +21,6 @@ const AnimatedBackground = () => {
         }}
       />
       
-      {/* Gradient Orb 3 */}
       <div
         className="absolute w-[500px] h-[500px] rounded-full blur-[100px] animate-float"
         style={{

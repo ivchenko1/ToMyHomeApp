@@ -10,12 +10,10 @@ const BusinessLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { pathname } = useLocation();
 
-  // Scroll to top on route change
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
 
-  // Pokaż loader podczas ładowania auth state
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -27,15 +25,12 @@ const BusinessLayout = () => {
     );
   }
 
-  // Sprawdź czy użytkownik jest usługodawcą
   const isProvider = user?.accountType === 'provider' || !!user?.businessName;
 
-  // Redirect to login if not authenticated
   if (!isAuthenticated) {
     return <Navigate to="/auth?redirect=/biznes" replace />;
   }
 
-  // Redirect to home if not a provider
   if (!isProvider) {
     return <Navigate to="/" replace />;
   }

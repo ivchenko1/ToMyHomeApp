@@ -92,8 +92,6 @@ const BusinessStatistics = () => {
         const pending = bookings.filter(b => b.status === 'pending').length;
         const confirmed = bookings.filter(b => b.status === 'confirmed').length;
 
-        // Przychody liczone tylko dla zrealizowanych wizyt (completed) 
-        // lub potwierdzonych wizyt z przeszłości (data wizyty już minęła)
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
@@ -102,7 +100,7 @@ const BusinessStatistics = () => {
           if (b.status === 'confirmed' || b.status === 'pending') {
             const bookingDate = new Date(b.date);
             bookingDate.setHours(23, 59, 59, 999);
-            return bookingDate < today; // Wizyta już się odbyła
+            return bookingDate < today; 
           }
           return false;
         });
@@ -135,7 +133,6 @@ const BusinessStatistics = () => {
           }
           serviceStats[b.serviceName].count++;
           
-          // Przychód tylko dla zrealizowanych wizyt
           const isCompleted = b.status === 'completed';
           const isPastBooking = (() => {
             if (b.status === 'confirmed' || b.status === 'pending') {

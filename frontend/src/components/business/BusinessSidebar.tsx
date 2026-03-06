@@ -26,7 +26,6 @@ const BusinessSidebar = ({ isOpen = true, onClose }: BusinessSidebarProps) => {
   const { user } = useAuth();
   const [unreadMessages, setUnreadMessages] = useState(0);
 
-  // Subskrybuj nieprzeczytane wiadomości
   useEffect(() => {
     if (!user?.id) {
       setUnreadMessages(0);
@@ -107,7 +106,6 @@ const BusinessSidebar = ({ isOpen = true, onClose }: BusinessSidebarProps) => {
 
   return (
     <>
-      {/* Mobile Overlay */}
       {isOpen && (
         <div 
           className="lg:hidden fixed inset-0 bg-black/50 z-40"
@@ -115,7 +113,6 @@ const BusinessSidebar = ({ isOpen = true, onClose }: BusinessSidebarProps) => {
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`
           fixed lg:sticky top-16 left-0 z-40
@@ -126,7 +123,6 @@ const BusinessSidebar = ({ isOpen = true, onClose }: BusinessSidebarProps) => {
         `}
       >
         <div className="flex flex-col h-full">
-          {/* Main Menu */}
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
             <div className="mb-4">
               <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3">
@@ -162,7 +158,6 @@ const BusinessSidebar = ({ isOpen = true, onClose }: BusinessSidebarProps) => {
             ))}
           </nav>
 
-          {/* Bottom Menu */}
           <div className="p-4 border-t border-gray-100">
             {bottomItems.map((item) => (
               <Link
@@ -184,7 +179,6 @@ const BusinessSidebar = ({ isOpen = true, onClose }: BusinessSidebarProps) => {
             ))}
           </div>
 
-          {/* Pro Banner */}
           <div className="p-4">
             <div className="p-4 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl text-white">
               <h4 className="font-bold mb-1">Przejdź na PRO</h4>
